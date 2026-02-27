@@ -1,5 +1,7 @@
 # Ortus
 
+## FOR HUMANS - WHAT IS ORTUS
+
 **A macOS menu bar app that blocks Slack during focus hours so you can do deep work.**
 
 Ortus kills Slack when focus mode activates (manually or on a schedule) and keeps it dead — if you try to reopen it, Ortus terminates it again. When focus ends, Slack comes back automatically.
@@ -8,13 +10,13 @@ There's no "End Focus" button to tempt you. Quitting the app during focus is blo
 
 An optional AI chat (powered by Claude) lets you check what's happening in Slack without actually opening it.
 
-## Why
+### Why
 
 Slack is the biggest productivity killer in most people's workday. "Just checking one message" turns into 30 minutes of context-switching. Existing focus tools set DND status or mute notifications — but Slack is still *right there*, one click away.
 
 Ortus takes a harder line: Slack is gone. Not minimized, not muted — terminated. And it can't come back until your focus time is over. This creates the kind of forced boundary that actually works for deep work.
 
-## Features
+### Features
 
 - **Menu bar app** — lives in your menu bar with a sunrise icon, no dock icon
 - **Slack blocking** — kills Slack and prevents relaunch during focus
@@ -26,7 +28,7 @@ Ortus takes a harder line: Slack is gone. Not minimized, not muted — terminate
 - **AI Slack assistant** — ask Claude about your Slack channels without opening Slack
 - **Slack OAuth** — connects to your workspace for AI features
 
-## Setup
+### Setup
 
 ```bash
 # Build
@@ -40,7 +42,7 @@ Requires macOS 13+ and Xcode/Swift toolchain.
 
 For the AI chat feature (optional): add a Claude API key and connect Slack via OAuth in Settings.
 
-## How It Works
+### How It Works
 
 1. When focus activates, Ortus terminates all Slack processes
 2. It monitors app launches and kills Slack if it tries to start
@@ -49,10 +51,9 @@ For the AI chat feature (optional): add a Claude API key and connect Slack via O
 
 ---
 
-<details>
-<summary><strong>Technical Reference (for AI models and contributors)</strong></summary>
+## FOR LLMs - HOW TO WORK IN THIS REPO
 
-## Architecture
+### Architecture
 
 Ortus is a SwiftUI macOS menu bar app built with Swift Package Manager. It runs as a `MenuBarExtra` with `.window` style (popover panel). No dock icon (`LSUIElement = true` in Info.plist).
 
@@ -75,7 +76,7 @@ Ortus/
 │   │   ├── SlackOAuthService.swift # OAuth flow with loopback HTTP server
 │   │   └── KeychainService.swift   # macOS Keychain wrapper for secrets
 │   ├── Views/
-│   │   ├── OrtusTheme.swift   # Design system: colors, spacing, radii, reusable components
+│   │   ├── OrtusTheme.swift   # Design system: materials, spacing, radii, reusable components
 │   │   ├── ContentView.swift  # Tab container (Focus, Schedule, Chat, Settings)
 │   │   ├── FocusView.swift    # Focus status, timer, start button (no end button)
 │   │   ├── ScheduleView.swift # Schedule list with inline editing (no sheets)
@@ -97,6 +98,8 @@ Ortus/
 
 **No Slack relaunch on app quit during focus**: The old `willTerminateNotification` observer that relaunched Slack on quit was removed — it was counterproductive since quit is now blocked during focus.
 
+**Glass material design**: Cards and status circles use SwiftUI `.ultraThinMaterial` / `.thinMaterial` instead of opaque `NSColor`-based backgrounds. This gives translucent glass-like appearance that adapts to both light and dark mode automatically. Continuous corner radius (`style: .continuous`) used throughout for Apple's supercircle shape language.
+
 ### State Management
 
 - `FocusManager` (ObservableObject): central state for focus sessions, schedules, emergency end
@@ -108,9 +111,10 @@ Ortus/
 
 ### Design System (OrtusTheme.swift)
 
-- Colors: `primary` (indigo), `primaryLight` (indigo 12%), `warning` (orange), `warningLight`, `success` (green), `destructive` (red), `cardBackground`, `cardBorder`
+- Materials: `.ultraThinMaterial` for cards and status circles, `.thinMaterial` for interactive elements — adaptive glass that works in light and dark mode
+- Colors: `primary` (indigo), `primaryLight` (indigo 12%), `warning` (orange), `warningLight`, `success` (green), `destructive` (red), `subtleBackground` (primary 4%)
 - Spacing: 8pt grid — `spacingXS(4)`, `spacingSM(8)`, `spacingMD(16)`, `spacingLG(24)`, `spacingXL(32)`
-- Corner radii: `radiusSM(8)`, `radiusMD(12)`, `radiusLG(16)`
+- Corner radii: `radiusSM(8)`, `radiusMD(12)`, `radiusLG(16)` — all using continuous (supercircle) style
 - Components: `.ortusCard()` modifier, `OrtusPrimaryButtonStyle`, `OrtusEmptyState`, `OrtusSectionHeader`
 
 ### Build & Run
@@ -130,5 +134,3 @@ None. Pure Swift/SwiftUI with Apple frameworks only (AppKit, Security, Network, 
 
 - **Claude API**: Standard Messages API with tool use. Agentic loop (max 10 iterations). Model: `claude-sonnet-4-5-20250929`. Tools defined in `SlackTools.swift`.
 - **Slack API**: OAuth v2 user token flow with loopback HTTP server on localhost. User scopes: `search:read`, `channels:history`, `groups:history`, `im:history`, `mpim:history`, `users:read`, `channels:read`, `groups:read`.
-
-</details>

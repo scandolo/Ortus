@@ -145,9 +145,17 @@ struct MessageBubble: View {
             .padding(.horizontal, OrtusTheme.spacingMD)
             .padding(.vertical, OrtusTheme.spacingSM)
             .background(
-                RoundedRectangle(cornerRadius: OrtusTheme.radiusMD)
-                    .fill(message.role == .user ? OrtusTheme.primaryLight : Color.gray.opacity(0.1))
+                Group {
+                    if message.role == .user {
+                        RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
+                            .fill(OrtusTheme.primaryLight)
+                    } else {
+                        RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
+                            .fill(.ultraThinMaterial)
+                    }
+                }
             )
+            .clipShape(RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous))
 
             if message.role == .assistant { Spacer(minLength: 40) }
         }

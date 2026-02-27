@@ -36,7 +36,9 @@ struct FocusView: View {
         VStack(spacing: OrtusTheme.spacingLG) {
             ZStack {
                 Circle()
-                    .fill(OrtusTheme.primaryLight)
+                    .fill(.ultraThinMaterial)
+                    .overlay(Circle().fill(OrtusTheme.primary.opacity(0.10)))
+                    .clipShape(Circle())
                     .frame(width: 120, height: 120)
 
                 Image(systemName: "sunrise.fill")
@@ -85,7 +87,9 @@ struct FocusView: View {
         VStack(spacing: OrtusTheme.spacingMD) {
             ZStack {
                 Circle()
-                    .fill(OrtusTheme.warningLight)
+                    .fill(.ultraThinMaterial)
+                    .overlay(Circle().fill(OrtusTheme.warning.opacity(0.10)))
+                    .clipShape(Circle())
                     .frame(width: 120, height: 120)
 
                 Image(systemName: "exclamationmark.circle")
@@ -125,7 +129,8 @@ struct FocusView: View {
         VStack(spacing: OrtusTheme.spacingLG) {
             ZStack {
                 Circle()
-                    .fill(Color.gray.opacity(0.1))
+                    .fill(.ultraThinMaterial)
+                    .clipShape(Circle())
                     .frame(width: 120, height: 120)
 
                 Image(systemName: "sunrise")

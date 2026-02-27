@@ -11,8 +11,7 @@ enum OrtusTheme {
     static let warningLight = Color.orange.opacity(0.12)
     static let success = Color.green
     static let destructive = Color.red
-    static let cardBackground = Color(nsColor: .controlBackgroundColor)
-    static let cardBorder = Color(nsColor: .separatorColor)
+    static let subtleBackground = Color.primary.opacity(0.04)
 
     // MARK: Spacing
 
@@ -35,15 +34,13 @@ struct OrtusCardModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .padding(OrtusTheme.spacingMD)
-            .background(
-                RoundedRectangle(cornerRadius: OrtusTheme.radiusMD)
-                    .fill(OrtusTheme.cardBackground)
-                    .shadow(color: .black.opacity(0.06), radius: 2, y: 1)
-            )
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: OrtusTheme.radiusMD)
-                    .stroke(OrtusTheme.cardBorder, lineWidth: 0.5)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
             )
+            .shadow(color: .black.opacity(0.04), radius: 3, y: 1)
     }
 }
 
@@ -63,7 +60,7 @@ struct OrtusPrimaryButtonStyle: ButtonStyle {
             .padding(.horizontal, OrtusTheme.spacingMD)
             .padding(.vertical, OrtusTheme.spacingSM)
             .background(
-                RoundedRectangle(cornerRadius: OrtusTheme.radiusSM)
+                RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous)
                     .fill(OrtusTheme.primary)
                     .opacity(configuration.isPressed ? 0.8 : 1)
             )

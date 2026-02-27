@@ -226,7 +226,7 @@ struct DayToggleButton: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 6)
                 .background(
-                    RoundedRectangle(cornerRadius: 6)
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .fill(isSelected ? OrtusTheme.primary : Color.clear)
                 )
                 .foregroundStyle(isSelected ? .white : .primary)
