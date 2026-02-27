@@ -51,9 +51,6 @@ struct ContentView: View {
             .padding(.top, OrtusTheme.spacingSM)
             .animation(.easeInOut(duration: 0.2), value: selectedTab)
 
-            Divider()
-                .padding(.top, OrtusTheme.spacingXS)
-
             // Content
             Group {
                 switch selectedTab {

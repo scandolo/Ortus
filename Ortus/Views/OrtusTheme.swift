@@ -2,6 +2,48 @@ import AppKit
 import SwiftUI
 
 // MARK: - Design System
+//
+// ┌─────────────────────────────────────────────────────────────────────┐
+// │  ORTUS VISUAL GUIDELINES — READ BEFORE MODIFYING ANY VIEW         │
+// │                                                                     │
+// │  1. SHAPE LANGUAGE: Everything is rounded. Every container, card,  │
+// │     input field, button, and the popover itself uses continuous     │
+// │     corner radius (style: .continuous) — Apple's "supercircle".    │
+// │     Never use sharp corners or default RoundedRectangle without    │
+// │     style: .continuous.                                             │
+// │                                                                     │
+// │  2. NO DIVIDERS: Never use SwiftUI Divider(). Separate sections    │
+// │     with spacing (spacingSM/spacingMD) or by placing content in    │
+// │     distinct .ortusCard() containers. Straight lines break the     │
+// │     rounded visual language.                                        │
+// │                                                                     │
+// │  3. FLOATING ELEMENTS: Toolbars, input bars, and action bars       │
+// │     should be .ortusCard() shapes floating with padding around     │
+// │     them — never edge-to-edge strips separated by lines.           │
+// │                                                                     │
+// │  4. NO OPAQUE BACKGROUNDS: This app runs inside a MenuBarExtra     │
+// │     popover with VibrantBackground (NSVisualEffectView). All       │
+// │     surface colors must be transparent overlays (cardFill,         │
+// │     hoverFill, border). Never use Color(nsColor: .controlBg) or   │
+// │     .textFieldStyle(.roundedBorder) — they draw opaque AppKit      │
+// │     backgrounds that break dark mode.                               │
+// │                                                                     │
+// │  5. BUTTON HIERARCHY:                                               │
+// │     - OrtusPrimaryButtonStyle → main CTA (one per view max)        │
+// │     - OrtusSecondaryButtonStyle → secondary actions (save, add)    │
+// │     - OrtusGhostButtonStyle → tertiary/cancel/destructive          │
+// │     Never use default SwiftUI .bordered or unstyled Button().      │
+// │                                                                     │
+// │  6. TEXT FIELDS: Always use OrtusTextFieldStyle() for TextField    │
+// │     and SecureField. It uses .plain + custom SwiftUI background.   │
+// │                                                                     │
+// │  7. POPOVER SHAPE: The MenuBarExtra popover window handles its     │
+// │     own shape — do NOT clip ContentView with .clipShape().         │
+// │     Let macOS manage the popover chrome.                            │
+// │                                                                     │
+// │  8. TOKENS: Use only OrtusTheme spacing/radius/color tokens.       │
+// │     Don't hardcode sizes, colors, or corner radii inline.          │
+// └─────────────────────────────────────────────────────────────────────┘
 
 enum OrtusTheme {
     // MARK: Colors — Accent (calm green, adaptive light/dark)
@@ -33,7 +75,11 @@ enum OrtusTheme {
     // MARK: Colors — Text
 
     /// Use alongside SwiftUI .primary / .secondary for placeholders & disabled states.
-    static let textMuted = Color(red: 0.71, green: 0.71, blue: 0.69) // #B5B5B0
+    static let textMuted = Color(nsColor: NSColor(name: nil) { appearance in
+        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            ? NSColor(red: 0.62, green: 0.62, blue: 0.60, alpha: 1)   // #9E9E99 dark
+            : NSColor(red: 0.45, green: 0.45, blue: 0.43, alpha: 1)   // #73736E light
+    })
 
     // MARK: Colors — Surface (transparent adaptive overlays for popover context)
 
@@ -184,6 +230,36 @@ struct OrtusTextFieldStyle: TextFieldStyle {
                 radius: 3,
                 y: 0
             )
+    }
+}
+
+// MARK: - Floating Toolbar Modifier (for input bars, action bars)
+
+struct OrtusFloatingToolbarModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .padding(.horizontal, OrtusTheme.spacingMD)
+            .padding(.vertical, OrtusTheme.spacingSM)
+            .background(
+                RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous)
+                    .fill(OrtusTheme.cardFill)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous)
+                    .stroke(OrtusTheme.border, lineWidth: 0.5)
+            )
+            .shadow(color: .black.opacity(0.04), radius: 2, y: 1)
+            .padding(.horizontal, OrtusTheme.spacingSM)
+            .padding(.bottom, OrtusTheme.spacingSM)
+    }
+}
+
+extension View {
+    /// Use for floating input bars, action bars, and toolbars at the bottom of a view.
+    /// Renders as a rounded card shape with outer padding — never a flat edge-to-edge strip.
+    func ortusFloatingToolbar() -> some View {
+        modifier(OrtusFloatingToolbarModifier())
     }
 }
 

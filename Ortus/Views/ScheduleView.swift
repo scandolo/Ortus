@@ -69,8 +69,6 @@ struct ScheduleView: View {
                 }
             }
 
-            Divider()
-
             HStack {
                 Spacer()
                 Button {
@@ -81,8 +79,8 @@ struct ScheduleView: View {
                 }
                 .buttonStyle(OrtusSecondaryButtonStyle())
                 .disabled(isAddingNew)
-                .padding(OrtusTheme.spacingMD)
             }
+            .ortusFloatingToolbar()
         }
     }
 }

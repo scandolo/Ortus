@@ -192,8 +192,6 @@ struct SettingsView: View {
                             .foregroundStyle(OrtusTheme.warning)
                     }
 
-                    Divider()
-
                     Button("Quit Ortus") {
                         NSApplication.shared.terminate(nil)
                     }

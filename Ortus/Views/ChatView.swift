@@ -24,7 +24,6 @@ struct ChatView: View {
                 messageList
             }
 
-            Divider()
             inputBar
         }
     }
@@ -102,7 +101,7 @@ struct ChatView: View {
             .buttonStyle(.plain)
             .disabled(!canSend)
         }
-        .padding(OrtusTheme.spacingMD)
+        .ortusFloatingToolbar()
     }
 
     // MARK: - Helpers
