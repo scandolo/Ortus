@@ -1,0 +1,9 @@
+.build/
+.swiftpm/
+Ortus.app/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+.DS_Store
+.env
+.env.local
