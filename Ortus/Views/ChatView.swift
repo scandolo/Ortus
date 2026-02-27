@@ -11,14 +11,14 @@ struct ChatView: View {
             if !claudeService.isConfigured || !slackService.isConnected {
                 OrtusEmptyState(
                     icon: "bubble.left.and.bubble.right",
-                    title: "AI Chat (Optional)",
-                    message: "To ask AI about your Slack workspace, add a Claude API key and connect Slack in Settings. Focus mode works without this."
+                    title: "AI chat",
+                    message: "To ask AI about your Slack workspace, add a Claude API key and connect Slack in Settings. Focus mode works without this"
                 )
             } else if claudeService.messages.isEmpty {
                 OrtusEmptyState(
                     icon: "bubble.left.and.bubble.right",
-                    title: "Ask About Slack",
-                    message: "Ask what's happening in channels, search messages, or check on conversations."
+                    title: "Ask about Slack",
+                    message: "Ask what's happening in channels, search messages, or check on conversations"
                 )
             } else {
                 messageList
@@ -44,7 +44,7 @@ struct ChatView: View {
                         HStack(spacing: 6) {
                             ProgressView()
                                 .scaleEffect(0.7)
-                            Text("Thinking...")
+                            Text("Thinking")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -86,7 +86,7 @@ struct ChatView: View {
                 .help("Clear conversation")
             }
 
-            TextField("Ask about Slack...", text: $inputText)
+            TextField("What would you like to know?", text: $inputText)
                 .textFieldStyle(.plain)
                 .focused($isInputFocused)
                 .onSubmit { sendMessage() }
@@ -97,7 +97,7 @@ struct ChatView: View {
             } label: {
                 Image(systemName: "arrow.up.circle.fill")
                     .font(.title2)
-                    .foregroundStyle(canSend ? OrtusTheme.primary : .secondary)
+                    .foregroundStyle(canSend ? OrtusTheme.accent : .secondary)
             }
             .buttonStyle(.plain)
             .disabled(!canSend)
@@ -145,17 +145,10 @@ struct MessageBubble: View {
             .padding(.horizontal, OrtusTheme.spacingMD)
             .padding(.vertical, OrtusTheme.spacingSM)
             .background(
-                Group {
-                    if message.role == .user {
-                        RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
-                            .fill(OrtusTheme.primaryLight)
-                    } else {
-                        RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
-                            .fill(.ultraThinMaterial)
-                    }
-                }
+                RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous)
+                    .fill(message.role == .user ? OrtusTheme.accentSoft : OrtusTheme.cardFill)
             )
-            .clipShape(RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous))
 
             if message.role == .assistant { Spacer(minLength: 40) }
         }

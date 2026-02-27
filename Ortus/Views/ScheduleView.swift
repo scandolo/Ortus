@@ -10,8 +10,8 @@ struct ScheduleView: View {
             if focusManager.schedules.isEmpty && !isAddingNew {
                 OrtusEmptyState(
                     icon: "calendar.badge.plus",
-                    title: "No Schedules",
-                    message: "Add a schedule to automatically block Slack during focus hours."
+                    title: "No schedules yet",
+                    message: "Add a schedule to pause Slack automatically during focus hours"
                 )
             } else {
                 ScrollView {
@@ -20,7 +20,7 @@ struct ScheduleView: View {
                             if editingScheduleID == schedule.id {
                                 ScheduleInlineEditor(
                                     schedule: schedule,
-                                    title: "Edit Schedule",
+                                    title: "Edit schedule",
                                     onSave: { updated in
                                         focusManager.updateSchedule(updated)
                                         editingScheduleID = nil
@@ -53,7 +53,7 @@ struct ScheduleView: View {
                         if isAddingNew {
                             ScheduleInlineEditor(
                                 schedule: FocusSchedule(),
-                                title: "New Schedule",
+                                title: "New schedule",
                                 onSave: { schedule in
                                     focusManager.addSchedule(schedule)
                                     isAddingNew = false
@@ -77,8 +77,9 @@ struct ScheduleView: View {
                     editingScheduleID = nil
                     isAddingNew = true
                 } label: {
-                    Label("Add Schedule", systemImage: "plus")
+                    Label("Add schedule", systemImage: "plus")
                 }
+                .buttonStyle(OrtusSecondaryButtonStyle())
                 .disabled(isAddingNew)
                 .padding(OrtusTheme.spacingMD)
             }
@@ -118,7 +119,7 @@ struct ScheduleRow: View {
             Button(action: onDelete) {
                 Image(systemName: "trash")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(OrtusTheme.textMuted)
             }
             .buttonStyle(.plain)
             .help("Delete schedule")
@@ -169,7 +170,7 @@ struct ScheduleInlineEditor: View {
             OrtusSectionHeader(title: title)
 
             TextField("Name", text: $schedule.name)
-                .textFieldStyle(.roundedBorder)
+                .textFieldStyle(OrtusTextFieldStyle())
 
             HStack {
                 DatePicker("Start", selection: $startTime, displayedComponents: .hourAndMinute)
@@ -194,6 +195,7 @@ struct ScheduleInlineEditor: View {
 
             HStack {
                 Button("Cancel", action: onCancel)
+                    .buttonStyle(OrtusGhostButtonStyle())
 
                 Spacer()
 
@@ -226,8 +228,8 @@ struct DayToggleButton: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 6)
                 .background(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(isSelected ? OrtusTheme.primary : Color.clear)
+                    RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous)
+                        .fill(isSelected ? OrtusTheme.accent : Color.clear)
                 )
                 .foregroundStyle(isSelected ? .white : .primary)
         }
