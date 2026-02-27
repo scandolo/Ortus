@@ -23,10 +23,10 @@ struct SettingsView: View {
                     HStack {
                         if showingAPIKey {
                             TextField("sk-ant-...", text: $claudeAPIKey)
-                                .textFieldStyle(.roundedBorder)
+                                .textFieldStyle(OrtusTextFieldStyle())
                         } else {
                             SecureField("sk-ant-...", text: $claudeAPIKey)
-                                .textFieldStyle(.roundedBorder)
+                                .textFieldStyle(OrtusTextFieldStyle())
                         }
                         Button {
                             showingAPIKey.toggle()
@@ -36,11 +36,12 @@ struct SettingsView: View {
                         .buttonStyle(.plain)
                     }
 
-                    Button("Save API Key") {
+                    Button("Save API key") {
                         if !claudeAPIKey.isEmpty {
                             try? KeychainService.save(claudeAPIKey, for: .claudeAPIKey)
                         }
                     }
+                    .buttonStyle(OrtusSecondaryButtonStyle())
                     .disabled(claudeAPIKey.isEmpty)
                 }
                 .ortusCard()
@@ -57,20 +58,21 @@ struct SettingsView: View {
                             Button("Disconnect") {
                                 slackOAuthService.disconnect()
                             }
-                            .foregroundStyle(OrtusTheme.destructive)
+                            .buttonStyle(OrtusGhostButtonStyle())
+                            .foregroundStyle(OrtusTheme.danger)
                         }
                     } else {
-                        Text("Slack App Credentials")
+                        Text("Slack app credentials")
                             .font(.caption)
                             .foregroundStyle(.secondary)
 
                         TextField("Client ID", text: $slackClientId)
-                            .textFieldStyle(.roundedBorder)
+                            .textFieldStyle(OrtusTextFieldStyle())
                         SecureField("Client Secret", text: $slackClientSecret)
-                            .textFieldStyle(.roundedBorder)
+                            .textFieldStyle(OrtusTextFieldStyle())
 
                         HStack {
-                            Button("Save Credentials") {
+                            Button("Save credentials") {
                                 if !slackClientId.isEmpty {
                                     try? KeychainService.save(slackClientId, for: .slackClientId)
                                 }
@@ -78,6 +80,7 @@ struct SettingsView: View {
                                     try? KeychainService.save(slackClientSecret, for: .slackClientSecret)
                                 }
                             }
+                            .buttonStyle(OrtusSecondaryButtonStyle())
                             .disabled(slackClientId.isEmpty || slackClientSecret.isEmpty)
 
                             Spacer()
@@ -108,7 +111,7 @@ struct SettingsView: View {
                         if let error = slackOAuthService.error {
                             Text(error)
                                 .font(.caption)
-                                .foregroundStyle(OrtusTheme.destructive)
+                                .foregroundStyle(OrtusTheme.danger)
                         }
                     }
                 }
@@ -135,19 +138,19 @@ struct SettingsView: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
 
-                            Button("Emergency End Focus") {
+                            Button("Emergency end") {
                                 showEmergencyConfirm = true
                             }
                             .font(.caption)
                             .foregroundStyle(OrtusTheme.warning)
                             .buttonStyle(.plain)
-                            .alert("Emergency End?", isPresented: $showEmergencyConfirm) {
+                            .alert("End focus early?", isPresented: $showEmergencyConfirm) {
                                 Button("Cancel", role: .cancel) {}
-                                Button("End Focus", role: .destructive) {
+                                Button("End focus", role: .destructive) {
                                     focusManager.emergencyEndFocusSession()
                                 }
                             } message: {
-                                Text("This will end focus mode, but Slack will remain blocked until the original end time. You can only do this once per week.")
+                                Text("This will end focus, but Slack stays paused until the original end time. You can use this once per week.")
                             }
                         } else if let nextDate = focusManager.nextEmergencyAvailableDate {
                             Text("Emergency end unavailable until \(nextDate.formatted(date: .abbreviated, time: .shortened))")
@@ -179,7 +182,7 @@ struct SettingsView: View {
                         .buttonStyle(.plain)
                     }
 
-                    Text("Focus mode for Slack with AI assistant")
+                    Text("Focus mode for deep work")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
@@ -189,16 +192,15 @@ struct SettingsView: View {
                             .foregroundStyle(OrtusTheme.warning)
                     }
 
-                    Divider()
-
                     Button("Quit Ortus") {
                         NSApplication.shared.terminate(nil)
                     }
-                    .foregroundStyle(OrtusTheme.destructive)
+                    .buttonStyle(OrtusGhostButtonStyle())
+                    .foregroundStyle(OrtusTheme.danger)
                     .disabled(focusManager.isInFocus || focusManager.isEmergencyEnded)
 
                     if focusManager.isInFocus || focusManager.isEmergencyEnded {
-                        Text("Cannot quit during focus mode")
+                        Text("Cannot quit during focus")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }

@@ -3,6 +3,7 @@ import SwiftUI
 struct FocusView: View {
     @EnvironmentObject var focusManager: FocusManager
     @State private var manualDuration: Double = 60
+    @State private var isPulsing = false
 
     var body: some View {
         VStack(spacing: OrtusTheme.spacingLG) {
@@ -33,50 +34,65 @@ struct FocusView: View {
     // MARK: - Active Focus
 
     private var activeFocusState: some View {
-        VStack(spacing: OrtusTheme.spacingLG) {
-            ZStack {
-                Circle()
-                    .fill(.ultraThinMaterial)
-                    .overlay(Circle().fill(OrtusTheme.primary.opacity(0.10)))
-                    .clipShape(Circle())
-                    .frame(width: 120, height: 120)
-
-                Image(systemName: "sunrise.fill")
-                    .font(.system(size: 48))
-                    .foregroundStyle(OrtusTheme.primary)
-            }
-
-            Text("Focus Mode Active")
-                .font(.title2.bold())
-
-            if let name = focusManager.currentSessionName {
-                Text(name)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
+        VStack(spacing: OrtusTheme.spacingMD) {
             if let endTime = focusManager.focusEndTime {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     let remaining = endTime.timeIntervalSince(context.date)
-                    if remaining > 0 {
-                        Text(formatDuration(remaining))
-                            .font(.system(.title3, design: .monospaced))
-                            .foregroundStyle(OrtusTheme.primary)
-                    } else {
-                        Text("Ending...")
-                            .font(.title3)
-                            .foregroundStyle(.secondary)
+                    ZStack {
+                        // Breathing pulse circle
+                        Circle()
+                            .fill(
+                                RadialGradient(
+                                    gradient: Gradient(colors: [
+                                        OrtusTheme.accentSoft.opacity(isPulsing ? 0.15 : 0.0),
+                                        OrtusTheme.accentSoft.opacity(0.0)
+                                    ]),
+                                    center: .center,
+                                    startRadius: 0,
+                                    endRadius: 100
+                                )
+                            )
+                            .frame(width: 200, height: 200)
+
+                        // Hero timer
+                        if remaining > 0 {
+                            Text(formatDuration(remaining))
+                                .font(.system(size: 56, weight: .light, design: .rounded))
+                                .tracking(-2)
+                                .foregroundStyle(.primary)
+                        } else {
+                            Text("Ending")
+                                .font(.system(size: 56, weight: .light, design: .rounded))
+                                .tracking(-2)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
             }
 
+            // Quiet label
+            Text("deep focus")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if let name = focusManager.currentSessionName {
+                Text(name)
+                    .font(.subheadline)
+                    .foregroundStyle(OrtusTheme.textMuted)
+            }
+
             if focusManager.developerModeEnabled {
-                Button("End Focus (Dev)") {
+                Button("End focus (dev)") {
                     focusManager.endFocusSession()
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .buttonStyle(.plain)
+            }
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+                isPulsing = true
             }
         }
     }
@@ -87,9 +103,7 @@ struct FocusView: View {
         VStack(spacing: OrtusTheme.spacingMD) {
             ZStack {
                 Circle()
-                    .fill(.ultraThinMaterial)
-                    .overlay(Circle().fill(OrtusTheme.warning.opacity(0.10)))
-                    .clipShape(Circle())
+                    .fill(OrtusTheme.warning.opacity(0.10))
                     .frame(width: 120, height: 120)
 
                 Image(systemName: "exclamationmark.circle")
@@ -97,7 +111,7 @@ struct FocusView: View {
                     .foregroundStyle(OrtusTheme.warning)
             }
 
-            Text("Slack Still Blocked")
+            Text("Slack still paused")
                 .font(.title2.bold())
 
             if let originalEnd = focusManager.originalFocusEndTime {
@@ -108,14 +122,14 @@ struct FocusView: View {
                             .font(.system(.body, design: .monospaced))
                             .foregroundStyle(OrtusTheme.warning)
                     } else {
-                        Text("Unblocking...")
+                        Text("Unblocking")
                             .font(.body)
                             .foregroundStyle(.secondary)
                     }
                 }
             }
 
-            Text("Focus was emergency-ended, but Slack remains blocked until the original end time.")
+            Text("Focus ended early. Slack stays paused until the original time.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -127,18 +141,11 @@ struct FocusView: View {
 
     private var idleState: some View {
         VStack(spacing: OrtusTheme.spacingLG) {
-            ZStack {
-                Circle()
-                    .fill(.ultraThinMaterial)
-                    .clipShape(Circle())
-                    .frame(width: 120, height: 120)
+            Image(systemName: "sunrise")
+                .font(.system(size: 56))
+                .foregroundStyle(.secondary)
 
-                Image(systemName: "sunrise")
-                    .font(.system(size: 48))
-                    .foregroundStyle(.secondary)
-            }
-
-            Text("Focus Mode Off")
+            Text("Ready when you are")
                 .font(.title2.bold())
 
             VStack(spacing: OrtusTheme.spacingMD) {
@@ -151,11 +158,11 @@ struct FocusView: View {
                 }
 
                 Slider(value: $manualDuration, in: 15...240, step: 15)
-                    .tint(OrtusTheme.primary)
+                    .tint(OrtusTheme.accent)
             }
             .padding(.horizontal, 30)
 
-            Button("Start Focus") {
+            Button("Begin focus") {
                 focusManager.startFocusSession(
                     name: "Manual Focus",
                     duration: manualDuration * 60
