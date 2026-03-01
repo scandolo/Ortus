@@ -12,7 +12,7 @@ final class FocusManager: ObservableObject {
     @Published var isEmergencyEnded = false
     @Published var originalFocusEndTime: Date?
 
-    @AppStorage("relaunchSlackOnEnd") var relaunchSlackOnEnd = true
+    @AppStorage("relaunchSlackOnEnd") var relaunchSlackOnEnd = false
     @AppStorage("showNotifications") var showNotifications = true
     @AppStorage("lastEmergencyEndTimestamp") var lastEmergencyEndTimestamp: Double = 0
     @AppStorage("developerModeEnabled") var developerModeEnabled = false
