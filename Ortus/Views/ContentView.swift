@@ -28,7 +28,7 @@ struct ContentView: View {
                             .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(selectedTab == tag ? .primary : .tertiary)
+                    .foregroundStyle(selectedTab == tag ? .primary : OrtusTheme.textSecondary)
                 }
 
                 // Settings — compact gear icon
@@ -45,7 +45,7 @@ struct ContentView: View {
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(selectedTab == 3 ? .primary : .tertiary)
+                .foregroundStyle(selectedTab == 3 ? .primary : OrtusTheme.textSecondary)
             }
             .padding(.horizontal, OrtusTheme.spacingSM)
             .padding(.top, OrtusTheme.spacingSM)

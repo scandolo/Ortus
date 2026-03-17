@@ -44,8 +44,8 @@ struct ChatView: View {
                             ProgressView()
                                 .scaleEffect(0.7)
                             Text("Thinking")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .font(.system(size: 12))
+                                .foregroundStyle(OrtusTheme.textSecondary)
                         }
                         .padding(.leading, OrtusTheme.spacingMD)
                         .id("loading")
@@ -79,7 +79,7 @@ struct ChatView: View {
                     claudeService.clearConversation()
                 } label: {
                     Image(systemName: "trash")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(OrtusTheme.textSecondary)
                 }
                 .buttonStyle(.plain)
                 .help("Clear conversation")
@@ -96,7 +96,7 @@ struct ChatView: View {
             } label: {
                 Image(systemName: "arrow.up.circle.fill")
                     .font(.title2)
-                    .foregroundStyle(canSend ? OrtusTheme.accent : .secondary)
+                    .foregroundStyle(canSend ? OrtusTheme.accent : OrtusTheme.textTertiary)
             }
             .buttonStyle(.plain)
             .disabled(!canSend)
@@ -134,12 +134,12 @@ struct MessageBubble: View {
 
             VStack(alignment: message.role == .user ? .trailing : .leading, spacing: OrtusTheme.spacingXS) {
                 Text(renderMarkdown(message.content))
-                    .font(.body)
+                    .font(.system(size: 13))
                     .textSelection(.enabled)
 
                 Text(message.timestamp, style: .time)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 11))
+                    .foregroundStyle(OrtusTheme.textSecondary)
             }
             .padding(.horizontal, OrtusTheme.spacingMD)
             .padding(.vertical, OrtusTheme.spacingSM)

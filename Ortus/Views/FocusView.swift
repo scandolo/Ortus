@@ -25,8 +25,8 @@ struct FocusView: View {
                 let activeSchedules = focusManager.schedules.filter(\.isEnabled)
                 if !activeSchedules.isEmpty {
                     Text("\(activeSchedules.count) schedule\(activeSchedules.count == 1 ? "" : "s") active")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 12))
+                        .foregroundStyle(OrtusTheme.textSecondary)
                 }
             }
         }
@@ -60,11 +60,11 @@ struct FocusView: View {
             }
 
             Text("Focus starting...")
-                .font(.title2.bold())
+                .font(.system(size: 18, weight: .semibold))
 
             Text("Forgot something? You can still go back.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.system(size: 12))
+                .foregroundStyle(OrtusTheme.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, OrtusTheme.spacingLG)
 
@@ -108,7 +108,7 @@ struct FocusView: View {
                             Text("Ending")
                                 .font(.system(size: 56, weight: .light, design: .rounded))
                                 .tracking(-2)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(OrtusTheme.textSecondary)
                         }
                     }
                 }
@@ -116,21 +116,21 @@ struct FocusView: View {
 
             // Quiet label
             Text("deep focus")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.system(size: 12))
+                .foregroundStyle(OrtusTheme.textSecondary)
 
             if let name = focusManager.currentSessionName {
                 Text(name)
-                    .font(.subheadline)
-                    .foregroundStyle(OrtusTheme.textMuted)
+                    .font(.system(size: 13))
+                    .foregroundStyle(OrtusTheme.textSecondary)
             }
 
             if focusManager.developerModeEnabled {
                 Button("End focus (dev)") {
                     focusManager.endFocusSession()
                 }
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.system(size: 12))
+                .foregroundStyle(OrtusTheme.textSecondary)
                 .buttonStyle(.plain)
             }
         }
@@ -156,7 +156,7 @@ struct FocusView: View {
             }
 
             Text("Slack still paused")
-                .font(.title2.bold())
+                .font(.system(size: 18, weight: .semibold))
 
             if let originalEnd = focusManager.originalFocusEndTime {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
@@ -167,15 +167,15 @@ struct FocusView: View {
                             .foregroundStyle(OrtusTheme.warning)
                     } else {
                         Text("Unblocking")
-                            .font(.body)
-                            .foregroundStyle(.secondary)
+                            .font(.system(size: 13))
+                            .foregroundStyle(OrtusTheme.textSecondary)
                     }
                 }
             }
 
             Text("Focus ended early. Slack stays paused until the original time.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.system(size: 12))
+                .foregroundStyle(OrtusTheme.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, OrtusTheme.spacingLG)
         }
@@ -187,15 +187,16 @@ struct FocusView: View {
         VStack(spacing: OrtusTheme.spacingLG) {
             Image(systemName: "sunrise")
                 .font(.system(size: 56))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(OrtusTheme.textTertiary)
 
             Text("Ready when you are")
-                .font(.title2.bold())
+                .font(.system(size: 18, weight: .semibold))
 
             VStack(spacing: OrtusTheme.spacingMD) {
                 HStack {
                     Text("Duration")
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 13))
+                        .foregroundStyle(OrtusTheme.textSecondary)
                     Spacer()
                     Text("\(Int(manualDuration)) min")
                         .monospacedDigit()

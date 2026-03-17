@@ -41,7 +41,15 @@ import SwiftUI
 // │     own shape — do NOT clip ContentView with .clipShape().         │
 // │     Let macOS manage the popover chrome.                            │
 // │                                                                     │
-// │  8. TOKENS: Use only OrtusTheme spacing/radius/color tokens.       │
+// │  8. TEXT COLORS: Never use SwiftUI .secondary or .tertiary for     │
+// │     foreground styles — they wash out on light vibrancy. Use       │
+// │     OrtusTheme.textSecondary and OrtusTheme.textTertiary instead.  │
+// │                                                                     │
+// │  9. FONT SIZES: Use explicit .system(size:weight:) for all text.   │
+// │     Headers: 15pt semibold. Body: 13pt. Captions: 12pt.           │
+// │     Small captions: 11pt. Hero text: 18pt semibold.                │
+// │                                                                     │
+// │ 10. TOKENS: Use only OrtusTheme spacing/radius/color tokens.       │
 // │     Don't hardcode sizes, colors, or corner radii inline.          │
 // └─────────────────────────────────────────────────────────────────────┘
 
@@ -81,11 +89,41 @@ enum OrtusTheme {
             : NSColor(red: 0.45, green: 0.45, blue: 0.43, alpha: 1)   // #73736E light
     })
 
-    // MARK: Colors — Surface (transparent adaptive overlays for popover context)
+    // MARK: Colors — Text hierarchy (legible on both light and dark vibrancy)
 
-    static let cardFill  = Color.primary.opacity(0.05)
-    static let hoverFill = Color.primary.opacity(0.08)
-    static let border    = Color.primary.opacity(0.10)
+    /// Primary text — use SwiftUI .primary (fully opaque, always readable).
+    /// Secondary text — captions, timestamps, supporting labels.
+    static let textSecondary = Color(nsColor: NSColor(name: nil) { appearance in
+        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            ? NSColor(white: 1.0, alpha: 0.55)
+            : NSColor(white: 0.0, alpha: 0.50)
+    })
+
+    /// Tertiary text — disabled, placeholder-level.
+    static let textTertiary = Color(nsColor: NSColor(name: nil) { appearance in
+        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            ? NSColor(white: 1.0, alpha: 0.35)
+            : NSColor(white: 0.0, alpha: 0.35)
+    })
+
+    // MARK: Colors — Surface (semi-opaque overlays for popover context — must be
+    //        visible over both light and dark desktop wallpapers)
+
+    static let cardFill = Color(nsColor: NSColor(name: nil) { appearance in
+        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            ? NSColor(white: 1.0, alpha: 0.06)
+            : NSColor(white: 0.0, alpha: 0.05)
+    })
+    static let hoverFill = Color(nsColor: NSColor(name: nil) { appearance in
+        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            ? NSColor(white: 1.0, alpha: 0.10)
+            : NSColor(white: 0.0, alpha: 0.08)
+    })
+    static let border = Color(nsColor: NSColor(name: nil) { appearance in
+        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            ? NSColor(white: 1.0, alpha: 0.12)
+            : NSColor(white: 0.0, alpha: 0.12)
+    })
 
     // MARK: Spacing (4px base grid)
 
@@ -145,7 +183,7 @@ struct OrtusPrimaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 14, weight: .medium))
+            .font(.system(size: 13, weight: .medium))
             .foregroundStyle(.white)
             .padding(.horizontal, 20)
             .padding(.vertical, 10)
@@ -166,7 +204,7 @@ struct OrtusSecondaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 14, weight: .medium))
+            .font(.system(size: 13, weight: .medium))
             .foregroundStyle(.primary)
             .padding(.horizontal, 20)
             .padding(.vertical, 10)
@@ -191,8 +229,8 @@ struct OrtusGhostButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 14, weight: .medium))
-            .foregroundStyle(isHovering || configuration.isPressed ? .primary : .secondary)
+            .font(.system(size: 13, weight: .medium))
+            .foregroundStyle(isHovering || configuration.isPressed ? .primary : OrtusTheme.textSecondary)
             .padding(.horizontal, 20)
             .padding(.vertical, 10)
             .background(
@@ -275,12 +313,12 @@ struct OrtusEmptyState: View {
             Spacer()
             Image(systemName: icon)
                 .font(.system(size: 36))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(OrtusTheme.textTertiary)
             Text(title)
-                .font(.headline)
+                .font(.system(size: 15, weight: .semibold))
             Text(message)
-                .font(.caption)
-                .foregroundStyle(OrtusTheme.textMuted)
+                .font(.system(size: 12))
+                .foregroundStyle(OrtusTheme.textSecondary)
                 .multilineTextAlignment(.center)
             Spacer()
         }
@@ -310,8 +348,9 @@ struct OrtusSectionHeader: View {
 
     var body: some View {
         Text(title)
-            .font(.caption.weight(.semibold))
+            .font(.system(size: 11, weight: .semibold))
             .tracking(0.5)
-            .foregroundStyle(.secondary)
+            .textCase(.uppercase)
+            .foregroundStyle(OrtusTheme.textSecondary)
     }
 }

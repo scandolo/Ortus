@@ -98,16 +98,16 @@ struct ScheduleRow: View {
             Button(action: onEdit) {
                 VStack(alignment: .leading, spacing: OrtusTheme.spacingXS) {
                     Text(schedule.name)
-                        .font(.headline)
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(.primary)
 
                     Text(daysSummary)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 12))
+                        .foregroundStyle(OrtusTheme.textSecondary)
 
                     Text("\(schedule.startTimeString) \u{2013} \(schedule.endTimeString)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 12))
+                        .foregroundStyle(OrtusTheme.textSecondary)
                 }
             }
             .buttonStyle(.plain)
@@ -116,8 +116,8 @@ struct ScheduleRow: View {
 
             Button(action: onDelete) {
                 Image(systemName: "trash")
-                    .font(.caption)
-                    .foregroundStyle(OrtusTheme.textMuted)
+                    .font(.system(size: 12))
+                    .foregroundStyle(OrtusTheme.textSecondary)
             }
             .buttonStyle(.plain)
             .help("Delete schedule")
@@ -174,7 +174,7 @@ struct ScheduleInlineEditor: View {
                 DatePicker("Start", selection: $startTime, displayedComponents: .hourAndMinute)
                     .labelsHidden()
                 Text("\u{2013}")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(OrtusTheme.textSecondary)
                 DatePicker("End", selection: $endTime, displayedComponents: .hourAndMinute)
                     .labelsHidden()
             }
@@ -222,7 +222,7 @@ struct DayToggleButton: View {
     var body: some View {
         Button(action: onTap) {
             Text(day.shortName)
-                .font(.caption.bold())
+                .font(.system(size: 12, weight: .semibold))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 6)
                 .background(

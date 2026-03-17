@@ -14,8 +14,6 @@ final class FocusManager: ObservableObject {
     @Published var isInGracePeriod = false
     @Published var gracePeriodEndTime: Date?
 
-    @AppStorage("relaunchSlackOnEnd") var relaunchSlackOnEnd = false
-    @AppStorage("showNotifications") var showNotifications = true
     @AppStorage("lastEmergencyEndTimestamp") var lastEmergencyEndTimestamp: Double = 0
     @AppStorage("developerModeEnabled") var developerModeEnabled = false
 
@@ -94,9 +92,7 @@ final class FocusManager: ObservableObject {
             startGracePeriod()
         }
 
-        if showNotifications {
-            sendNotification(title: "Focus Mode Active", body: "Slack has been blocked. Stay focused!")
-        }
+        sendNotification(title: "Focus Mode Active", body: "Slack has been blocked. Stay focused!")
     }
 
     func revertFocusSession() {
@@ -107,9 +103,7 @@ final class FocusManager: ObservableObject {
         currentSessionName = nil
         stopMonitoringLaunches()
 
-        if showNotifications {
-            sendNotification(title: "Focus Reverted", body: "Focus session cancelled. You can reopen Slack when ready.")
-        }
+        sendNotification(title: "Focus Reverted", body: "Focus session cancelled. You can reopen Slack when ready.")
     }
 
     private func startGracePeriod() {
@@ -146,13 +140,7 @@ final class FocusManager: ObservableObject {
         currentSessionName = nil
         stopMonitoringLaunches()
 
-        if relaunchSlackOnEnd {
-            launchSlack()
-        }
-
-        if showNotifications {
-            sendNotification(title: "Focus Mode Ended", body: "Slack is available again.")
-        }
+        sendNotification(title: "Focus Mode Ended", body: "Slack is available again.")
     }
 
     func emergencyEndFocusSession() {
@@ -167,9 +155,7 @@ final class FocusManager: ObservableObject {
         currentSessionName = nil
         // Keep launch monitoring active — Slack stays blocked until natural end
 
-        if showNotifications {
-            sendNotification(title: "Emergency End", body: "Focus UI ended. Slack remains blocked until the scheduled end time.")
-        }
+        sendNotification(title: "Emergency End", body: "Focus UI ended. Slack remains blocked until the scheduled end time.")
     }
 
     // MARK: - Schedule Evaluation
@@ -191,12 +177,7 @@ final class FocusManager: ObservableObject {
             isEmergencyEnded = false
             originalFocusEndTime = nil
             stopMonitoringLaunches()
-            if relaunchSlackOnEnd {
-                launchSlack()
-            }
-            if showNotifications {
-                sendNotification(title: "Focus Period Over", body: "Slack is available again.")
-            }
+            sendNotification(title: "Focus Period Over", body: "Slack is available again.")
             return
         }
 
@@ -229,12 +210,6 @@ final class FocusManager: ObservableObject {
         }
     }
 
-    private func launchSlack() {
-        if let slackURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: Self.slackBundleID) {
-            NSWorkspace.shared.openApplication(at: slackURL, configuration: .init())
-        }
-    }
-
     private func startMonitoringLaunches() {
         stopMonitoringLaunches()
         launchObserver = NSWorkspace.shared.notificationCenter.addObserver(
@@ -250,9 +225,7 @@ final class FocusManager: ObservableObject {
                 if !app.terminate() {
                     app.forceTerminate()
                 }
-                if self.showNotifications {
-                    self.sendNotification(title: "Slack Blocked", body: "Focus mode is active. Slack cannot be opened.")
-                }
+                self.sendNotification(title: "Slack Blocked", body: "Focus mode is active. Slack cannot be opened.")
             }
         }
     }
