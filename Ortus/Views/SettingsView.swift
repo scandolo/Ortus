@@ -130,27 +130,39 @@ struct SettingsView: View {
                 .ortusCard()
 
                 // Emergency End (only visible during focus)
-                if focusManager.isInFocus {
+                if focusManager.isInFocus && !focusManager.isInGracePeriod {
                     OrtusSectionHeader(title: "Emergency")
                     VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
                         if focusManager.canUseEmergencyEnd {
-                            Text("Use only for genuine emergencies. Limited to once per week.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            if showEmergencyConfirm {
+                                Text("Slack stays paused until the original end time. You can use this once per week.")
+                                    .font(.caption)
+                                    .foregroundStyle(OrtusTheme.warning)
 
-                            Button("Emergency end") {
-                                showEmergencyConfirm = true
-                            }
-                            .font(.caption)
-                            .foregroundStyle(OrtusTheme.warning)
-                            .buttonStyle(.plain)
-                            .alert("End focus early?", isPresented: $showEmergencyConfirm) {
-                                Button("Cancel", role: .cancel) {}
-                                Button("End focus", role: .destructive) {
-                                    focusManager.emergencyEndFocusSession()
+                                HStack {
+                                    Button("Confirm end") {
+                                        focusManager.emergencyEndFocusSession()
+                                        showEmergencyConfirm = false
+                                    }
+                                    .buttonStyle(OrtusPrimaryButtonStyle())
+                                    .tint(OrtusTheme.warning)
+
+                                    Button("Cancel") {
+                                        showEmergencyConfirm = false
+                                    }
+                                    .buttonStyle(OrtusGhostButtonStyle())
                                 }
-                            } message: {
-                                Text("This will end focus, but Slack stays paused until the original end time. You can use this once per week.")
+                            } else {
+                                Text("Use only for genuine emergencies. Limited to once per week.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                Button("Emergency end") {
+                                    showEmergencyConfirm = true
+                                }
+                                .font(.caption)
+                                .foregroundStyle(OrtusTheme.warning)
+                                .buttonStyle(.plain)
                             }
                         } else if let nextDate = focusManager.nextEmergencyAvailableDate {
                             Text("Emergency end unavailable until \(nextDate.formatted(date: .abbreviated, time: .shortened))")
