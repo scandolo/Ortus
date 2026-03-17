@@ -106,10 +106,9 @@ final class FocusManager: ObservableObject {
         focusEndTime = nil
         currentSessionName = nil
         stopMonitoringLaunches()
-        launchSlack()
 
         if showNotifications {
-            sendNotification(title: "Focus Reverted", body: "Focus session cancelled. Slack is back.")
+            sendNotification(title: "Focus Reverted", body: "Focus session cancelled. You can reopen Slack when ready.")
         }
     }
 

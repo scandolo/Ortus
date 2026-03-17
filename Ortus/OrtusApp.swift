@@ -20,6 +20,11 @@ struct OrtusApp: App {
     @StateObject private var claudeService = ClaudeService()
     @StateObject private var slackOAuthService = SlackOAuthService()
 
+    init() {
+        // Eagerly wire up services that don't depend on view lifecycle
+        _claudeService.wrappedValue.slackService = _slackService.wrappedValue
+    }
+
     var body: some Scene {
         MenuBarExtra {
             ContentView()
@@ -28,7 +33,6 @@ struct OrtusApp: App {
                 .environmentObject(claudeService)
                 .environmentObject(slackOAuthService)
                 .onAppear {
-                    claudeService.slackService = slackService
                     appDelegate.focusManager = focusManager
                 }
         } label: {
