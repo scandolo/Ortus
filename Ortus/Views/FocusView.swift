@@ -11,6 +11,8 @@ struct FocusView: View {
 
             if focusManager.isEmergencyEnded {
                 emergencyEndedState
+            } else if focusManager.isInFocus && focusManager.isInGracePeriod {
+                gracePeriodState
             } else if focusManager.isInFocus {
                 activeFocusState
             } else {
@@ -29,6 +31,48 @@ struct FocusView: View {
             }
         }
         .padding(OrtusTheme.spacingMD)
+    }
+
+    // MARK: - Grace Period
+
+    private var gracePeriodState: some View {
+        VStack(spacing: OrtusTheme.spacingMD) {
+            if let graceEnd = focusManager.gracePeriodEndTime {
+                TimelineView(.periodic(from: .now, by: 0.1)) { context in
+                    let remaining = max(0, graceEnd.timeIntervalSince(context.date))
+                    ZStack {
+                        // Progress ring
+                        Circle()
+                            .stroke(OrtusTheme.accent.opacity(0.15), lineWidth: 4)
+                            .frame(width: 120, height: 120)
+
+                        Circle()
+                            .trim(from: 0, to: remaining / 30)
+                            .stroke(OrtusTheme.accent, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                            .frame(width: 120, height: 120)
+                            .rotationEffect(.degrees(-90))
+
+                        Text("\(Int(ceil(remaining)))")
+                            .font(.system(size: 48, weight: .light, design: .rounded))
+                            .foregroundStyle(.primary)
+                    }
+                }
+            }
+
+            Text("Focus starting...")
+                .font(.title2.bold())
+
+            Text("Forgot something? You can still go back.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, OrtusTheme.spacingLG)
+
+            Button("Never mind") {
+                focusManager.revertFocusSession()
+            }
+            .buttonStyle(OrtusSecondaryButtonStyle())
+        }
     }
 
     // MARK: - Active Focus
