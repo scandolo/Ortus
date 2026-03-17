@@ -11,6 +11,8 @@ final class FocusManager: ObservableObject {
     @Published var currentSessionName: String?
     @Published var isEmergencyEnded = false
     @Published var originalFocusEndTime: Date?
+    @Published var isInGracePeriod = false
+    @Published var gracePeriodEndTime: Date?
 
     @AppStorage("relaunchSlackOnEnd") var relaunchSlackOnEnd = false
     @AppStorage("showNotifications") var showNotifications = true
@@ -18,8 +20,10 @@ final class FocusManager: ObservableObject {
     @AppStorage("developerModeEnabled") var developerModeEnabled = false
 
     private nonisolated static let slackBundleID = "com.tinyspeck.slackmacgap"
+    private nonisolated static let gracePeriodDuration: TimeInterval = 30
     private var scheduleTimer: Timer?
     private var launchObserver: NSObjectProtocol?
+    private var gracePeriodTimer: Timer?
 
     // MARK: - Emergency End
 
@@ -44,6 +48,7 @@ final class FocusManager: ObservableObject {
 
     deinit {
         scheduleTimer?.invalidate()
+        gracePeriodTimer?.invalidate()
         if let obs = launchObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(obs)
         }
@@ -84,13 +89,57 @@ final class FocusManager: ObservableObject {
         killSlack()
         startMonitoringLaunches()
 
+        // Grace period only for manual sessions — scheduled ones are expected
+        if name == "Manual Focus" {
+            startGracePeriod()
+        }
+
         if showNotifications {
             sendNotification(title: "Focus Mode Active", body: "Slack has been blocked. Stay focused!")
         }
     }
 
+    func revertFocusSession() {
+        guard isInFocus, isInGracePeriod else { return }
+        cancelGracePeriod()
+        isInFocus = false
+        focusEndTime = nil
+        currentSessionName = nil
+        stopMonitoringLaunches()
+        launchSlack()
+
+        if showNotifications {
+            sendNotification(title: "Focus Reverted", body: "Focus session cancelled. Slack is back.")
+        }
+    }
+
+    private func startGracePeriod() {
+        isInGracePeriod = true
+        gracePeriodEndTime = Date().addingTimeInterval(Self.gracePeriodDuration)
+        gracePeriodTimer = Timer.scheduledTimer(withTimeInterval: Self.gracePeriodDuration, repeats: false) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.endGracePeriod()
+            }
+        }
+    }
+
+    private func endGracePeriod() {
+        isInGracePeriod = false
+        gracePeriodEndTime = nil
+        gracePeriodTimer?.invalidate()
+        gracePeriodTimer = nil
+    }
+
+    private func cancelGracePeriod() {
+        gracePeriodTimer?.invalidate()
+        gracePeriodTimer = nil
+        isInGracePeriod = false
+        gracePeriodEndTime = nil
+    }
+
     func endFocusSession() {
         guard isInFocus else { return }
+        cancelGracePeriod()
         isInFocus = false
         isEmergencyEnded = false
         originalFocusEndTime = nil
@@ -109,6 +158,7 @@ final class FocusManager: ObservableObject {
 
     func emergencyEndFocusSession() {
         guard isInFocus else { return }
+        cancelGracePeriod()
 
         lastEmergencyEndTimestamp = Date().timeIntervalSince1970
         isEmergencyEnded = true
