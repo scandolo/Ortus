@@ -4,7 +4,6 @@ struct ChatView: View {
     @EnvironmentObject var claudeService: ClaudeService
     @EnvironmentObject var slackService: SlackService
     @State private var inputText = ""
-    @FocusState private var isInputFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -86,8 +85,7 @@ struct ChatView: View {
             }
 
             TextField("What would you like to know?", text: $inputText)
-                .textFieldStyle(.plain)
-                .focused($isInputFocused)
+                .textFieldStyle(OrtusTextFieldStyle())
                 .onSubmit { sendMessage() }
                 .disabled(!claudeService.isConfigured || !slackService.isConnected)
 
@@ -100,6 +98,7 @@ struct ChatView: View {
             }
             .buttonStyle(.plain)
             .disabled(!canSend)
+            .help("Send message")
         }
         .ortusFloatingToolbar()
     }

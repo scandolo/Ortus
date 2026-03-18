@@ -26,7 +26,7 @@ struct FocusView: View {
                 if !activeSchedules.isEmpty {
                     Text("\(activeSchedules.count) schedule\(activeSchedules.count == 1 ? "" : "s") active")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(OrtusTheme.textMuted)
                 }
             }
         }
@@ -64,7 +64,7 @@ struct FocusView: View {
 
             Text("Forgot something? You can still go back.")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(OrtusTheme.textMuted)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, OrtusTheme.spacingLG)
 
@@ -117,7 +117,7 @@ struct FocusView: View {
             // Quiet label
             Text("deep focus")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(OrtusTheme.textMuted)
 
             if let name = focusManager.currentSessionName {
                 Text(name)
@@ -151,7 +151,7 @@ struct FocusView: View {
                     .frame(width: 120, height: 120)
 
                 Image(systemName: "exclamationmark.circle")
-                    .font(.system(size: 48))
+                    .font(.system(size: 48, design: .rounded))
                     .foregroundStyle(OrtusTheme.warning)
             }
 
@@ -186,7 +186,7 @@ struct FocusView: View {
     private var idleState: some View {
         VStack(spacing: OrtusTheme.spacingLG) {
             Image(systemName: "sunrise")
-                .font(.system(size: 56))
+                .font(.system(size: 56, design: .rounded))
                 .foregroundStyle(.secondary)
 
             Text("Ready when you are")
@@ -204,7 +204,7 @@ struct FocusView: View {
                 Slider(value: $manualDuration, in: 15...240, step: 15)
                     .tint(OrtusTheme.accent)
             }
-            .padding(.horizontal, 30)
+            .padding(.horizontal, OrtusTheme.spacingXL)
 
             Button("Begin focus") {
                 focusManager.startFocusSession(

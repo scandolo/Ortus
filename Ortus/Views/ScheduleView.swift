@@ -127,6 +127,7 @@ struct ScheduleRow: View {
                 set: { onToggle($0) }
             ))
             .labelsHidden()
+            .accessibilityLabel("\(schedule.name) enabled")
         }
     }
 
@@ -224,9 +225,9 @@ struct DayToggleButton: View {
             Text(day.shortName)
                 .font(.caption.bold())
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 6)
+                .padding(.vertical, OrtusTheme.spacingSM)
                 .background(
-                    RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous)
+                    RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
                         .fill(isSelected ? OrtusTheme.accent : Color.clear)
                 )
                 .foregroundStyle(isSelected ? .white : .primary)
