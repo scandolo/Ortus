@@ -144,8 +144,8 @@ struct SettingsView: View {
                                         focusManager.emergencyEndFocusSession()
                                         showEmergencyConfirm = false
                                     }
-                                    .buttonStyle(OrtusPrimaryButtonStyle())
-                                    .tint(OrtusTheme.warning)
+                                    .buttonStyle(OrtusGhostButtonStyle())
+                                    .foregroundStyle(OrtusTheme.warning)
 
                                     Button("Cancel") {
                                         showEmergencyConfirm = false

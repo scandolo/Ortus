@@ -21,6 +21,8 @@ final class FocusManager: ObservableObject {
 
     private nonisolated static let slackBundleID = "com.tinyspeck.slackmacgap"
     private nonisolated static let gracePeriodDuration: TimeInterval = 30
+    private nonisolated static let scheduleEvaluationInterval: TimeInterval = 30
+    private nonisolated static let emergencyLockoutDuration: TimeInterval = 7 * 24 * 3600
     private var scheduleTimer: Timer?
     private var launchObserver: NSObjectProtocol?
     private var gracePeriodTimer: Timer?
@@ -30,13 +32,13 @@ final class FocusManager: ObservableObject {
     var canUseEmergencyEnd: Bool {
         guard lastEmergencyEndTimestamp > 0 else { return true }
         let lastUsed = Date(timeIntervalSince1970: lastEmergencyEndTimestamp)
-        return Date().timeIntervalSince(lastUsed) > 7 * 24 * 3600
+        return Date().timeIntervalSince(lastUsed) > Self.emergencyLockoutDuration
     }
 
     var nextEmergencyAvailableDate: Date? {
         guard lastEmergencyEndTimestamp > 0 else { return nil }
         let lastUsed = Date(timeIntervalSince1970: lastEmergencyEndTimestamp)
-        let next = lastUsed.addingTimeInterval(7 * 24 * 3600)
+        let next = lastUsed.addingTimeInterval(Self.emergencyLockoutDuration)
         return next > Date() ? next : nil
     }
 
@@ -176,7 +178,7 @@ final class FocusManager: ObservableObject {
 
     private func startScheduleEvaluation() {
         evaluateSchedules()
-        scheduleTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+        scheduleTimer = Timer.scheduledTimer(withTimeInterval: Self.scheduleEvaluationInterval, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.evaluateSchedules()
             }

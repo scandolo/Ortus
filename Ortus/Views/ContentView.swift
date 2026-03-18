@@ -20,7 +20,7 @@ struct ContentView: View {
                         Label(title, systemImage: icon)
                             .font(.subheadline)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
+                            .padding(.vertical, OrtusTheme.spacingSM)
                             .background(
                                 Capsule()
                                     .fill(selectedTab == tag ? OrtusTheme.accentSoft : Color.clear)
@@ -29,6 +29,7 @@ struct ContentView: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(selectedTab == tag ? .primary : .tertiary)
+                    .accessibilityLabel(title)
                 }
 
                 // Settings — compact gear icon
@@ -46,6 +47,7 @@ struct ContentView: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(selectedTab == 3 ? .primary : .tertiary)
+                .accessibilityLabel("Settings")
             }
             .padding(.horizontal, OrtusTheme.spacingSM)
             .padding(.top, OrtusTheme.spacingSM)
