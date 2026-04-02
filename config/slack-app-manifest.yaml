@@ -1,0 +1,27 @@
+_metadata:
+  major_version: 2
+  minor_version: 1
+
+display_information:
+  name: Ortus
+  description: Block Slack during focus sessions and let users catch up without reopening Slack.
+  background_color: "#4F46E5"
+
+oauth_config:
+  redirect_urls:
+    - https://auth.ortus.app/slack/callback
+  scopes:
+    user:
+      - search:read
+      - channels:history
+      - groups:history
+      - im:history
+      - mpim:history
+      - users:read
+      - channels:read
+      - groups:read
+
+settings:
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false

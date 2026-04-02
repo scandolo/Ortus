@@ -13,6 +13,7 @@ struct SettingsView: View {
     @State private var launchAtLogin = false
     @State private var versionTapCount = 0
     @State private var showEmergencyConfirm = false
+    @State private var showManualSlackSetup = false
 
     var body: some View {
         ScrollView {
@@ -61,6 +62,33 @@ struct SettingsView: View {
                             .buttonStyle(OrtusGhostButtonStyle())
                             .foregroundStyle(OrtusTheme.danger)
                         }
+                    } else if slackOAuthService.hasBundledInstallFlow {
+                        Text("Connect Ortus to Slack")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Text("No app creation needed. Ortus uses a shared Slack app and opens Slack's approval screen.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Button("Connect Slack") {
+                            slackOAuthService.startOAuthFlow()
+                        }
+                        .buttonStyle(OrtusPrimaryButtonStyle())
+
+                        if focusManager.developerModeEnabled {
+                            DisclosureGroup("Manual developer setup", isExpanded: $showManualSlackSetup) {
+                                VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
+                                    TextField("Client ID", text: $slackClientId)
+                                        .textFieldStyle(OrtusTextFieldStyle())
+                                    SecureField("Client Secret", text: $slackClientSecret)
+                                        .textFieldStyle(OrtusTextFieldStyle())
+                                }
+                                .padding(.top, OrtusTheme.spacingXS)
+                            }
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        }
                     } else {
                         Text("Slack app credentials")
                             .font(.caption)
@@ -98,21 +126,22 @@ struct SettingsView: View {
                             .disabled(slackClientId.isEmpty && slackOAuthService.clientId.isEmpty)
                         }
 
-                        if slackOAuthService.isAuthenticating {
-                            HStack {
-                                ProgressView()
-                                    .scaleEffect(0.7)
-                                Text("Waiting for Slack authorization...")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
+                    }
 
-                        if let error = slackOAuthService.error {
-                            Text(error)
+                    if slackOAuthService.isAuthenticating {
+                        HStack {
+                            ProgressView()
+                                .scaleEffect(0.7)
+                            Text("Waiting for Slack authorization...")
                                 .font(.caption)
-                                .foregroundStyle(OrtusTheme.danger)
+                                .foregroundStyle(.secondary)
                         }
+                    }
+
+                    if let error = slackOAuthService.error {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(OrtusTheme.danger)
                     }
                 }
                 .ortusCard()

@@ -14,9 +14,26 @@
 	<string>1</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.ortus.app.oauth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>ortus</string>
+			</array>
+		</dict>
+	</array>
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>OrtusSlackClientID</key>
+	<string></string>
+	<key>OrtusSlackRedirectURL</key>
+	<string></string>
+	<key>OrtusSlackCallbackScheme</key>
+	<string>ortus</string>
 </dict>
 </plist>
