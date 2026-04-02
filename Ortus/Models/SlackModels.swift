@@ -114,13 +114,21 @@ struct SlackProfile: Codable {
 
 struct SlackOAuthResponse: Codable {
     let ok: Bool
+    let accessToken: String?
+    let tokenType: String?
     let authedUser: SlackAuthedUser?
     let team: SlackTeam?
     let error: String?
 
     enum CodingKeys: String, CodingKey {
         case ok, team, error
+        case accessToken = "access_token"
+        case tokenType = "token_type"
         case authedUser = "authed_user"
+    }
+
+    var resolvedAccessToken: String? {
+        authedUser?.accessToken ?? accessToken
     }
 }
 
@@ -140,7 +148,7 @@ struct SlackAuthedUser: Codable {
 
 struct SlackTeam: Codable {
     let id: String
-    let name: String
+    let name: String?
 }
 
 // MARK: - Auth Test

@@ -1,6 +1,7 @@
 import Foundation
 import Network
 import AppKit
+import CryptoKit
 
 @MainActor
 final class SlackOAuthService: ObservableObject {
@@ -11,8 +12,13 @@ final class SlackOAuthService: ObservableObject {
 
     private var listener: NWListener?
     private var connection: NWConnection?
+    private let appConfiguration = SlackAppConfiguration.shared
+    private var pendingOAuthState: String?
+    private var pendingCodeVerifier: String?
 
-    private let userScopes = "search:read,channels:history,groups:history,im:history,mpim:history,users:read,channels:read,groups:read"
+    var hasBundledInstallFlow: Bool {
+        appConfiguration.hasBundledInstallFlow
+    }
 
     init() {
         // Check if we already have a token
@@ -31,18 +37,77 @@ final class SlackOAuthService: ObservableObject {
     }
 
     func startOAuthFlow() {
+        error = nil
+
+        if hasBundledInstallFlow {
+            startBundledOAuthFlow()
+            return
+        }
+
         guard !clientId.isEmpty, !clientSecret.isEmpty else {
             error = "Please set your Slack Client ID and Client Secret in Settings first."
             return
         }
 
+        startLegacyOAuthFlow()
+    }
+
+    func handleOAuthCallback(url: URL) {
+        guard hasBundledInstallFlow else { return }
+        guard url.scheme?.caseInsensitiveCompare(appConfiguration.callbackScheme) == .orderedSame else { return }
+
+        let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        let queryItems = components?.queryItems ?? []
+
+        if let oauthError = queryItems.first(where: { $0.name == "error" })?.value {
+            error = "Slack authorization failed: \(oauthError)"
+            isAuthenticating = false
+            clearPendingOAuthState()
+            return
+        }
+
+        guard let code = queryItems.first(where: { $0.name == "code" })?.value else {
+            error = "No authorization code received from Slack."
+            isAuthenticating = false
+            clearPendingOAuthState()
+            return
+        }
+
+        guard let state = queryItems.first(where: { $0.name == "state" })?.value,
+              state == pendingOAuthState else {
+            error = "Slack authorization state did not match the request."
+            isAuthenticating = false
+            clearPendingOAuthState()
+            return
+        }
+
         isAuthenticating = true
-        error = nil
+        Task {
+            do {
+                try await exchangeBundledCodeForToken(code: code)
+            } catch {
+                self.error = "Token exchange failed: \(error.localizedDescription)"
+            }
+            self.isAuthenticating = false
+        }
+    }
+
+    func disconnect() {
+        KeychainService.delete(.slackToken)
+        KeychainService.delete(.slackTeamName)
+        isConnected = false
+        teamName = nil
+        clearPendingOAuthState()
+        stopServer()
+    }
+
+    private func startLegacyOAuthFlow() {
+        isAuthenticating = true
 
         do {
             let port = try startLoopbackServer()
             let redirectURI = "http://127.0.0.1:\(port)/callback"
-            let authURL = "https://slack.com/oauth/v2/authorize?client_id=\(clientId)&user_scope=\(userScopes)&redirect_uri=\(redirectURI.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? redirectURI)"
+            let authURL = "https://slack.com/oauth/v2/authorize?client_id=\(clientId)&user_scope=\(appConfiguration.userScopesString)&redirect_uri=\(redirectURI.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? redirectURI)"
 
             if let url = URL(string: authURL) {
                 NSWorkspace.shared.open(url)
@@ -53,11 +118,25 @@ final class SlackOAuthService: ObservableObject {
         }
     }
 
-    func disconnect() {
-        KeychainService.delete(.slackToken)
-        KeychainService.delete(.slackTeamName)
-        isConnected = false
-        teamName = nil
+    private func startBundledOAuthFlow() {
+        let state = randomURLSafeString(byteCount: 24)
+        let verifier = randomURLSafeString(byteCount: 48)
+        let challenge = codeChallenge(for: verifier)
+
+        pendingOAuthState = state
+        pendingCodeVerifier = verifier
+        isAuthenticating = true
+
+        let redirectURI = appConfiguration.bundledRedirectURL
+        let authURL = "https://slack.com/oauth/v2/authorize?client_id=\(appConfiguration.bundledClientID)&user_scope=\(appConfiguration.userScopesString)&redirect_uri=\(redirectURI.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? redirectURI)&state=\(state)&code_challenge_method=S256&code_challenge=\(challenge)"
+
+        if let url = URL(string: authURL) {
+            NSWorkspace.shared.open(url)
+        } else {
+            error = "Failed to create Slack authorization URL."
+            isAuthenticating = false
+            clearPendingOAuthState()
+        }
     }
 
     // MARK: - Loopback Server
@@ -128,8 +207,23 @@ final class SlackOAuthService: ObservableObject {
         // Parse the authorization code from the HTTP request
         guard let codeLine = request.split(separator: "\r\n").first,
               let urlPath = codeLine.split(separator: " ").dropFirst().first,
-              let components = URLComponents(string: String(urlPath)),
-              let code = components.queryItems?.first(where: { $0.name == "code" })?.value else {
+              let components = URLComponents(string: String(urlPath)) else {
+            sendResponse(to: connection, html: "<h1>Error</h1><p>No authorization code received.</p>")
+            stopServer()
+            error = "No authorization code received from Slack."
+            isAuthenticating = false
+            return
+        }
+
+        if let oauthError = components.queryItems?.first(where: { $0.name == "error" })?.value {
+            sendResponse(to: connection, html: "<h1>Authorization cancelled</h1><p>You can close this tab and return to Ortus.</p>")
+            stopServer()
+            error = "Slack authorization failed: \(oauthError)"
+            isAuthenticating = false
+            return
+        }
+
+        guard let code = components.queryItems?.first(where: { $0.name == "code" })?.value else {
             sendResponse(to: connection, html: "<h1>Error</h1><p>No authorization code received.</p>")
             stopServer()
             error = "No authorization code received from Slack."
@@ -146,39 +240,135 @@ final class SlackOAuthService: ObservableObject {
         stopServer()
 
         do {
-            try await exchangeCodeForToken(code: code, redirectURI: redirectURI)
+            try await exchangeLegacyCodeForToken(code: code, redirectURI: redirectURI)
         } catch {
             self.error = "Token exchange failed: \(error.localizedDescription)"
         }
         isAuthenticating = false
     }
 
-    private func exchangeCodeForToken(code: String, redirectURI: String) async throws {
+    private func exchangeLegacyCodeForToken(code: String, redirectURI: String) async throws {
         var request = URLRequest(url: URL(string: "https://slack.com/api/oauth.v2.access")!)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.setValue(basicAuthorizationHeader(), forHTTPHeaderField: "Authorization")
 
-        let body = [
-            "client_id=\(clientId)",
-            "client_secret=\(clientSecret)",
-            "code=\(code)",
-            "redirect_uri=\(redirectURI)",
-        ].joined(separator: "&")
-        request.httpBody = Data(body.utf8)
+        request.httpBody = formBody([
+            "client_id": clientId,
+            "code": code,
+            "redirect_uri": redirectURI,
+        ])
 
         let (data, _) = try await URLSession.shared.data(for: request)
         let response = try JSONDecoder().decode(SlackOAuthResponse.self, from: data)
 
-        guard response.ok, let authedUser = response.authedUser else {
+        guard response.ok else {
             throw OAuthError.tokenExchangeFailed(response.error ?? "Unknown error")
         }
 
-        try KeychainService.save(authedUser.accessToken, for: .slackToken)
-        if let team = response.team {
-            try KeychainService.save(team.name, for: .slackTeamName)
-            teamName = team.name
+        try await finishOAuthConnection(response: response)
+    }
+
+    private func exchangeBundledCodeForToken(code: String) async throws {
+        guard let codeVerifier = pendingCodeVerifier else {
+            throw OAuthError.tokenExchangeFailed("Missing PKCE verifier")
         }
+
+        var request = URLRequest(url: URL(string: "https://slack.com/api/oauth.v2.user.access")!)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.httpBody = formBody([
+            "client_id": appConfiguration.bundledClientID,
+            "code": code,
+            "code_verifier": codeVerifier,
+            "redirect_uri": appConfiguration.bundledRedirectURL,
+        ])
+
+        let (data, _) = try await URLSession.shared.data(for: request)
+        let response = try JSONDecoder().decode(SlackOAuthResponse.self, from: data)
+
+        guard response.ok else {
+            throw OAuthError.tokenExchangeFailed(response.error ?? "Unknown error")
+        }
+
+        try await finishOAuthConnection(response: response)
+    }
+
+    private func finishOAuthConnection(response: SlackOAuthResponse) async throws {
+        guard let accessToken = response.resolvedAccessToken else {
+            throw OAuthError.tokenExchangeFailed("No access token returned")
+        }
+
+        try KeychainService.save(accessToken, for: .slackToken)
+
+        if let returnedTeamName = response.team?.name, !returnedTeamName.isEmpty {
+            try KeychainService.save(returnedTeamName, for: .slackTeamName)
+            teamName = returnedTeamName
+        } else if let fetchedTeamName = try await fetchTeamName(accessToken: accessToken) {
+            try KeychainService.save(fetchedTeamName, for: .slackTeamName)
+            teamName = fetchedTeamName
+        } else {
+            KeychainService.delete(.slackTeamName)
+            teamName = nil
+        }
+
         isConnected = true
+        clearPendingOAuthState()
+    }
+
+    private func fetchTeamName(accessToken: String) async throws -> String? {
+        var request = URLRequest(url: URL(string: "https://slack.com/api/auth.test")!)
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+
+        let (data, _) = try await URLSession.shared.data(for: request)
+        let response = try JSONDecoder().decode(SlackAuthTestResponse.self, from: data)
+
+        guard response.ok else {
+            throw OAuthError.tokenExchangeFailed(response.error ?? "Auth test failed")
+        }
+
+        return response.team
+    }
+
+    private func formBody(_ params: [String: String]) -> Data {
+        let encoded = params.map { key, value in
+            "\(key)=\(urlEncode(value))"
+        }.joined(separator: "&")
+        return Data(encoded.utf8)
+    }
+
+    private func basicAuthorizationHeader() -> String {
+        let credentials = "\(clientId):\(clientSecret)"
+        let encoded = Data(credentials.utf8).base64EncodedString()
+        return "Basic \(encoded)"
+    }
+
+    private func urlEncode(_ value: String) -> String {
+        let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~")
+        return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value
+    }
+
+    private func randomURLSafeString(byteCount: Int) -> String {
+        let bytes = (0..<byteCount).map { _ in UInt8.random(in: .min ... .max) }
+        return Data(bytes)
+            .base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+    }
+
+    private func codeChallenge(for verifier: String) -> String {
+        let digest = SHA256.hash(data: Data(verifier.utf8))
+        return Data(digest)
+            .base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+    }
+
+    private func clearPendingOAuthState() {
+        pendingOAuthState = nil
+        pendingCodeVerifier = nil
     }
 
     private func sendResponse(to connection: NWConnection, html: String) {

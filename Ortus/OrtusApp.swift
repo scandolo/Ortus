@@ -35,6 +35,9 @@ struct OrtusApp: App {
                 .onAppear {
                     appDelegate.focusManager = focusManager
                 }
+                .onOpenURL { url in
+                    slackOAuthService.handleOAuthCallback(url: url)
+                }
         } label: {
             Image(systemName: focusManager.isInFocus ? "sunrise.fill" : "sunrise")
         }
