@@ -25,7 +25,7 @@ struct FocusView: View {
                 let activeSchedules = focusManager.schedules.filter(\.isEnabled)
                 if !activeSchedules.isEmpty {
                     Text("\(activeSchedules.count) schedule\(activeSchedules.count == 1 ? "" : "s") active")
-                        .font(.caption)
+                        .font(OrtusTheme.Typo.meta)
                         .foregroundStyle(OrtusTheme.textMuted)
                 }
             }
@@ -41,7 +41,6 @@ struct FocusView: View {
                 TimelineView(.periodic(from: .now, by: 0.1)) { context in
                     let remaining = max(0, graceEnd.timeIntervalSince(context.date))
                     ZStack {
-                        // Progress ring
                         Circle()
                             .stroke(OrtusTheme.accent.opacity(0.15), lineWidth: 4)
                             .frame(width: 120, height: 120)
@@ -53,17 +52,18 @@ struct FocusView: View {
                             .rotationEffect(.degrees(-90))
 
                         Text("\(Int(ceil(remaining)))")
-                            .font(.system(size: 48, weight: .light, design: .rounded))
+                            .font(OrtusTheme.Typo.display)
                             .foregroundStyle(.primary)
+                            .monospacedDigit()
                     }
                 }
             }
 
-            Text("Focus starting...")
-                .font(.title2.bold())
+            Text("Focus starting")
+                .font(OrtusTheme.Typo.title)
 
             Text("Forgot something? You can still go back.")
-                .font(.caption)
+                .font(OrtusTheme.Typo.body)
                 .foregroundStyle(OrtusTheme.textMuted)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, OrtusTheme.spacingLG)
@@ -78,67 +78,148 @@ struct FocusView: View {
     // MARK: - Active Focus
 
     private var activeFocusState: some View {
-        VStack(spacing: OrtusTheme.spacingMD) {
+        VStack(spacing: OrtusTheme.spacingLG) {
             if let endTime = focusManager.focusEndTime {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
-                    let remaining = endTime.timeIntervalSince(context.date)
-                    ZStack {
-                        // Breathing pulse circle
-                        Circle()
-                            .fill(
-                                RadialGradient(
-                                    gradient: Gradient(colors: [
-                                        OrtusTheme.accentSoft.opacity(isPulsing ? 0.15 : 0.0),
-                                        OrtusTheme.accentSoft.opacity(0.0)
-                                    ]),
-                                    center: .center,
-                                    startRadius: 0,
-                                    endRadius: 100
-                                )
-                            )
-                            .frame(width: 200, height: 200)
-
-                        // Hero timer
-                        if remaining > 0 {
-                            Text(formatDuration(remaining))
-                                .font(.system(size: 56, weight: .light, design: .rounded))
-                                .tracking(-2)
-                                .foregroundStyle(.primary)
-                        } else {
-                            Text("Ending")
-                                .font(.system(size: 56, weight: .light, design: .rounded))
-                                .tracking(-2)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
+                    let remaining = max(0, endTime.timeIntervalSince(context.date))
+                    let totalDuration = totalSessionDuration(endingAt: endTime)
+                    let progress = totalDuration > 0 ? remaining / totalDuration : 0
+                    timerHero(remaining: remaining, progress: progress)
                 }
             }
 
-            // Quiet label
-            Text("deep focus")
-                .font(.caption)
-                .foregroundStyle(OrtusTheme.textMuted)
-
-            if let name = focusManager.currentSessionName {
-                Text(name)
-                    .font(.subheadline)
+            VStack(spacing: OrtusTheme.spacingXS) {
+                Text("DEEP FOCUS")
+                    .font(OrtusTheme.Typo.section)
+                    .tracking(1.4)
                     .foregroundStyle(OrtusTheme.textMuted)
+
+                if let name = focusManager.currentSessionName {
+                    Text(name)
+                        .font(OrtusTheme.Typo.bodyMedium)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            HStack(spacing: OrtusTheme.spacingSM) {
+                Button {
+                    focusManager.extendFocus(by: 15 * 60)
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 10, weight: .bold))
+                        Text("15 min")
+                    }
+                }
+                .buttonStyle(OrtusSecondaryButtonStyle())
+                .help("Add 15 minutes to this focus session")
+
+                if shouldShowSlackBadge {
+                    slackSyncedBadge
+                }
             }
 
             if focusManager.developerModeEnabled {
                 Button("End focus (dev)") {
                     focusManager.endFocusSession()
                 }
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .buttonStyle(.plain)
+                .buttonStyle(OrtusGhostButtonStyle())
             }
         }
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+            withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) {
                 isPulsing = true
             }
         }
+    }
+
+    private func timerHero(remaining: TimeInterval, progress: Double) -> some View {
+        ZStack {
+            // Outer breathing aura
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            OrtusTheme.accentSoft.opacity(isPulsing ? 0.55 : 0.20),
+                            .clear
+                        ],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 130
+                    )
+                )
+                .frame(width: 260, height: 260)
+                .blur(radius: 10)
+
+            // Glass disc — strong contrast against canvas
+            Circle()
+                .fill(OrtusTheme.cardSurface)
+                .frame(width: 190, height: 190)
+                .overlay(
+                    Circle().strokeBorder(OrtusTheme.innerHighlight, lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.16), radius: 20, y: 6)
+
+            // Track + progress ring
+            Circle()
+                .stroke(OrtusTheme.accent.opacity(0.12), lineWidth: 3)
+                .frame(width: 190, height: 190)
+
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(
+                    AngularGradient(
+                        colors: [OrtusTheme.accent, OrtusTheme.accentHover, OrtusTheme.accent],
+                        center: .center
+                    ),
+                    style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                )
+                .frame(width: 190, height: 190)
+                .rotationEffect(.degrees(-90))
+                .animation(.linear(duration: 1), value: progress)
+
+            // Hero timer
+            if remaining > 0 {
+                Text(formatDuration(remaining))
+                    .font(OrtusTheme.Typo.hero)
+                    .tracking(-2)
+                    .foregroundStyle(.primary)
+                    .monospacedDigit()
+            } else {
+                Text("Ending")
+                    .font(OrtusTheme.Typo.hero)
+                    .tracking(-2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var slackSyncedBadge: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "moon.fill")
+                .font(.system(size: 10))
+                .foregroundStyle(OrtusTheme.accent)
+            Text(focusManager.slackStatusText)
+                .font(OrtusTheme.Typo.badge)
+                .foregroundStyle(.primary)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(Capsule().fill(OrtusTheme.cardSurface))
+        .overlay(Capsule().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
+        .clipShape(Capsule())
+    }
+
+    private var shouldShowSlackBadge: Bool {
+        focusManager.slackStatusEnabled
+        && (focusManager.slackService?.isConnected ?? false)
+    }
+
+    private func totalSessionDuration(endingAt end: Date) -> TimeInterval {
+        if let start = focusManager.focusStartTime {
+            return max(end.timeIntervalSince(start), 1)
+        }
+        return max(end.timeIntervalSinceNow * 2, 60 * 15)
     }
 
     // MARK: - Emergency Ended
@@ -147,35 +228,37 @@ struct FocusView: View {
         VStack(spacing: OrtusTheme.spacingMD) {
             ZStack {
                 Circle()
-                    .fill(OrtusTheme.warning.opacity(0.10))
+                    .fill(OrtusTheme.warning.opacity(0.14))
                     .frame(width: 120, height: 120)
 
-                Image(systemName: "exclamationmark.circle")
-                    .font(.system(size: 48, design: .rounded))
+                Image(systemName: "exclamationmark.circle.fill")
+                    .font(.system(size: 48))
                     .foregroundStyle(OrtusTheme.warning)
+                    .symbolRenderingMode(.hierarchical)
             }
 
             Text("Slack still paused")
-                .font(.title2.bold())
+                .font(OrtusTheme.Typo.title)
 
             if let originalEnd = focusManager.originalFocusEndTime {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     let remaining = originalEnd.timeIntervalSince(context.date)
                     if remaining > 0 {
                         Text("Unblocks in \(formatDuration(remaining))")
-                            .font(.system(.body, design: .monospaced))
+                            .font(OrtusTheme.Typo.bodyMedium)
+                            .monospacedDigit()
                             .foregroundStyle(OrtusTheme.warning)
                     } else {
                         Text("Unblocking")
-                            .font(.body)
+                            .font(OrtusTheme.Typo.body)
                             .foregroundStyle(.secondary)
                     }
                 }
             }
 
             Text("Focus ended early. Slack stays paused until the original time.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(OrtusTheme.Typo.body)
+                .foregroundStyle(OrtusTheme.textMuted)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, OrtusTheme.spacingLG)
         }
@@ -185,26 +268,44 @@ struct FocusView: View {
 
     private var idleState: some View {
         VStack(spacing: OrtusTheme.spacingLG) {
-            Image(systemName: "sunrise")
-                .font(.system(size: 56, design: .rounded))
-                .foregroundStyle(.secondary)
+            ZStack {
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [OrtusTheme.accentSoft.opacity(0.7), .clear],
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: 70
+                        )
+                    )
+                    .frame(width: 140, height: 140)
+
+                Image(systemName: "sunrise.fill")
+                    .font(.system(size: 58))
+                    .foregroundStyle(OrtusTheme.accent)
+                    .symbolRenderingMode(.hierarchical)
+            }
 
             Text("Ready when you are")
-                .font(.title2.bold())
+                .font(OrtusTheme.Typo.title)
 
-            VStack(spacing: OrtusTheme.spacingMD) {
+            VStack(spacing: OrtusTheme.spacingSM) {
                 HStack {
                     Text("Duration")
+                        .font(OrtusTheme.Typo.bodyMedium)
                         .foregroundStyle(.secondary)
                     Spacer()
                     Text("\(Int(manualDuration)) min")
+                        .font(OrtusTheme.Typo.bodyMedium)
                         .monospacedDigit()
+                        .foregroundStyle(.primary)
                 }
 
                 Slider(value: $manualDuration, in: 15...240, step: 15)
                     .tint(OrtusTheme.accent)
             }
-            .padding(.horizontal, OrtusTheme.spacingXL)
+            .ortusCard()
+            .padding(.horizontal, OrtusTheme.spacingLG)
 
             Button("Begin focus") {
                 focusManager.startFocusSession(

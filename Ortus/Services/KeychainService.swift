@@ -5,7 +5,6 @@ enum KeychainService {
     private static let service = "com.ortus.app"
 
     enum Key: String {
-        case claudeAPIKey = "claude_api_key"
         case slackToken = "slack_token"
         case slackTeamName = "slack_team_name"
         case slackClientId = "slack_client_id"
