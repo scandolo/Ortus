@@ -3,6 +3,8 @@ import SwiftUI
 struct ChatView: View {
     @EnvironmentObject var claudeCodeService: ClaudeCodeService
     @State private var inputText = ""
+    @FocusState private var isInputFocused: Bool
+    @State private var isBarHovering = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -82,36 +84,47 @@ struct ChatView: View {
             }
 
             TextField("What's happening in Slack?", text: $inputText)
-                .textFieldStyle(OrtusTextFieldStyle())
+                .textFieldStyle(.plain)
+                .font(OrtusTheme.Typo.body)
+                .focused($isInputFocused)
                 .onSubmit { sendMessage() }
                 .disabled(!claudeCodeService.isConfigured || claudeCodeService.isProcessing)
 
             if claudeCodeService.isProcessing {
-                Button {
-                    claudeCodeService.stop()
-                } label: {
-                    Image(systemName: "stop.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(OrtusTheme.warning)
-                        .symbolRenderingMode(.hierarchical)
-                }
-                .buttonStyle(.plain)
-                .help("Stop")
+                ChatStopButton(action: { claudeCodeService.stop() })
             } else {
-                Button {
-                    sendMessage()
-                } label: {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(canSend ? OrtusTheme.accent : .secondary)
-                        .symbolRenderingMode(.hierarchical)
-                }
-                .buttonStyle(.plain)
-                .disabled(!canSend)
-                .help("Send message")
+                ChatSendButton(canSend: canSend, action: sendMessage)
             }
         }
-        .ortusFloatingToolbar()
+        .padding(.leading, OrtusTheme.spacingMD)
+        .padding(.trailing, 6)
+        .padding(.vertical, 6)
+        .background(inputBarBackground)
+        .onHover { isBarHovering = $0 }
+        .padding(.horizontal, OrtusTheme.spacingMD)
+        .padding(.bottom, OrtusTheme.spacingSM)
+        .animation(.easeOut(duration: 0.18), value: isInputFocused)
+        .animation(.easeOut(duration: 0.18), value: isBarHovering)
+    }
+
+    private var inputBarBackground: some View {
+        Capsule()
+            .fill(OrtusTheme.cardSurface)
+            .overlay(
+                Capsule()
+                    .fill(isBarHovering && !isInputFocused ? Color.primary.opacity(0.04) : .clear)
+            )
+            .overlay(
+                Capsule().strokeBorder(
+                    isInputFocused ? OrtusTheme.accent : OrtusTheme.hairline,
+                    lineWidth: isInputFocused ? 1.5 : 1
+                )
+            )
+            .shadow(
+                color: isInputFocused ? OrtusTheme.accent.opacity(0.30) : .black.opacity(0.12),
+                radius: isInputFocused ? 8 : 14,
+                y: isInputFocused ? 2 : 4
+            )
     }
 
     // MARK: - Helpers
@@ -127,6 +140,76 @@ struct ChatView: View {
         guard !text.isEmpty, canSend else { return }
         inputText = ""
         claudeCodeService.sendMessage(text)
+    }
+}
+
+// MARK: - Send / Stop Buttons
+
+private struct ChatSendButton: View {
+    let canSend: Bool
+    let action: () -> Void
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "arrow.up")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(
+                    Circle().fill(
+                        canSend
+                            ? (isHovering ? OrtusTheme.accentHover : OrtusTheme.accent)
+                            : Color.secondary.opacity(0.22)
+                    )
+                )
+                .overlay(
+                    Circle().strokeBorder(
+                        canSend ? OrtusTheme.innerHighlightStrong : .clear,
+                        lineWidth: 1
+                    )
+                )
+                .shadow(
+                    color: canSend ? OrtusTheme.accent.opacity(isHovering ? 0.55 : 0.30) : .clear,
+                    radius: isHovering ? 8 : 4,
+                    y: 1
+                )
+                .scaleEffect(canSend && isHovering ? 1.08 : 1.0)
+        }
+        .buttonStyle(.plain)
+        .disabled(!canSend)
+        .help("Send message")
+        .animation(.easeOut(duration: 0.18), value: isHovering)
+        .animation(.easeOut(duration: 0.18), value: canSend)
+        .onHover { isHovering = $0 }
+    }
+}
+
+private struct ChatStopButton: View {
+    let action: () -> Void
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "stop.fill")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(Circle().fill(OrtusTheme.warning))
+                .overlay(
+                    Circle().strokeBorder(OrtusTheme.innerHighlightStrong, lineWidth: 1)
+                )
+                .shadow(
+                    color: OrtusTheme.warning.opacity(isHovering ? 0.55 : 0.30),
+                    radius: isHovering ? 8 : 4,
+                    y: 1
+                )
+                .scaleEffect(isHovering ? 1.08 : 1.0)
+        }
+        .buttonStyle(.plain)
+        .help("Stop")
+        .animation(.easeOut(duration: 0.18), value: isHovering)
+        .onHover { isHovering = $0 }
     }
 }
 

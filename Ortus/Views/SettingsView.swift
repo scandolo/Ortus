@@ -12,6 +12,18 @@ struct SettingsView: View {
     @State private var launchAtLogin = false
     @State private var versionTapCount = 0
     @State private var showEmergencyConfirm = false
+    @State private var showSlackPreview = false
+    @State private var taglineIndex = 0
+
+    /// Easter egg: tapping "Ortus" cycles through a few sunrise-themed lines.
+    /// Index 0 is the default tagline so first launch shows nothing unusual.
+    private let taglines = [
+        "Focus mode for deep work",
+        "Ortus, n. — the rising of the sun",
+        "First light. First task.",
+        "Carpe lucem.",
+        "Wake. Work. Wonder."
+    ]
 
     var body: some View {
         ScrollView {
@@ -87,10 +99,10 @@ struct SettingsView: View {
                 .disabled(!slackOAuthService.isConnected)
 
             if focusManager.slackStatusEnabled && slackOAuthService.isConnected {
-                labeledField(label: "Status text", placeholder: "Ortus mode", text: $focusManager.slackStatusText)
-                labeledField(label: "Emoji code", placeholder: ":no_entry_sign:", text: $focusManager.slackStatusEmoji)
+                statusComposer
                 Toggle("Snooze notifications (Do Not Disturb)", isOn: $focusManager.slackDndEnabled)
                     .font(OrtusTheme.Typo.bodyMedium)
+                previewDisclosure
             }
 
             connectionRow
@@ -108,6 +120,51 @@ struct SettingsView: View {
         }
     }
 
+    /// Slack-style status composer: emoji picker button + status text field on one row,
+    /// matching Slack's own "Set a status" UI. Replaces the old two stacked text fields.
+    private var statusComposer: some View {
+        VStack(alignment: .leading, spacing: OrtusTheme.spacingXS) {
+            Text("Status")
+                .font(OrtusTheme.Typo.meta)
+                .foregroundStyle(.secondary)
+            HStack(spacing: OrtusTheme.spacingSM) {
+                EmojiPickerButton(code: $focusManager.slackStatusEmoji)
+                TextField("Ortus mode", text: $focusManager.slackStatusText)
+                    .textFieldStyle(OrtusTextFieldStyle())
+            }
+        }
+    }
+
+    /// Progressive disclosure: the preview stays hidden by default so the section
+    /// reads compact at a glance, but is one click away when the user wants to
+    /// see how teammates will perceive their status.
+    private var previewDisclosure: some View {
+        VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
+            Button {
+                withAnimation(.easeOut(duration: 0.2)) { showSlackPreview.toggle() }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: showSlackPreview ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 9, weight: .bold))
+                    Text(showSlackPreview ? "Hide preview" : "Preview in Slack")
+                }
+                .font(OrtusTheme.Typo.caption)
+                .foregroundStyle(OrtusTheme.accent)
+            }
+            .buttonStyle(.plain)
+
+            if showSlackPreview {
+                SlackStatusPreview(
+                    statusText: focusManager.slackStatusText,
+                    emojiCode: focusManager.slackStatusEmoji,
+                    userName: NSFullUserName().isEmpty ? "You" : NSFullUserName(),
+                    dndEnabled: focusManager.slackDndEnabled
+                )
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+
     @ViewBuilder
     private var connectionRow: some View {
         if slackOAuthService.isConnected {
@@ -122,8 +179,7 @@ struct SettingsView: View {
                 Button("Disconnect") {
                     slackOAuthService.disconnect()
                 }
-                .buttonStyle(OrtusGhostButtonStyle())
-                .foregroundStyle(OrtusTheme.danger)
+                .buttonStyle(OrtusDestructiveButtonStyle())
             }
         } else {
             VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
@@ -336,48 +392,59 @@ struct SettingsView: View {
     private var aboutCard: some View {
         VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
             OrtusSectionHeader(title: "About")
-            HStack {
-                Text("Ortus")
-                    .font(OrtusTheme.Typo.headline)
-                Spacer()
-                Button {
-                    versionTapCount += 1
-                    if versionTapCount >= 7 {
-                        focusManager.developerModeEnabled.toggle()
-                        versionTapCount = 0
+
+            HStack(alignment: .center, spacing: OrtusTheme.spacingMD) {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Button {
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                taglineIndex = (taglineIndex + 1) % taglines.count
+                            }
+                        } label: {
+                            Text("Ortus")
+                                .font(OrtusTheme.Typo.headline)
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            versionTapCount += 1
+                            if versionTapCount >= 7 {
+                                focusManager.developerModeEnabled.toggle()
+                                versionTapCount = 0
+                            }
+                        } label: {
+                            Text("v1.0")
+                                .font(OrtusTheme.Typo.meta)
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
                     }
-                } label: {
-                    Text("v1.0")
-                        .font(OrtusTheme.Typo.meta)
+
+                    Text(taglines[taglineIndex])
+                        .font(OrtusTheme.Typo.caption)
+                        .italic(taglineIndex > 0)
                         .foregroundStyle(.secondary)
+
+                    if focusManager.developerModeEnabled {
+                        Text("Developer mode active")
+                            .font(OrtusTheme.Typo.meta)
+                            .foregroundStyle(OrtusTheme.warning)
+                    }
+
+                    if focusManager.isInFocus || focusManager.isEmergencyEnded {
+                        Text("Cannot quit during focus")
+                            .font(OrtusTheme.Typo.meta)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-                .buttonStyle(.plain)
-            }
 
-            Text("Focus mode for deep work")
-                .font(OrtusTheme.Typo.caption)
-                .foregroundStyle(.secondary)
+                Spacer(minLength: 0)
 
-            if focusManager.developerModeEnabled {
-                Text("Developer mode active")
-                    .font(OrtusTheme.Typo.meta)
-                    .foregroundStyle(OrtusTheme.warning)
-            }
-
-            HStack {
                 Button("Quit Ortus") {
                     NSApplication.shared.terminate(nil)
                 }
-                .buttonStyle(OrtusGhostButtonStyle())
-                .foregroundStyle(OrtusTheme.danger)
+                .buttonStyle(OrtusDestructiveButtonStyle())
                 .disabled(focusManager.isInFocus || focusManager.isEmergencyEnded)
-                Spacer()
-            }
-
-            if focusManager.isInFocus || focusManager.isEmergencyEnded {
-                Text("Cannot quit during focus")
-                    .font(OrtusTheme.Typo.meta)
-                    .foregroundStyle(.secondary)
             }
         }
         .ortusCard()

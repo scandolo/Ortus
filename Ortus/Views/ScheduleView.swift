@@ -69,18 +69,17 @@ struct ScheduleView: View {
                 }
             }
 
-            HStack {
-                Spacer()
-                Button {
-                    editingScheduleID = nil
-                    isAddingNew = true
-                } label: {
-                    Label("Add schedule", systemImage: "plus")
-                }
-                .buttonStyle(OrtusSecondaryButtonStyle())
-                .disabled(isAddingNew)
+            Button {
+                editingScheduleID = nil
+                isAddingNew = true
+            } label: {
+                Label("Add schedule", systemImage: "plus")
+                    .frame(maxWidth: .infinity)
             }
-            .ortusFloatingToolbar()
+            .buttonStyle(OrtusSecondaryButtonStyle())
+            .disabled(isAddingNew)
+            .padding(.horizontal, OrtusTheme.spacingMD)
+            .padding(.bottom, OrtusTheme.spacingSM)
         }
     }
 }

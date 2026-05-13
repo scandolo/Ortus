@@ -22,6 +22,8 @@ import SwiftUI
 // │  5. BUTTON HIERARCHY:                                               │
 // │     - OrtusPrimaryButtonStyle → tinted-amber capsule (one CTA / view)│
 // │     - OrtusSecondaryButtonStyle → glass capsule                     │
+// │     - OrtusDestructiveButtonStyle → ember-tinted capsule (Disconnect,│
+// │       Quit, end-session). On-brand sunset tone, never raw red.      │
 // │     - OrtusGhostButtonStyle → borderless                            │
 // │                                                                     │
 // │  6. TEXT FIELDS: Always OrtusTextFieldStyle().                      │
@@ -70,10 +72,13 @@ enum OrtusTheme {
             : NSColor(red: 0.78, green: 0.55, blue: 0.20, alpha: 1)
     })
 
+    /// Deep ember — the colour of a sunset's last burning edge. The destructive
+    /// counterpart to `accent`: same warm family, hue-shifted toward red so it
+    /// reads as "stop / careful" without breaking the sunrise palette.
     static let danger = Color(nsColor: NSColor(name: nil) { appearance in
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            ? NSColor(red: 0.95, green: 0.50, blue: 0.50, alpha: 1)
-            : NSColor(red: 0.78, green: 0.30, blue: 0.30, alpha: 1)
+            ? NSColor(red: 0.96, green: 0.44, blue: 0.28, alpha: 1)   // #F47147 — bright ember in dark
+            : NSColor(red: 0.74, green: 0.26, blue: 0.12, alpha: 1)   // #BD431F — burnt sienna in light
     })
 
     /// Calm sage — the colour of post-sunrise vegetation. Used for "all clear / connected" states.
@@ -281,6 +286,41 @@ struct OrtusSecondaryButtonStyle: ButtonStyle {
             .background(Capsule().fill(active ? Color.primary.opacity(0.06) : .clear))
             .overlay(
                 Capsule().strokeBorder(OrtusTheme.hairline, lineWidth: 1)
+            )
+            .clipShape(Capsule())
+            .scaleEffect(pressed ? 0.96 : 1.0)
+            .animation(.easeOut(duration: 0.14), value: pressed)
+            .animation(.easeOut(duration: 0.18), value: isHovering)
+            .onHover { isHovering = $0 }
+    }
+}
+
+// MARK: - Destructive Button (ember-tinted capsule)
+
+/// Used for irreversible actions: Disconnect, Quit Ortus, end-session.
+/// Shape matches the secondary capsule so destructive actions sit cleanly
+/// next to other buttons; the ember tint communicates "careful" without
+/// importing a foreign red into the sunrise palette.
+struct OrtusDestructiveButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+    @State private var isHovering = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        let pressed = configuration.isPressed
+        let active = (isHovering || pressed) && isEnabled
+        return configuration.label
+            .font(OrtusTheme.Typo.button)
+            .foregroundStyle(isEnabled ? OrtusTheme.danger : OrtusTheme.danger.opacity(0.45))
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+            .background(
+                Capsule().fill(OrtusTheme.danger.opacity(active ? 0.18 : 0.10))
+            )
+            .overlay(
+                Capsule().strokeBorder(
+                    OrtusTheme.danger.opacity(isEnabled ? (active ? 0.60 : 0.38) : 0.18),
+                    lineWidth: 1
+                )
             )
             .clipShape(Capsule())
             .scaleEffect(pressed ? 0.96 : 1.0)

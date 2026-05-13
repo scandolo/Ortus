@@ -53,7 +53,7 @@ struct ContentView: View {
         .clipShape(Capsule())
         .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
         .padding(.horizontal, OrtusTheme.spacingMD)
-        .padding(.top, OrtusTheme.spacingMD)
+        .padding(.top, OrtusTheme.spacingLG)
         .padding(.bottom, OrtusTheme.spacingSM)
     }
 }

@@ -7,8 +7,6 @@ struct FocusView: View {
 
     var body: some View {
         VStack(spacing: OrtusTheme.spacingLG) {
-            Spacer()
-
             if focusManager.isEmergencyEnded {
                 emergencyEndedState
             } else if focusManager.isInFocus && focusManager.isInGracePeriod {
@@ -18,8 +16,6 @@ struct FocusView: View {
             } else {
                 idleState
             }
-
-            Spacer()
 
             if !focusManager.isInFocus && !focusManager.isEmergencyEnded && !focusManager.schedules.isEmpty {
                 let activeSchedules = focusManager.schedules.filter(\.isEnabled)
@@ -31,6 +27,7 @@ struct FocusView: View {
             }
         }
         .padding(OrtusTheme.spacingMD)
+        .frame(maxHeight: .infinity, alignment: .center)
     }
 
     // MARK: - Grace Period
@@ -289,20 +286,15 @@ struct FocusView: View {
             Text("Ready when you are")
                 .font(OrtusTheme.Typo.title)
 
-            VStack(spacing: OrtusTheme.spacingSM) {
-                HStack {
-                    Text("Duration")
-                        .font(OrtusTheme.Typo.bodyMedium)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Text("\(Int(manualDuration)) min")
-                        .font(OrtusTheme.Typo.bodyMedium)
-                        .monospacedDigit()
-                        .foregroundStyle(.primary)
-                }
+            VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
+                OrtusSectionHeader(title: "Duration")
 
-                Slider(value: $manualDuration, in: 15...240, step: 15)
-                    .tint(OrtusTheme.accent)
+                OrtusDurationSlider(
+                    minutes: $manualDuration,
+                    range: 15...240,
+                    ticks: [15, 30, 60, 90, 120, 180, 240],
+                    step: 15
+                )
             }
             .ortusCard()
             .padding(.horizontal, OrtusTheme.spacingLG)
