@@ -1,5 +1,8 @@
 import Foundation
 
+/// Thin Slack client used solely to update the user's profile status and DND
+/// during Ortus focus sessions. Read-side queries (search, channel history, etc.)
+/// happen through the AI chat's local Claude Code + Slack MCP — not here.
 @MainActor
 final class SlackService: ObservableObject {
     private let baseURL = "https://slack.com/api/"
@@ -13,66 +16,81 @@ final class SlackService: ObservableObject {
         token != nil
     }
 
-    // MARK: - Search
+    // MARK: - Status & DND
 
-    func searchMessages(query: String, count: Int = 20) async throws -> [SlackSearchMatch] {
-        let params = ["query": query, "count": String(count), "sort": "timestamp", "sort_dir": "desc"]
-        let response: SlackSearchResponse = try await apiCall("search.messages", params: params)
+    /// Sets the user's Slack profile status. Pass an expiration date so Slack auto-clears it.
+    func setStatus(text: String, emoji: String, expiration: Date?) async throws {
+        var profile: [String: Any] = [
+            "status_text": text,
+            "status_emoji": emoji,
+        ]
+        if let expiration {
+            profile["status_expiration"] = Int(expiration.timeIntervalSince1970)
+        } else {
+            profile["status_expiration"] = 0
+        }
+        let response: SlackBasicResponse = try await apiPost("users.profile.set", body: ["profile": profile])
         guard response.ok else { throw SlackError.apiError(response.error ?? "Unknown") }
-        return response.messages?.matches ?? []
     }
 
-    // MARK: - Conversations
+    /// Clears the user's Slack profile status.
+    func clearStatus() async throws {
+        try await setStatus(text: "", emoji: "", expiration: nil)
+    }
 
-    func getChannelHistory(channelID: String, limit: Int = 30) async throws -> [SlackMessage] {
-        let params = ["channel": channelID, "limit": String(limit)]
-        let response: SlackConversationsHistoryResponse = try await apiCall("conversations.history", params: params)
+    /// Snoozes Slack notifications for the given number of minutes (Slack DND).
+    func setSnooze(minutes: Int) async throws {
+        let response: SlackBasicResponse = try await apiGet("dnd.setSnooze", params: ["num_minutes": String(minutes)])
         guard response.ok else { throw SlackError.apiError(response.error ?? "Unknown") }
-        return response.messages ?? []
     }
 
-    func listChannels(limit: Int = 200) async throws -> [SlackChannel] {
-        let params = ["limit": String(limit), "types": "public_channel,private_channel", "exclude_archived": "true"]
-        let response: SlackConversationsListResponse = try await apiCall("conversations.list", params: params)
-        guard response.ok else { throw SlackError.apiError(response.error ?? "Unknown") }
-        return response.channels ?? []
+    /// Ends the user's current snooze window. Treats "snooze_not_active" as success.
+    func endSnooze() async throws {
+        let response: SlackBasicResponse = try await apiGet("dnd.endSnooze", params: [:])
+        guard response.ok || response.error == "snooze_not_active" else {
+            throw SlackError.apiError(response.error ?? "Unknown")
+        }
     }
 
-    // MARK: - Users
+    // MARK: - HTTP Helpers
 
-    func getUserInfo(userID: String) async throws -> SlackUser {
-        let params = ["user": userID]
-        let response: SlackUserInfoResponse = try await apiCall("users.info", params: params)
-        guard response.ok, let user = response.user else { throw SlackError.apiError(response.error ?? "Unknown") }
-        return user
-    }
-
-    // MARK: - Auth Test
-
-    func testAuth() async throws -> SlackAuthTestResponse {
-        let response: SlackAuthTestResponse = try await apiCall("auth.test", params: [:])
-        guard response.ok else { throw SlackError.apiError(response.error ?? "Unknown") }
-        return response
-    }
-
-    // MARK: - Generic API Call
-
-    private func apiCall<T: Codable>(_ method: String, params: [String: String]) async throws -> T {
+    private func apiGet<T: Codable>(_ method: String, params: [String: String]) async throws -> T {
         guard let token else { throw SlackError.noToken }
 
         var components = URLComponents(string: baseURL + method)!
-        components.queryItems = params.map { URLQueryItem(name: $0.key, value: $0.value) }
+        if !params.isEmpty {
+            components.queryItems = params.map { URLQueryItem(name: $0.key, value: $0.value) }
+        }
 
         var request = URLRequest(url: components.url!)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
         let (data, response) = try await session.data(for: request)
 
         if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 429 {
             let retryAfter = httpResponse.value(forHTTPHeaderField: "Retry-After").flatMap(Double.init) ?? 3
             try await Task.sleep(for: .seconds(retryAfter))
-            return try await apiCall(method, params: params)
+            return try await apiGet(method, params: params)
+        }
+
+        return try JSONDecoder().decode(T.self, from: data)
+    }
+
+    private func apiPost<T: Codable>(_ method: String, body: [String: Any]) async throws -> T {
+        guard let token else { throw SlackError.noToken }
+
+        var request = URLRequest(url: URL(string: baseURL + method)!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await session.data(for: request)
+
+        if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 429 {
+            let retryAfter = httpResponse.value(forHTTPHeaderField: "Retry-After").flatMap(Double.init) ?? 3
+            try await Task.sleep(for: .seconds(retryAfter))
+            return try await apiPost(method, body: body)
         }
 
         return try JSONDecoder().decode(T.self, from: data)
@@ -84,7 +102,7 @@ final class SlackService: ObservableObject {
 
         var errorDescription: String? {
             switch self {
-            case .noToken: "No Slack token. Please connect Slack in Settings."
+            case .noToken: "Slack isn't connected. Connect it in Settings to enable status updates."
             case .apiError(let msg): "Slack API error: \(msg)"
             }
         }

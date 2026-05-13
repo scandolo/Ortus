@@ -94,20 +94,21 @@ struct ScheduleRow: View {
     let onDelete: () -> Void
 
     var body: some View {
-        HStack {
+        HStack(spacing: OrtusTheme.spacingMD) {
             Button(action: onEdit) {
-                VStack(alignment: .leading, spacing: OrtusTheme.spacingXS) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(schedule.name)
-                        .font(.headline)
+                        .font(OrtusTheme.Typo.headline)
                         .foregroundStyle(.primary)
 
                     Text(daysSummary)
-                        .font(.caption)
+                        .font(OrtusTheme.Typo.caption)
                         .foregroundStyle(.secondary)
 
                     Text("\(schedule.startTimeString) \u{2013} \(schedule.endTimeString)")
-                        .font(.caption)
+                        .font(OrtusTheme.Typo.caption)
                         .foregroundStyle(.secondary)
+                        .monospacedDigit()
                 }
             }
             .buttonStyle(.plain)
@@ -116,7 +117,7 @@ struct ScheduleRow: View {
 
             Button(action: onDelete) {
                 Image(systemName: "trash")
-                    .font(.caption)
+                    .font(.system(size: 13))
                     .foregroundStyle(OrtusTheme.textMuted)
             }
             .buttonStyle(.plain)
@@ -127,6 +128,7 @@ struct ScheduleRow: View {
                 set: { onToggle($0) }
             ))
             .labelsHidden()
+            .tint(OrtusTheme.accent)
             .accessibilityLabel("\(schedule.name) enabled")
         }
     }
@@ -183,12 +185,12 @@ struct ScheduleInlineEditor: View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: OrtusTheme.spacingSM) {
                 ForEach(Weekday.allCases) { day in
                     DayToggleButton(day: day, isSelected: schedule.days.contains(day)) {
-                        if schedule.days.contains(day) {
-                            schedule.days.remove(day)
-                        } else {
-                            schedule.days.insert(day)
-                        }
-                    }
+                if schedule.days.contains(day) {
+                    schedule.days.remove(day)
+                } else {
+                    schedule.days.insert(day)
+                }
+            }
                 }
             }
 
@@ -220,18 +222,28 @@ struct DayToggleButton: View {
     let isSelected: Bool
     let onTap: () -> Void
 
+    @State private var isHovering = false
+
     var body: some View {
         Button(action: onTap) {
             Text(day.shortName)
-                .font(.caption.bold())
+                .font(OrtusTheme.Typo.badge)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, OrtusTheme.spacingSM)
                 .background(
                     RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
-                        .fill(isSelected ? OrtusTheme.accent : Color.clear)
+                        .fill(isSelected ? OrtusTheme.accent : (isHovering ? Color.primary.opacity(0.06) : .clear))
                 )
+                .overlay(
+                    RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
+                        .strokeBorder(isSelected ? .clear : OrtusTheme.hairline, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous))
                 .foregroundStyle(isSelected ? .white : .primary)
         }
         .buttonStyle(.plain)
+        .scaleEffect(isHovering ? 1.03 : 1.0)
+        .animation(.easeOut(duration: 0.15), value: isHovering)
+        .onHover { isHovering = $0 }
     }
 }

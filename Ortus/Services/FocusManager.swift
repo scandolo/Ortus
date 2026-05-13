@@ -7,6 +7,7 @@ import UserNotifications
 final class FocusManager: ObservableObject {
     @Published var isInFocus = false
     @Published var schedules: [FocusSchedule] = []
+    @Published var focusStartTime: Date?
     @Published var focusEndTime: Date?
     @Published var currentSessionName: String?
     @Published var isEmergencyEnded = false
@@ -18,6 +19,14 @@ final class FocusManager: ObservableObject {
     @AppStorage("showNotifications") var showNotifications = true
     @AppStorage("lastEmergencyEndTimestamp") var lastEmergencyEndTimestamp: Double = 0
     @AppStorage("developerModeEnabled") var developerModeEnabled = false
+
+    @AppStorage("slackStatusEnabled") var slackStatusEnabled = true
+    @AppStorage("slackStatusText") var slackStatusText = "Ortus mode"
+    @AppStorage("slackStatusEmoji") var slackStatusEmoji = ":no_entry_sign:"
+    @AppStorage("slackDndEnabled") var slackDndEnabled = true
+
+    /// Injected at app startup so focus transitions can update Slack status / DND.
+    var slackService: SlackService?
 
     private nonisolated static let slackBundleID = "com.tinyspeck.slackmacgap"
     private nonisolated static let gracePeriodDuration: TimeInterval = 30
@@ -47,14 +56,7 @@ final class FocusManager: ObservableObject {
         requestNotificationPermission()
         startScheduleEvaluation()
     }
-
-    deinit {
-        scheduleTimer?.invalidate()
-        gracePeriodTimer?.invalidate()
-        if let obs = launchObserver {
-            NSWorkspace.shared.notificationCenter.removeObserver(obs)
-        }
-    }
+    // No deinit: FocusManager is owned by @StateObject on App; lives until process exits.
 
     // MARK: - Schedule Management
 
@@ -83,6 +85,7 @@ final class FocusManager: ObservableObject {
         isEmergencyEnded = false
         originalFocusEndTime = nil
         currentSessionName = name
+        focusStartTime = Date()
 
         if let duration {
             focusEndTime = Date().addingTimeInterval(duration)
@@ -90,6 +93,7 @@ final class FocusManager: ObservableObject {
 
         killSlack()
         startMonitoringLaunches()
+        applySlackStatusForFocus()
 
         // Grace period only for manual sessions — scheduled ones are expected
         if name == "Manual Focus" {
@@ -105,9 +109,11 @@ final class FocusManager: ObservableObject {
         guard isInFocus, isInGracePeriod else { return }
         cancelGracePeriod()
         isInFocus = false
+        focusStartTime = nil
         focusEndTime = nil
         currentSessionName = nil
         stopMonitoringLaunches()
+        clearSlackStatusForFocus()
 
         if showNotifications {
             sendNotification(title: "Focus Reverted", body: "Focus session cancelled. You can reopen Slack when ready.")
@@ -144,9 +150,11 @@ final class FocusManager: ObservableObject {
         isInFocus = false
         isEmergencyEnded = false
         originalFocusEndTime = nil
+        focusStartTime = nil
         focusEndTime = nil
         currentSessionName = nil
         stopMonitoringLaunches()
+        clearSlackStatusForFocus()
 
         if relaunchSlackOnEnd {
             launchSlack()
@@ -157,6 +165,15 @@ final class FocusManager: ObservableObject {
         }
     }
 
+    /// Extends the current focus session by the given duration. No-op if not in focus or
+    /// if the session has no scheduled end time. Re-applies Slack status / DND with the new
+    /// expiration so teammates stay informed.
+    func extendFocus(by seconds: TimeInterval) {
+        guard isInFocus, seconds > 0, let currentEnd = focusEndTime else { return }
+        focusEndTime = currentEnd.addingTimeInterval(seconds)
+        applySlackStatusForFocus()
+    }
+
     func emergencyEndFocusSession() {
         guard isInFocus else { return }
         cancelGracePeriod()
@@ -165,9 +182,11 @@ final class FocusManager: ObservableObject {
         isEmergencyEnded = true
         originalFocusEndTime = focusEndTime
         isInFocus = false
+        focusStartTime = nil
         focusEndTime = nil
         currentSessionName = nil
         // Keep launch monitoring active — Slack stays blocked until natural end
+        clearSlackStatusForFocus()
 
         if showNotifications {
             sendNotification(title: "Emergency End", body: "Focus UI ended. Slack remains blocked until the scheduled end time.")
@@ -193,6 +212,7 @@ final class FocusManager: ObservableObject {
             isEmergencyEnded = false
             originalFocusEndTime = nil
             stopMonitoringLaunches()
+            clearSlackStatusForFocus()
             if relaunchSlackOnEnd {
                 launchSlack()
             }
@@ -215,6 +235,34 @@ final class FocusManager: ObservableObject {
         // Check manual session timeout
         if isInFocus, let endTime = focusEndTime, currentSessionName == "Manual Focus", Date() >= endTime {
             endFocusSession()
+        }
+    }
+
+    // MARK: - Slack Status / DND
+
+    private func applySlackStatusForFocus() {
+        guard let slackService, slackService.isConnected, slackStatusEnabled else { return }
+        let statusText = slackStatusText
+        let statusEmoji = slackStatusEmoji
+        let expiration = focusEndTime
+        let dnd = slackDndEnabled
+        let dndMinutes: Int? = focusEndTime.map { max(1, Int(($0.timeIntervalSinceNow / 60).rounded(.up))) }
+        Task {
+            try? await slackService.setStatus(text: statusText, emoji: statusEmoji, expiration: expiration)
+            if dnd, let minutes = dndMinutes {
+                try? await slackService.setSnooze(minutes: minutes)
+            }
+        }
+    }
+
+    private func clearSlackStatusForFocus() {
+        guard let slackService, slackService.isConnected else { return }
+        let wasDnd = slackDndEnabled
+        Task {
+            try? await slackService.clearStatus()
+            if wasDnd {
+                try? await slackService.endSnooze()
+            }
         }
     }
 
@@ -270,7 +318,9 @@ final class FocusManager: ObservableObject {
 
     private func requestNotificationPermission() {
         guard Bundle.main.bundleIdentifier != nil else { return }
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        Task {
+            _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
+        }
     }
 
     private func sendNotification(title: String, body: String) {

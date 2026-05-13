@@ -12,7 +12,13 @@ final class SlackOAuthService: ObservableObject {
     private var listener: NWListener?
     private var connection: NWConnection?
 
-    private let userScopes = "search:read,channels:history,groups:history,im:history,mpim:history,users:read,channels:read,groups:read"
+    private let userScopes = "users.profile:write,dnd:write"
+
+    /// Fixed loopback port for the OAuth callback. Slack matches redirect URIs exactly
+    /// (no wildcards), so a random per-launch port can't be whitelisted. This is the
+    /// port the user adds to their Slack app's Redirect URLs config.
+    nonisolated static let callbackPort: UInt16 = 53124
+    nonisolated static var callbackURL: String { "http://127.0.0.1:\(callbackPort)/callback" }
 
     init() {
         // Check if we already have a token
@@ -40,13 +46,16 @@ final class SlackOAuthService: ObservableObject {
         error = nil
 
         do {
-            let port = try startLoopbackServer()
-            let redirectURI = "http://127.0.0.1:\(port)/callback"
+            _ = try startLoopbackServer()
+            let redirectURI = Self.callbackURL
             let authURL = "https://slack.com/oauth/v2/authorize?client_id=\(clientId)&user_scope=\(userScopes)&redirect_uri=\(redirectURI.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? redirectURI)"
 
             if let url = URL(string: authURL) {
                 NSWorkspace.shared.open(url)
             }
+        } catch let err as OAuthError {
+            self.error = err.errorDescription
+            isAuthenticating = false
         } catch {
             self.error = "Failed to start OAuth server: \(error.localizedDescription)"
             isAuthenticating = false
@@ -64,9 +73,17 @@ final class SlackOAuthService: ObservableObject {
 
     private nonisolated func startLoopbackServer() throws -> UInt16 {
         let params = NWParameters.tcp
-        params.requiredLocalEndpoint = NWEndpoint.hostPort(host: .ipv4(.loopback), port: .any)
+        guard let port = NWEndpoint.Port(rawValue: Self.callbackPort) else {
+            throw OAuthError.portBindFailed
+        }
+        params.requiredLocalEndpoint = NWEndpoint.hostPort(host: .ipv4(.loopback), port: port)
 
-        let newListener = try NWListener(using: params)
+        let newListener: NWListener
+        do {
+            newListener = try NWListener(using: params)
+        } catch {
+            throw OAuthError.portInUse(Self.callbackPort)
+        }
 
         let portBox = PortBox()
 
@@ -139,9 +156,8 @@ final class SlackOAuthService: ObservableObject {
 
         sendResponse(to: connection, html: "<h1>Connected!</h1><p>You can close this tab and return to Ortus.</p><script>window.close()</script>")
 
-        // Exchange code for token
-        let port = listener?.port?.rawValue ?? 0
-        let redirectURI = "http://127.0.0.1:\(port)/callback"
+        // Exchange code for token. Must use the same redirect_uri as the authorize step.
+        let redirectURI = Self.callbackURL
 
         stopServer()
 
@@ -201,12 +217,15 @@ final class SlackOAuthService: ObservableObject {
 
     enum OAuthError: LocalizedError {
         case portBindFailed
+        case portInUse(UInt16)
         case tokenExchangeFailed(String)
 
         var errorDescription: String? {
             switch self {
             case .portBindFailed:
                 "Failed to bind loopback server port"
+            case .portInUse(let port):
+                "Port \(port) is already in use. Quit whatever is using it and try again."
             case .tokenExchangeFailed(let reason):
                 "Token exchange failed: \(reason)"
             }
