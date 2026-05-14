@@ -20,12 +20,17 @@ final class SlackOAuthService: ObservableObject {
     nonisolated static let callbackPort: UInt16 = 53124
     nonisolated static var callbackURL: String { "http://127.0.0.1:\(callbackPort)/callback" }
 
+    /// Non-secret connection state cached in UserDefaults. Reading these on launch
+    /// instead of the keychain means the app doesn't trigger a keychain prompt every
+    /// time it starts up — the actual token still lives in the keychain and is only
+    /// fetched lazily when we need to make a Slack API call.
+    private static let isConnectedKey = "ortus.slack.isConnected"
+    private static let teamNameKey = "ortus.slack.teamName"
+
     init() {
-        // Check if we already have a token
-        if KeychainService.load(.slackToken) != nil {
-            isConnected = true
-            teamName = KeychainService.load(.slackTeamName)
-        }
+        let defaults = UserDefaults.standard
+        isConnected = defaults.bool(forKey: Self.isConnectedKey)
+        teamName = defaults.string(forKey: Self.teamNameKey)
     }
 
     var clientId: String {
@@ -65,6 +70,9 @@ final class SlackOAuthService: ObservableObject {
     func disconnect() {
         KeychainService.delete(.slackToken)
         KeychainService.delete(.slackTeamName)
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: Self.isConnectedKey)
+        defaults.removeObject(forKey: Self.teamNameKey)
         isConnected = false
         teamName = nil
     }
@@ -190,8 +198,11 @@ final class SlackOAuthService: ObservableObject {
         }
 
         try KeychainService.save(authedUser.accessToken, for: .slackToken)
+        let defaults = UserDefaults.standard
+        defaults.set(true, forKey: Self.isConnectedKey)
         if let team = response.team {
             try KeychainService.save(team.name, for: .slackTeamName)
+            defaults.set(team.name, forKey: Self.teamNameKey)
             teamName = team.name
         }
         isConnected = true

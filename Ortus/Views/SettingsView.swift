@@ -42,8 +42,17 @@ struct SettingsView: View {
         }
         .toggleStyle(.switch)
         .tint(OrtusTheme.accent)
-        .onAppear {
+    }
+
+    /// Lazy keychain read: only fetch the saved Slack credentials when the user
+    /// actually opens the setup form. Pre-loading on view appearance was firing
+    /// a keychain prompt every time Settings was opened — most of the time the
+    /// values aren't even shown (setup form is hidden when already connected).
+    private func loadSlackCredentialsIfNeeded() {
+        if slackClientId.isEmpty {
             slackClientId = KeychainService.load(.slackClientId) ?? ""
+        }
+        if slackClientSecret.isEmpty {
             slackClientSecret = KeychainService.load(.slackClientSecret) ?? ""
         }
     }
@@ -94,14 +103,21 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
             OrtusSectionHeader(title: "Slack status")
 
-            Toggle("Update Slack status during focus", isOn: $focusManager.slackStatusEnabled)
-                .font(OrtusTheme.Typo.bodyMedium)
-                .disabled(!slackOAuthService.isConnected)
+            // Both toggles read as a single group: "what Ortus does in Slack
+            // during focus." The status composer + preview are customization
+            // for the first toggle and live below the group, not between them.
+            VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
+                Toggle("Update Slack status during focus", isOn: $focusManager.slackStatusEnabled)
+                    .font(OrtusTheme.Typo.bodyMedium)
+                    .disabled(!slackOAuthService.isConnected)
+
+                Toggle("Snooze notifications (Do Not Disturb)", isOn: $focusManager.slackDndEnabled)
+                    .font(OrtusTheme.Typo.bodyMedium)
+                    .disabled(!slackOAuthService.isConnected)
+            }
 
             if focusManager.slackStatusEnabled && slackOAuthService.isConnected {
                 statusComposer
-                Toggle("Snooze notifications (Do Not Disturb)", isOn: $focusManager.slackDndEnabled)
-                    .font(OrtusTheme.Typo.bodyMedium)
                 previewDisclosure
             }
 
@@ -192,6 +208,7 @@ struct SettingsView: View {
                         .foregroundStyle(.primary)
                     Spacer()
                     Button {
+                        if !showSlackSetup { loadSlackCredentialsIfNeeded() }
                         withAnimation(.easeOut(duration: 0.2)) { showSlackSetup.toggle() }
                     } label: {
                         HStack(spacing: 4) {
@@ -341,6 +358,10 @@ struct SettingsView: View {
                 }
         }
         .ortusCard()
+        // Sync the @State flag with macOS's real SMAppService registration each
+        // time Settings appears. Without this, the toggle always renders off on
+        // first open even when the app *is* registered to launch at login.
+        .onAppear { launchAtLogin = SMAppService.mainApp.status == .enabled }
     }
 
     // MARK: - Emergency
@@ -348,35 +369,42 @@ struct SettingsView: View {
     private var emergencyCard: some View {
         VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
             OrtusSectionHeader(title: "Emergency")
+
             if focusManager.canUseEmergencyEnd {
                 if showEmergencyConfirm {
-                    Text("Slack stays paused until the original end time. You can use this once per week.")
-                        .font(OrtusTheme.Typo.caption)
-                        .foregroundStyle(OrtusTheme.warning)
+                    HStack(alignment: .center, spacing: OrtusTheme.spacingMD) {
+                        Text("Slack stays paused until the original end time. You can use this once per week.")
+                            .font(OrtusTheme.Typo.caption)
+                            .foregroundStyle(OrtusTheme.warning)
+                            .fixedSize(horizontal: false, vertical: true)
 
-                    HStack {
-                        Button("Confirm end") {
-                            focusManager.emergencyEndFocusSession()
-                            showEmergencyConfirm = false
-                        }
-                        .buttonStyle(OrtusGhostButtonStyle())
-                        .foregroundStyle(OrtusTheme.warning)
+                        Spacer(minLength: 0)
 
                         Button("Cancel") {
                             showEmergencyConfirm = false
                         }
                         .buttonStyle(OrtusGhostButtonStyle())
+
+                        Button("Confirm end") {
+                            focusManager.emergencyEndFocusSession()
+                            showEmergencyConfirm = false
+                        }
+                        .buttonStyle(OrtusDestructiveButtonStyle())
                     }
                 } else {
-                    Text("Use only for genuine emergencies. Limited to once per week.")
-                        .font(OrtusTheme.Typo.caption)
-                        .foregroundStyle(.secondary)
+                    HStack(alignment: .center, spacing: OrtusTheme.spacingMD) {
+                        Text("Use only for genuine emergencies. Limited to once per week.")
+                            .font(OrtusTheme.Typo.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
 
-                    Button("Emergency end") {
-                        showEmergencyConfirm = true
+                        Spacer(minLength: 0)
+
+                        Button("Emergency end") {
+                            showEmergencyConfirm = true
+                        }
+                        .buttonStyle(OrtusDestructiveButtonStyle())
                     }
-                    .buttonStyle(OrtusGhostButtonStyle())
-                    .foregroundStyle(OrtusTheme.warning)
                 }
             } else if let nextDate = focusManager.nextEmergencyAvailableDate {
                 Text("Emergency end unavailable until \(nextDate.formatted(date: .abbreviated, time: .shortened))")
@@ -458,7 +486,13 @@ struct SettingsView: View {
                 try SMAppService.mainApp.unregister()
             }
         } catch {
-            launchAtLogin = !enabled
+            // Swallow; the re-sync below pulls the actual state from macOS.
+        }
+        // Always reconcile against the real SMAppService state — if the call
+        // failed, this snaps the toggle back to whatever macOS actually has.
+        let actual = SMAppService.mainApp.status == .enabled
+        if launchAtLogin != actual {
+            launchAtLogin = actual
         }
     }
 }

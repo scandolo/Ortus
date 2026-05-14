@@ -98,23 +98,17 @@ struct FocusView: View {
                 }
             }
 
-            HStack(spacing: OrtusTheme.spacingSM) {
-                Button {
-                    focusManager.extendFocus(by: 15 * 60)
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 10, weight: .bold))
-                        Text("15 min")
-                    }
-                }
-                .buttonStyle(OrtusSecondaryButtonStyle())
-                .help("Add 15 minutes to this focus session")
-
-                if shouldShowSlackBadge {
-                    slackSyncedBadge
+            Button {
+                focusManager.extendFocus(by: 15 * 60)
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 10, weight: .bold))
+                    Text("15 min")
                 }
             }
+            .buttonStyle(OrtusSecondaryButtonStyle())
+            .help("Add 15 minutes to this focus session")
 
             if focusManager.developerModeEnabled {
                 Button("End focus (dev)") {
@@ -189,27 +183,6 @@ struct FocusView: View {
                     .foregroundStyle(.secondary)
             }
         }
-    }
-
-    private var slackSyncedBadge: some View {
-        HStack(spacing: 5) {
-            Image(systemName: "moon.fill")
-                .font(.system(size: 10))
-                .foregroundStyle(OrtusTheme.accent)
-            Text(focusManager.slackStatusText)
-                .font(OrtusTheme.Typo.badge)
-                .foregroundStyle(.primary)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 7)
-        .background(Capsule().fill(OrtusTheme.cardSurface))
-        .overlay(Capsule().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
-        .clipShape(Capsule())
-    }
-
-    private var shouldShowSlackBadge: Bool {
-        focusManager.slackStatusEnabled
-        && (focusManager.slackService?.isConnected ?? false)
     }
 
     private func totalSessionDuration(endingAt end: Date) -> TimeInterval {
