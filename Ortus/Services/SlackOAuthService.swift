@@ -33,12 +33,33 @@ final class SlackOAuthService: ObservableObject {
         teamName = defaults.string(forKey: Self.teamNameKey)
     }
 
+    /// In-memory caches for the OAuth client credentials. These getters are
+    /// called twice during the OAuth flow (and historically on every Settings
+    /// open), so reading the keychain each time was firing the password prompt
+    /// repeatedly. After the first read per process, subsequent accesses are
+    /// served from memory.
+    private var cachedClientId: String?
+    private var cachedClientSecret: String?
+
     var clientId: String {
-        KeychainService.load(.slackClientId) ?? ""
+        if let cachedClientId { return cachedClientId }
+        let value = KeychainService.load(.slackClientId) ?? ""
+        cachedClientId = value
+        return value
     }
 
     var clientSecret: String {
-        KeychainService.load(.slackClientSecret) ?? ""
+        if let cachedClientSecret { return cachedClientSecret }
+        let value = KeychainService.load(.slackClientSecret) ?? ""
+        cachedClientSecret = value
+        return value
+    }
+
+    /// Called when the user re-saves credentials in Settings so the next read
+    /// pulls the fresh values from the keychain instead of the stale cache.
+    func invalidateCredentialsCache() {
+        cachedClientId = nil
+        cachedClientSecret = nil
     }
 
     func startOAuthFlow() {
@@ -73,8 +94,10 @@ final class SlackOAuthService: ObservableObject {
         let defaults = UserDefaults.standard
         defaults.removeObject(forKey: Self.isConnectedKey)
         defaults.removeObject(forKey: Self.teamNameKey)
+        invalidateCredentialsCache()
         isConnected = false
         teamName = nil
+        NotificationCenter.default.post(name: .ortusSlackTokenChanged, object: nil)
     }
 
     // MARK: - Loopback Server
@@ -206,6 +229,7 @@ final class SlackOAuthService: ObservableObject {
             teamName = team.name
         }
         isConnected = true
+        NotificationCenter.default.post(name: .ortusSlackTokenChanged, object: nil)
     }
 
     private func sendResponse(to connection: NWConnection, html: String) {

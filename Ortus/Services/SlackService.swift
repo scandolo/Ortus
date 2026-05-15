@@ -8,12 +8,43 @@ final class SlackService: ObservableObject {
     private let baseURL = "https://slack.com/api/"
     private let session = URLSession.shared
 
+    /// In-memory token cache. Loaded lazily from the keychain on first access
+    /// and reused for the lifetime of the process. Without this every API call
+    /// (and every `isConnected` check) hits the keychain, which can fire the
+    /// macOS password prompt repeatedly even when the ACL is healthy. A single
+    /// cached read per launch means at most one prompt instead of many.
+    private var cachedToken: String??
+
+    init() {
+        // When the OAuth service writes a fresh token (sign-in, reconnect) or
+        // clears it on sign-out, drop the in-memory cache so the next access
+        // re-reads the keychain. Without this, a reconnect would keep using
+        // the stale token from before the user changed credentials.
+        NotificationCenter.default.addObserver(
+            forName: .ortusSlackTokenChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.invalidateTokenCache() }
+        }
+    }
+
     var token: String? {
-        KeychainService.load(.slackToken)
+        if let cachedToken { return cachedToken }
+        let value = KeychainService.load(.slackToken)
+        cachedToken = value
+        return value
     }
 
     var isConnected: Bool {
         token != nil
+    }
+
+    /// Drop the in-memory token. Call this from any flow that invalidates the
+    /// saved credentials (sign-out, manual disconnect) so the next API call
+    /// re-reads the keychain instead of using a stale cached value.
+    func invalidateTokenCache() {
+        cachedToken = nil
     }
 
     // MARK: - Status & DND
@@ -96,6 +127,16 @@ final class SlackService: ObservableObject {
         return try JSONDecoder().decode(T.self, from: data)
     }
 
+}
+
+extension Notification.Name {
+    /// Posted by `SlackOAuthService` whenever the saved Slack token changes
+    /// (after OAuth completes, or after disconnect). `SlackService` listens
+    /// and drops its in-memory token cache so the next API call re-reads.
+    static let ortusSlackTokenChanged = Notification.Name("ortus.slack.tokenChanged")
+}
+
+extension SlackService {
     enum SlackError: LocalizedError {
         case noToken
         case apiError(String)
