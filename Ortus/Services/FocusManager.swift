@@ -31,24 +31,25 @@ final class FocusManager: ObservableObject {
     private nonisolated static let slackBundleID = "com.tinyspeck.slackmacgap"
     private nonisolated static let gracePeriodDuration: TimeInterval = 30
     private nonisolated static let scheduleEvaluationInterval: TimeInterval = 30
-    private nonisolated static let emergencyLockoutDuration: TimeInterval = 7 * 24 * 3600
     private var scheduleTimer: Timer?
     private var launchObserver: NSObjectProtocol?
     private var gracePeriodTimer: Timer?
 
     // MARK: - Emergency End
 
+    // Once per calendar week (resets at the start of the user's locale week,
+    // e.g. Monday 00:00 in en_GB), not a rolling 7-day window.
     var canUseEmergencyEnd: Bool {
         guard lastEmergencyEndTimestamp > 0 else { return true }
         let lastUsed = Date(timeIntervalSince1970: lastEmergencyEndTimestamp)
-        return Date().timeIntervalSince(lastUsed) > Self.emergencyLockoutDuration
+        return !Calendar.current.isDate(lastUsed, equalTo: Date(), toGranularity: .weekOfYear)
     }
 
     var nextEmergencyAvailableDate: Date? {
-        guard lastEmergencyEndTimestamp > 0 else { return nil }
-        let lastUsed = Date(timeIntervalSince1970: lastEmergencyEndTimestamp)
-        let next = lastUsed.addingTimeInterval(Self.emergencyLockoutDuration)
-        return next > Date() ? next : nil
+        guard !canUseEmergencyEnd else { return nil }
+        let calendar = Calendar.current
+        guard let startOfThisWeek = calendar.dateInterval(of: .weekOfYear, for: Date())?.start else { return nil }
+        return calendar.date(byAdding: .weekOfYear, value: 1, to: startOfThisWeek)
     }
 
     init() {
