@@ -1,0 +1,213 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="../_shared/style.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="root">
+    <!-- Capsule tab bar — matches OG ContentView -->
+    <nav class="tabbar">
+      <button class="tab active" data-tab="focus">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path d="M12 4v3M4.93 6.93l2.12 2.12M2 14h3M22 14h-3M19.07 6.93l-2.12 2.12M21 19H3M7 14a5 5 0 0 1 10 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <span>Focus</span>
+      </button>
+      <button class="tab" data-tab="settings" aria-label="Settings">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.6"/>
+          <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/>
+        </svg>
+      </button>
+    </nav>
+
+    <!-- ── FOCUS TAB ── -->
+    <section class="pane focus-pane active" data-pane="focus">
+      <!-- Idle state -->
+      <div class="idle-state">
+        <!-- Sunrise hero -->
+        <div class="sunrise-hero">
+          <div class="sunrise-glow-disc"></div>
+          <svg class="sunrise-icon" viewBox="0 0 80 80" fill="none">
+            <defs>
+              <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#FFD78A"/>
+                <stop offset="60%" stop-color="#FA9F47"/>
+                <stop offset="100%" stop-color="#E07327"/>
+              </radialGradient>
+            </defs>
+            <!-- Half sun above horizon -->
+            <path d="M14 52 A26 26 0 0 1 66 52 Z" fill="url(#sunGrad)"/>
+            <!-- Rays -->
+            <g stroke="#FA9F47" stroke-width="2.4" stroke-linecap="round" opacity="0.85">
+              <line x1="40" y1="18" x2="40" y2="10"/>
+              <line x1="20" y1="32" x2="14" y2="28"/>
+              <line x1="60" y1="32" x2="66" y2="28"/>
+              <line x1="11" y1="46" x2="4" y2="46"/>
+              <line x1="69" y1="46" x2="76" y2="46"/>
+            </g>
+            <!-- Horizon line -->
+            <line x1="6" y1="52" x2="74" y2="52" stroke="#FA9F47" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+
+        <h1 class="hero-title">Ready when you are</h1>
+
+        <!-- INTENTION CARD — the new feature, made visible -->
+        <div class="card intention-card">
+          <div class="card-head">
+            <span class="section-title">Today's intention</span>
+            <span class="badge-new">New</span>
+          </div>
+          <textarea
+            id="intention"
+            class="intention-input"
+            placeholder="What's the one thing you'll do?"
+            rows="2"
+            spellcheck="false"
+          ></textarea>
+          <div class="intention-hint" id="intention-hint">Specific beats vague.</div>
+        </div>
+
+        <!-- DURATION CARD — bespoke sunrise slider -->
+        <div class="card duration-card">
+          <span class="section-title">Duration</span>
+          <div class="sunrise-slider" id="sunrise-slider">
+            <svg class="slider-svg" viewBox="0 0 360 80" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="trackFill" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%"  stop-color="#FAE0B3"/>
+                  <stop offset="55%" stop-color="#FA9F47"/>
+                  <stop offset="100%" stop-color="#FFB86B"/>
+                </linearGradient>
+                <radialGradient id="sunThumb" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%"  stop-color="#FFE9B8"/>
+                  <stop offset="70%" stop-color="#FA9F47"/>
+                  <stop offset="100%" stop-color="#E07327"/>
+                </radialGradient>
+                <filter id="thumbGlow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="3.5"/>
+                </filter>
+              </defs>
+
+              <!-- Track background -->
+              <rect class="track-bg" x="10" y="46" width="340" height="6" rx="3" />
+
+              <!-- Track fill -->
+              <rect class="track-fill" id="trackFillRect" x="10" y="46" width="0" height="6" rx="3" fill="url(#trackFill)"/>
+
+              <!-- Tick dots -->
+              <g id="tickDots"></g>
+
+              <!-- Halo behind thumb -->
+              <circle id="thumbHalo" cx="0" cy="49" r="22" fill="#FA9F47" opacity="0.18" filter="url(#thumbGlow)"/>
+
+              <!-- Sun thumb -->
+              <circle id="thumb" cx="0" cy="49" r="11" fill="url(#sunThumb)" stroke="rgba(255,255,255,0.55)" stroke-width="1"/>
+
+              <!-- Chip with downward tail -->
+              <g id="chipGroup">
+                <path id="chipPath" fill="rgb(41,41,41)" stroke="rgba(250,159,71,0.55)" stroke-width="1"/>
+                <text id="chipText" x="0" y="20" text-anchor="middle" fill="white" font-family="ui-rounded, 'SF Pro Rounded', system-ui" font-size="13" font-weight="700"></text>
+                <text id="chipUnit" x="0" y="20" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-family="ui-rounded, 'SF Pro Rounded', system-ui" font-size="9" font-weight="600">min</text>
+              </g>
+
+              <!-- Range labels at bottom -->
+              <text x="14"  y="72" fill="rgba(255,255,255,0.42)" font-family="ui-rounded, 'SF Pro Rounded', system-ui" font-size="10" font-weight="600">15m</text>
+              <text x="346" y="72" text-anchor="end" fill="rgba(255,255,255,0.42)" font-family="ui-rounded, 'SF Pro Rounded', system-ui" font-size="10" font-weight="600">4h</text>
+            </svg>
+            <input type="range" id="duration" min="15" max="240" step="5" value="60" class="slider-input" />
+          </div>
+        </div>
+
+        <button class="btn btn-primary begin-btn" id="begin" disabled>Begin focus</button>
+
+        <div class="active-schedules muted tiny" id="active-schedules"></div>
+      </div>
+
+      <!-- Active state -->
+      <div class="active-state hidden">
+        <div class="timer-hero">
+          <div class="timer-aura" id="timer-aura"></div>
+          <div class="timer-disc">
+            <svg class="timer-ring" viewBox="0 0 200 200">
+              <circle cx="100" cy="100" r="93" fill="none" stroke="rgba(250,159,71,0.12)" stroke-width="3"/>
+              <circle id="timer-progress" cx="100" cy="100" r="93" fill="none" stroke="url(#ringGrad)" stroke-width="3" stroke-linecap="round" stroke-dasharray="584" stroke-dashoffset="0" transform="rotate(-90 100 100)"/>
+              <defs>
+                <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#FA9F47"/>
+                  <stop offset="100%" stop-color="#FFB86B"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="timer-text" id="timer-text">0:00</div>
+          </div>
+        </div>
+
+        <div class="active-meta">
+          <div class="section-title">Deep focus</div>
+          <div class="active-intent" id="active-intent">—</div>
+        </div>
+
+        <button class="btn btn-secondary extend-btn" id="extend">
+          <svg width="10" height="10" viewBox="0 0 10 10"><path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          15 min
+        </button>
+      </div>
+    </section>
+
+    <!-- ── SETTINGS TAB ── -->
+    <section class="pane settings-pane" data-pane="settings">
+      <div class="settings-scroll">
+        <div class="card setting-card">
+          <span class="section-title">Preferences</span>
+          <div class="setting-row">
+            <div>
+              <div class="setting-title">Relaunch Slack when focus ends</div>
+              <div class="setting-sub">Slack reopens automatically.</div>
+            </div>
+            <label class="switch"><input type="checkbox" id="relaunchToggle"/><span class="switch-track"></span></label>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-title">Developer mode</div>
+              <div class="setting-sub">Adds an end-focus button to the timer.</div>
+            </div>
+            <label class="switch"><input type="checkbox" id="devToggle"/><span class="switch-track"></span></label>
+          </div>
+        </div>
+
+        <div class="card setting-card" id="emergency-card-wrap">
+          <span class="section-title">Emergency</span>
+          <div class="setting-sub" style="margin-bottom: 10px;">
+            One use per week. Slack stays paused until the original end time even after you use it.
+          </div>
+          <button class="btn btn-danger emergency-btn" id="emergency">End focus now</button>
+        </div>
+
+        <div class="card setting-card">
+          <div class="card-head">
+            <span class="section-title">Intention ledger</span>
+            <span class="ledger-count" id="ledger-count">0</span>
+          </div>
+          <div id="ledger-list" class="ledger-list">
+            <div class="ledger-empty muted tiny">No intentions yet. Start a focus session.</div>
+          </div>
+        </div>
+
+        <div class="card setting-card about-card">
+          <div class="about-brand">
+            <span class="brand-sun"></span>
+            <span class="brand-text">Ortus Next</span>
+            <span class="version">v0.1.0</span>
+          </div>
+          <div class="about-tagline" id="about-tagline">First light. First task.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script src="main.js"></script>
+</body>
+</html>

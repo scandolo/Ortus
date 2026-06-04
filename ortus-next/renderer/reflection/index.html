@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="../_shared/style.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main id="root">
+    <div class="eyebrow">Focus complete</div>
+    <h2>How did it go?</h2>
+    <div class="intent-recall" id="intent-recall">—</div>
+
+    <div class="outcomes">
+      <button class="outcome-btn" data-outcome="shipped">
+        <div class="oc-emoji">✓</div>
+        <div class="oc-label">Shipped it</div>
+      </button>
+      <button class="outcome-btn" data-outcome="partial">
+        <div class="oc-emoji">◐</div>
+        <div class="oc-label">Partial</div>
+      </button>
+      <button class="outcome-btn" data-outcome="stuck">
+        <div class="oc-emoji">∅</div>
+        <div class="oc-label">Stuck</div>
+      </button>
+      <button class="outcome-btn" data-outcome="pulled-away">
+        <div class="oc-emoji">↗</div>
+        <div class="oc-label">Pulled away</div>
+      </button>
+    </div>
+
+    <input class="input note" id="note" placeholder="Optional: what got in the way, or what worked." />
+
+    <div class="actions">
+      <button class="btn btn-ghost" id="skip">Skip</button>
+      <button class="btn btn-primary" id="save" disabled>Save reflection</button>
+    </div>
+  </main>
+  <script src="main.js"></script>
+</body>
+</html>

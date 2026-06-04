@@ -1,0 +1,25 @@
+{
+  "name": "ortus-next",
+  "version": "0.1.0",
+  "description": "Ortus rebuilt on Loom's architecture pattern: Electron shell + multi-window surfaces + native-feel sidecar via subprocess",
+  "main": "main.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --enable-logging"
+  },
+  "build": {
+    "appId": "app.ortus.next",
+    "productName": "Ortus Next",
+    "mac": {
+      "category": "public.app-category.productivity",
+      "extendInfo": {
+        "LSUIElement": true
+      }
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  },
+  "dependencies": {}
+}
