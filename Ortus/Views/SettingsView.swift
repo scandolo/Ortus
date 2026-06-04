@@ -373,7 +373,7 @@ struct SettingsView: View {
             if focusManager.canUseEmergencyEnd {
                 if showEmergencyConfirm {
                     HStack(alignment: .center, spacing: OrtusTheme.spacingMD) {
-                        Text("Slack stays paused until the original end time. You can use this once per week.")
+                        Text("Ends focus now and lets you back into Slack. You can use this once per week.")
                             .font(OrtusTheme.Typo.caption)
                             .foregroundStyle(OrtusTheme.warning)
                             .fixedSize(horizontal: false, vertical: true)
@@ -459,7 +459,7 @@ struct SettingsView: View {
                             .foregroundStyle(OrtusTheme.warning)
                     }
 
-                    if focusManager.isInFocus || focusManager.isEmergencyEnded {
+                    if focusManager.isInFocus {
                         Text("Cannot quit during focus")
                             .font(OrtusTheme.Typo.meta)
                             .foregroundStyle(.secondary)
@@ -472,7 +472,7 @@ struct SettingsView: View {
                     NSApplication.shared.terminate(nil)
                 }
                 .buttonStyle(OrtusDestructiveButtonStyle())
-                .disabled(focusManager.isInFocus || focusManager.isEmergencyEnded)
+                .disabled(focusManager.isInFocus)
             }
         }
         .ortusCard()
