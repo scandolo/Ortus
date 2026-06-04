@@ -7,9 +7,7 @@ struct FocusView: View {
 
     var body: some View {
         VStack(spacing: OrtusTheme.spacingLG) {
-            if focusManager.isEmergencyEnded {
-                emergencyEndedState
-            } else if focusManager.isInFocus && focusManager.isInGracePeriod {
+            if focusManager.isInFocus && focusManager.isInGracePeriod {
                 gracePeriodState
             } else if focusManager.isInFocus {
                 activeFocusState
@@ -190,48 +188,6 @@ struct FocusView: View {
             return max(end.timeIntervalSince(start), 1)
         }
         return max(end.timeIntervalSinceNow * 2, 60 * 15)
-    }
-
-    // MARK: - Emergency Ended
-
-    private var emergencyEndedState: some View {
-        VStack(spacing: OrtusTheme.spacingMD) {
-            ZStack {
-                Circle()
-                    .fill(OrtusTheme.warning.opacity(0.14))
-                    .frame(width: 120, height: 120)
-
-                Image(systemName: "exclamationmark.circle.fill")
-                    .font(.system(size: 48))
-                    .foregroundStyle(OrtusTheme.warning)
-                    .symbolRenderingMode(.hierarchical)
-            }
-
-            Text("Slack still paused")
-                .font(OrtusTheme.Typo.title)
-
-            if let originalEnd = focusManager.originalFocusEndTime {
-                TimelineView(.periodic(from: .now, by: 1)) { context in
-                    let remaining = originalEnd.timeIntervalSince(context.date)
-                    if remaining > 0 {
-                        Text("Unblocks in \(formatDuration(remaining))")
-                            .font(OrtusTheme.Typo.bodyMedium)
-                            .monospacedDigit()
-                            .foregroundStyle(OrtusTheme.warning)
-                    } else {
-                        Text("Unblocking")
-                            .font(OrtusTheme.Typo.body)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-
-            Text("Focus ended early. Slack stays paused until the original time.")
-                .font(OrtusTheme.Typo.body)
-                .foregroundStyle(OrtusTheme.textMuted)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, OrtusTheme.spacingLG)
-        }
     }
 
     // MARK: - Idle

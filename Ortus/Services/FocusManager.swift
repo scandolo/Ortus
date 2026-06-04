@@ -20,6 +20,13 @@ final class FocusManager: ObservableObject {
     @AppStorage("lastEmergencyEndTimestamp") var lastEmergencyEndTimestamp: Double = 0
     @AppStorage("developerModeEnabled") var developerModeEnabled = false
 
+    /// When an emergency end happens during a *scheduled* focus block, we record the
+    /// block's original end time here so the schedule evaluator won't auto-restart
+    /// focus until it passes. Persisted (not just in-memory) so quitting/reopening
+    /// Ortus — or a crash — can't be used to bypass the emergency end and re-trap you.
+    /// 0 means "no active suppression".
+    @AppStorage("emergencyScheduleSuppressUntil") var emergencyScheduleSuppressUntil: Double = 0
+
     @AppStorage("slackStatusEnabled") var slackStatusEnabled = true
     @AppStorage("slackStatusText") var slackStatusText = "Ortus mode"
     @AppStorage("slackStatusEmoji") var slackStatusEmoji = ":no_entry_sign:"
@@ -180,17 +187,27 @@ final class FocusManager: ObservableObject {
         cancelGracePeriod()
 
         lastEmergencyEndTimestamp = Date().timeIntervalSince1970
+        // `isEmergencyEnded` + `originalFocusEndTime` now serve ONE purpose: stop a
+        // *scheduled* focus block from auto-restarting within ~30s (see
+        // evaluateSchedules). They no longer keep Slack blocked. The deadline is also
+        // persisted so a restart can't bypass the suppression and re-trap you.
         isEmergencyEnded = true
         originalFocusEndTime = focusEndTime
+        emergencyScheduleSuppressUntil = focusEndTime?.timeIntervalSince1970 ?? 0
         isInFocus = false
         focusStartTime = nil
         focusEndTime = nil
         currentSessionName = nil
-        // Keep launch monitoring active — Slack stays blocked until natural end
+
+        // The whole point of an emergency end: actually let the user back into Slack.
+        // Stop the relaunch-kill monitor and bring Slack back now. The once-per-week
+        // rate limit is the only friction — once you've spent it, it must work.
+        stopMonitoringLaunches()
         clearSlackStatusForFocus()
+        launchSlack()
 
         if showNotifications {
-            sendNotification(title: "Emergency End", body: "Focus UI ended. Slack remains blocked until the scheduled end time.")
+            sendNotification(title: "Focus Ended", body: "Slack is available again.")
         }
     }
 
@@ -208,24 +225,23 @@ final class FocusManager: ObservableObject {
     private func evaluateSchedules() {
         let now = Date()
 
-        // Clean up emergency-ended state once the original end time has passed
+        // Has the emergency-end suppression window elapsed? Lift it (persisted +
+        // in-memory) so normal schedule evaluation resumes from here on.
+        let suppressingScheduleRestart = emergencyScheduleSuppressUntil > now.timeIntervalSince1970
+        if !suppressingScheduleRestart && emergencyScheduleSuppressUntil > 0 {
+            emergencyScheduleSuppressUntil = 0
+        }
         if isEmergencyEnded, let originalEnd = originalFocusEndTime, now >= originalEnd {
             isEmergencyEnded = false
             originalFocusEndTime = nil
-            stopMonitoringLaunches()
-            clearSlackStatusForFocus()
-            if relaunchSlackOnEnd {
-                launchSlack()
-            }
-            if showNotifications {
-                sendNotification(title: "Focus Period Over", body: "Slack is available again.")
-            }
-            return
         }
 
         let anyScheduleActive = schedules.contains { $0.isActiveNow(date: now) }
 
-        if anyScheduleActive && !isInFocus && !isEmergencyEnded {
+        // Don't auto-(re)start a scheduled block while an emergency-end suppression
+        // is still in effect — otherwise the schedule would re-trap you seconds after
+        // you bailed (and a restart would do the same).
+        if anyScheduleActive && !isInFocus && !suppressingScheduleRestart {
             let activeSchedule = schedules.first { $0.isActiveNow(date: now) }
             focusEndTime = activeSchedule?.nextEndTime(from: now)
             startFocusSession(name: activeSchedule?.name ?? "Scheduled Focus")
@@ -296,7 +312,7 @@ final class FocusManager: ObservableObject {
             guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
                   app.bundleIdentifier == Self.slackBundleID else { return }
             Task { @MainActor [weak self] in
-                guard let self, self.isInFocus || self.isEmergencyEnded else { return }
+                guard let self, self.isInFocus else { return }
                 try? await Task.sleep(for: .milliseconds(500))
                 if !app.terminate() {
                     app.forceTerminate()
