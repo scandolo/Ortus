@@ -422,6 +422,9 @@ struct SettingsView: View {
             OrtusSectionHeader(title: "About")
 
             HStack(alignment: .center, spacing: OrtusTheme.spacingMD) {
+                OrtusSunmark(showGlow: false)
+                    .frame(width: 34, height: 34)
+
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Button {

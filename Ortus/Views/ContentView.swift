@@ -1,17 +1,19 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject var focusManager: FocusManager
     @State private var selectedTab = 0
+    @Namespace private var navNamespace
 
-    private let tabs: [(String, String, Int)] = [
-        ("Focus", "sunrise.fill", 0),
-        ("Schedule", "calendar", 1),
-        ("Chat", "bubble.left.fill", 2),
+    private let tabs: [NavItem] = [
+        NavItem(title: "Focus",    icon: "sunrise",        selectedIcon: "sunrise.fill",        tag: 0),
+        NavItem(title: "Schedule", icon: "calendar",       selectedIcon: "calendar",            tag: 1),
+        NavItem(title: "Chat",     icon: "bubble.left",    selectedIcon: "bubble.left.fill",    tag: 2),
     ]
 
     var body: some View {
         VStack(spacing: 0) {
-            tabBar
+            navBar
 
             Group {
                 switch selectedTab {
@@ -24,80 +26,125 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .transition(.opacity)
+            .id(selectedTab)
+            .animation(OrtusTheme.Motion.enter, value: selectedTab)
         }
         .frame(width: 420, height: 560)
         .background(VibrantBackground())
     }
 
-    // MARK: - Tab Bar
+    // MARK: - Floating segmented nav
 
-    private var tabBar: some View {
-        HStack(spacing: 4) {
-            ForEach(tabs, id: \.2) { title, icon, tag in
-                TabButton(
-                    title: title,
-                    icon: icon,
-                    isSelected: selectedTab == tag
+    private var navBar: some View {
+        HStack(spacing: 2) {
+            ForEach(tabs) { item in
+                NavSegment(
+                    item: item,
+                    isSelected: selectedTab == item.tag,
+                    namespace: navNamespace
                 ) {
-                    withAnimation(.easeOut(duration: 0.18)) { selectedTab = tag }
+                    select(item.tag)
                 }
             }
 
-            SettingsGearButton(isSelected: selectedTab == 3) {
-                withAnimation(.easeOut(duration: 0.18)) { selectedTab = 3 }
+            // hairline spacer between primary tabs and the settings gear
+            Rectangle()
+                .fill(OrtusTheme.hairline)
+                .frame(width: 1, height: 18)
+                .padding(.horizontal, 2)
+
+            NavGear(isSelected: selectedTab == 3, namespace: navNamespace) {
+                select(3)
             }
         }
         .padding(4)
-        .background(Capsule().fill(OrtusTheme.cardSurface))
-        .overlay(Capsule().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
+        .background(
+            Capsule()
+                .fill(OrtusTheme.cardRaised)
+                .overlay(Capsule().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
+                .overlay(
+                    Capsule().strokeBorder(
+                        LinearGradient(colors: [OrtusTheme.innerHighlight, .clear],
+                                       startPoint: .top, endPoint: .bottom),
+                        lineWidth: 1
+                    )
+                )
+        )
         .clipShape(Capsule())
-        .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
+        .modifier(NavShadow())
         .padding(.horizontal, OrtusTheme.spacingMD)
         .padding(.top, OrtusTheme.spacingLG)
         .padding(.bottom, OrtusTheme.spacingSM)
     }
+
+    private func select(_ tag: Int) {
+        withAnimation(OrtusTheme.Motion.springy) { selectedTab = tag }
+    }
 }
 
-// MARK: - Tab Button
+private struct NavShadow: ViewModifier {
+    func body(content: Content) -> some View { OrtusTheme.Elevation.e2(content) }
+}
 
-private struct TabButton: View {
+// MARK: - Nav model
+
+private struct NavItem: Identifiable {
     let title: String
     let icon: String
+    let selectedIcon: String
+    let tag: Int
+    var id: Int { tag }
+}
+
+// MARK: - Primary segment
+
+private struct NavSegment: View {
+    let item: NavItem
     let isSelected: Bool
+    let namespace: Namespace.ID
     let action: () -> Void
 
     @State private var isHovering = false
 
     var body: some View {
         Button(action: action) {
-            Label(title, systemImage: icon)
-                .labelStyle(.titleAndIcon)
-                .font(OrtusTheme.Typo.bodyMedium)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 4)
-                .background(
-                    Capsule()
-                        .fill(isSelected ? OrtusTheme.accent.opacity(0.18) : (isHovering ? Color.primary.opacity(0.05) : .clear))
-                )
-                .overlay(
-                    Capsule()
-                        .strokeBorder(isSelected ? OrtusTheme.accent.opacity(0.30) : .clear, lineWidth: 1)
-                )
-                .clipShape(Capsule())
-                .contentShape(Capsule())
-                .foregroundStyle(isSelected ? OrtusTheme.accent : .secondary)
+            HStack(spacing: 6) {
+                Image(systemName: isSelected ? item.selectedIcon : item.icon)
+                    .font(.system(size: 12, weight: .semibold))
+                    .symbolRenderingMode(.hierarchical)
+                Text(item.title)
+                    .font(OrtusTheme.Typo.bodyMedium)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .padding(.horizontal, 4)
+            .background(selectionBackground)
+            .contentShape(Capsule())
+            .foregroundStyle(isSelected ? OrtusTheme.accent : (isHovering ? .primary : .secondary))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(title)
+        .accessibilityLabel(item.title)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .onHover { isHovering = $0 }
+    }
+
+    @ViewBuilder private var selectionBackground: some View {
+        if isSelected {
+            Capsule()
+                .fill(OrtusTheme.accentSoft)
+                .overlay(Capsule().strokeBorder(OrtusTheme.accent.opacity(0.30), lineWidth: 1))
+                .matchedGeometryEffect(id: "navSelection", in: namespace)
+        } else if isHovering {
+            Capsule().fill(Color.primary.opacity(0.05))
+        }
     }
 }
 
-// MARK: - Settings Gear
+// MARK: - Settings gear
 
-private struct SettingsGearButton: View {
+private struct NavGear: View {
     let isSelected: Bool
+    let namespace: Namespace.ID
     let action: () -> Void
 
     @State private var isHovering = false
@@ -105,22 +152,27 @@ private struct SettingsGearButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: isSelected ? "gearshape.fill" : "gearshape")
-                .font(.system(size: 14, weight: .medium))
+                .font(.system(size: 13, weight: .semibold))
+                .symbolRenderingMode(.hierarchical)
                 .frame(width: 38, height: 32)
-                .background(
-                    Capsule()
-                        .fill(isSelected ? OrtusTheme.accent.opacity(0.18) : (isHovering ? Color.primary.opacity(0.05) : .clear))
-                )
-                .overlay(
-                    Capsule()
-                        .strokeBorder(isSelected ? OrtusTheme.accent.opacity(0.30) : .clear, lineWidth: 1)
-                )
-                .clipShape(Capsule())
+                .background(background)
                 .contentShape(Capsule())
-                .foregroundStyle(isSelected ? OrtusTheme.accent : .secondary)
+                .foregroundStyle(isSelected ? OrtusTheme.accent : (isHovering ? .primary : .secondary))
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Settings")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .onHover { isHovering = $0 }
+    }
+
+    @ViewBuilder private var background: some View {
+        if isSelected {
+            Capsule()
+                .fill(OrtusTheme.accentSoft)
+                .overlay(Capsule().strokeBorder(OrtusTheme.accent.opacity(0.30), lineWidth: 1))
+                .matchedGeometryEffect(id: "navSelection", in: namespace)
+        } else if isHovering {
+            Capsule().fill(Color.primary.opacity(0.05))
+        }
     }
 }

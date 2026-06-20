@@ -41,11 +41,27 @@ pkill -f Ortus 2>/dev/null || true
 swift build
 
 APP_DIR="Ortus.app/Contents/MacOS"
+RES_DIR="Ortus.app/Contents/Resources"
 rm -rf Ortus.app
-mkdir -p "$APP_DIR"
+mkdir -p "$APP_DIR" "$RES_DIR"
 cp .build/debug/Ortus "$APP_DIR/Ortus"
 chmod +x "$APP_DIR/Ortus"   # source may have been chmod -x'd by a prior run
 cp Ortus/Info.plist Ortus.app/Contents/Info.plist
+
+# Build the Finder app icon (AppIcon.icns) from the asset catalog's PNGs.
+# The .appiconset filenames already follow Apple's .iconset naming convention,
+# so we just copy the PNGs into a temp .iconset and run iconutil. This is what
+# makes the custom Ortus sunmark show up in Finder / Get Info / cmd-tab.
+ICONSET_SRC="Ortus/Assets.xcassets/AppIcon.appiconset"
+if [ -d "$ICONSET_SRC" ] && command -v iconutil >/dev/null 2>&1; then
+    TMP_ICONSET=$(mktemp -d)/AppIcon.iconset
+    mkdir -p "$TMP_ICONSET"
+    cp "$ICONSET_SRC"/icon_*.png "$TMP_ICONSET"/ 2>/dev/null || true
+    iconutil -c icns "$TMP_ICONSET" -o "$RES_DIR/AppIcon.icns" 2>/dev/null \
+        && echo "→ Bundled AppIcon.icns" \
+        || echo "⚠︎ iconutil failed; app will use a generic icon"
+    rm -rf "$(dirname "$TMP_ICONSET")"
+fi
 
 # Sign with the stable cert so keychain ACLs persist across rebuilds.
 codesign --force --sign "$SIGNING_IDENTITY" \

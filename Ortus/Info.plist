@@ -6,6 +6,8 @@
 	<string>com.ortus.app</string>
 	<key>CFBundleName</key>
 	<string>Ortus</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleExecutable</key>
 	<string>Ortus</string>
 	<key>CFBundlePackageType</key>

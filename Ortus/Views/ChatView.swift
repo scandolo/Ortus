@@ -18,7 +18,7 @@ struct ChatView: View {
                 OrtusEmptyState(
                     icon: "sparkles",
                     title: "Ask about Slack",
-                    message: "Catch up on channels, search messages, or send replies without unblocking Slack"
+                    message: "Catch up on channels, search, or reply — all without unblocking Slack."
                 )
             } else {
                 messageList
@@ -109,7 +109,7 @@ struct ChatView: View {
 
     private var inputBarBackground: some View {
         Capsule()
-            .fill(OrtusTheme.cardSurface)
+            .fill(OrtusTheme.cardRaised)
             .overlay(
                 Capsule()
                     .fill(isBarHovering && !isInputFocused ? Color.primary.opacity(0.04) : .clear)

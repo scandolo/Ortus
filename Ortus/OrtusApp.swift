@@ -36,6 +36,10 @@ struct OrtusApp: App {
                     focusManager.slackService = slackService
                 }
         } label: {
+            // SF Symbol "sunrise" is the HIG-correct menu-bar glyph: it auto-tints
+            // for light/dark menu bars and inverts on selection, and it's literally
+            // a sunrise — on-brand for Ortus. The custom sunmark lives in-app, in
+            // the app icon, and on the website.
             Image(systemName: focusManager.isInFocus ? "sunrise.fill" : "sunrise")
         }
         .menuBarExtraStyle(.window)

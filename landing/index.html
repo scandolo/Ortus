@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ortus — Slack, gone. Until you're done.</title>
+
+  <!-- SEO / social -->
+  <meta name="description" content="Ortus is a macOS menu-bar app that kills Slack during focus hours. Not muted — terminated. It comes back automatically when your focus ends. Free & open source." />
+  <meta name="theme-color" content="#151418" />
+  <meta name="color-scheme" content="dark" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Ortus — Slack, gone. Until you're done." />
+  <meta property="og:description" content="A macOS menu-bar app that terminates Slack during focus hours, syncs your status & DND, and brings it back when you're done. Free & open source." />
+  <meta property="og:image" content="assets/sunmark.svg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Ortus — Slack, gone. Until you're done." />
+  <meta name="twitter:description" content="Kill Slack during focus hours. It can't come back until you're done." />
+
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ============================== TOP NAV ============================== -->
+  <header class="nav" id="nav">
+    <div class="nav__inner">
+      <a class="nav__brand" href="#top" aria-label="Ortus — home">
+        <span class="nav__mark" aria-hidden="true">
+          <!-- sunmark (verbatim line language) -->
+          <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="navDawn" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#2B294D"/>
+                <stop offset="0.4" stop-color="#A8457D"/>
+                <stop offset="0.72" stop-color="#E36333"/>
+                <stop offset="1" stop-color="#F7BC63"/>
+              </linearGradient>
+            </defs>
+            <path d="M28.5 66 A21.5 21.5 0 0 1 71.5 66 Z" fill="url(#navDawn)"/>
+            <g stroke="url(#navDawn)" stroke-width="6.5" stroke-linecap="round">
+              <line x1="10" y1="66" x2="18.8" y2="66"/>
+              <line x1="81.2" y1="66" x2="90" y2="66"/>
+              <line x1="50" y1="37.6" x2="50" y2="17.2"/>
+              <line x1="33.3" y1="43.0" x2="23.5" y2="29.5"/>
+              <line x1="66.7" y1="43.0" x2="76.5" y2="29.5"/>
+              <line x1="23.7" y1="55.4" x2="12.1" y2="50.7"/>
+              <line x1="76.3" y1="55.4" x2="87.9" y2="50.7"/>
+            </g>
+          </svg>
+        </span>
+        <span class="nav__word">Ortus</span>
+      </a>
+
+      <nav class="nav__links" aria-label="Primary">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#faq">FAQ</a>
+        <a class="btn btn--capsule" href="https://github.com/scandolo/Ortus" target="_blank" rel="noopener">Get Ortus</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- ============================== HERO ============================== -->
+    <section class="hero" aria-labelledby="hero-title">
+      <!-- cinematic dawn horizon glow -->
+      <div class="hero__glow" aria-hidden="true"></div>
+      <div class="hero__horizon" aria-hidden="true"></div>
+
+      <div class="hero__inner">
+        <div class="hero__copy reveal">
+          <p class="eyebrow">macOS menu-bar · Deep work</p>
+          <h1 class="hero__title" id="hero-title">
+            Slack, gone.<br />
+            Until <span class="grad-text">you're done.</span>
+          </h1>
+          <p class="hero__sub">
+            Ortus doesn't mute Slack — it <strong>terminates</strong> it during your focus hours.
+            No notifications, no "just one peek." It comes back on its own when you're done.
+          </p>
+
+          <div class="hero__cta">
+            <a class="btn btn--primary" href="https://github.com/scandolo/Ortus" target="_blank" rel="noopener">
+              <span class="btn__icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3v12" /><path d="m7 11 5 5 5-5" /><path d="M5 20h14" />
+                </svg>
+              </span>
+              Download for macOS
+            </a>
+            <a class="btn btn--ghost" href="https://github.com/scandolo/Ortus" target="_blank" rel="noopener">
+              <span class="btn__icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12 12 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21" />
+                </svg>
+              </span>
+              View on GitHub
+            </a>
+          </div>
+
+          <p class="hero__meta">macOS 14+ · Free &amp; open source · No dock icon</p>
+        </div>
+
+        <!-- ===== APP POPOVER MOCK (the proof) ===== -->
+        <div class="hero__device reveal" aria-hidden="true">
+          <div class="popover">
+            <!-- floating capsule tab bar -->
+            <div class="popover__tabs">
+              <button class="tab tab--active" type="button" tabindex="-1">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="13" r="7" /><path d="M12 13V9" /><path d="M9 2h6" /><path d="m19 5 1.5-1.5" />
+                </svg>
+                Focus
+              </button>
+              <button class="tab" type="button" tabindex="-1">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="5" width="18" height="16" rx="2.5" /><path d="M3 9h18" /><path d="M8 3v4" /><path d="M16 3v4" />
+                </svg>
+                Schedule
+              </button>
+              <button class="tab" type="button" tabindex="-1">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 12a8 8 0 0 1-11.5 7.2L4 21l1.8-5.5A8 8 0 1 1 21 12Z" />
+                </svg>
+                Chat
+              </button>
+              <button class="tab tab--icon" type="button" tabindex="-1" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- FOCUS screen -->
+            <div class="popover__screen">
+              <p class="popover__eyebrow">Deep focus</p>
+
+              <div class="timer">
+                <div class="timer__glow"></div>
+                <div class="timer__ring">
+                  <div class="timer__center">
+                    <span class="timer__time">52:00</span>
+                    <span class="timer__label">remaining</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="popover__row">
+                <span class="pill">Slack terminated</span>
+                <span class="pill pill--accent">+15 min</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== TRUST STRIP ============================== -->
+    <section class="trust" aria-label="Why termination beats muting">
+      <p class="trust__line reveal">
+        Muting is a promise you make to yourself. <span class="grad-text">Termination is a decision you can't undo.</span>
+        Ortus closes the door — and keeps it closed.
+      </p>
+    </section>
+
+    <!-- ============================== FEATURES ============================== -->
+    <section class="features" id="features" aria-labelledby="features-title">
+      <div class="section-head reveal">
+        <p class="eyebrow">Features</p>
+        <h2 class="section-title" id="features-title">Built to remove the temptation, not just the noise.</h2>
+      </div>
+
+      <div class="bento">
+        <!-- 1 — wide: kills slack -->
+        <article class="card card--wide reveal">
+          <span class="card__icon" aria-hidden="true">
+            <!-- target / strike-through -->
+            <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="16" cy="16" r="11" /><circle cx="16" cy="16" r="5.5" />
+              <path d="M6.5 6.5 25.5 25.5" />
+            </svg>
+          </span>
+          <h3 class="card__title">Kills Slack, keeps it dead</h3>
+          <p class="card__body">
+            The moment focus begins, Ortus terminates the Slack app. Relaunch it and Ortus
+            re-kills it instantly. There is no notification to peek at because there is no Slack to peek at.
+          </p>
+        </article>
+
+        <!-- 2 — no escape hatch -->
+        <article class="card reveal">
+          <span class="card__icon" aria-hidden="true">
+            <!-- locked -->
+            <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6.5" y="14" width="19" height="13" rx="3" />
+              <path d="M11 14v-3a5 5 0 0 1 10 0v3" />
+              <path d="M16 19.5v3" />
+            </svg>
+          </span>
+          <h3 class="card__title">No escape hatch</h3>
+          <p class="card__body">
+            There's no "End Focus" button. Quitting Ortus is blocked while you're in focus.
+            Emergency end is hidden and limited to once per week.
+          </p>
+        </article>
+
+        <!-- 3 — scheduled & manual -->
+        <article class="card reveal">
+          <span class="card__icon" aria-hidden="true">
+            <!-- sunrise slider -->
+            <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 22h24" />
+              <path d="M10 22a6 6 0 0 1 12 0" />
+              <path d="M16 9v3" /><path d="M8.5 12.5 10 14" /><path d="M23.5 12.5 22 14" />
+              <circle cx="22" cy="22" r="2.6" fill="currentColor" stroke="none" />
+            </svg>
+          </span>
+          <h3 class="card__title">Scheduled &amp; manual focus</h3>
+          <p class="card__body">
+            Set recurring focus hours — weekdays 9–12, say — so it just happens. Or start now
+            with a sunrise slider, anywhere from 15 minutes to 4 hours.
+          </p>
+        </article>
+
+        <!-- 4 — status sync -->
+        <article class="card reveal">
+          <span class="card__icon" aria-hidden="true">
+            <!-- status dot + sync -->
+            <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M27 16a11 11 0 1 1-3.6-8.1" />
+              <path d="M27 6v5h-5" />
+              <circle cx="16" cy="16" r="3.2" fill="currentColor" stroke="none" />
+            </svg>
+          </span>
+          <h3 class="card__title">Slack status sync</h3>
+          <p class="card__body">
+            Before it closes Slack, Ortus sets your status and turns on Do&nbsp;Not&nbsp;Disturb,
+            so your team knows you're heads-down. Both clear automatically when focus ends.
+          </p>
+        </article>
+
+        <!-- 5 — wide: AI assistant -->
+        <article class="card card--wide reveal">
+          <span class="card__icon" aria-hidden="true">
+            <!-- chat spark -->
+            <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M27 16a9.5 9.5 0 0 1-13.7 8.5L7 26.5l2-5.4A9.5 9.5 0 1 1 27 16Z" />
+              <path d="M16 11v2.5M16 18.5V21M11 16h2.5M18.5 16H21" />
+            </svg>
+          </span>
+          <h3 class="card__title">AI Slack assistant</h3>
+          <p class="card__body">
+            Need to catch up without opening the floodgates? Chat with your Slack through your
+            local Claude Code and its Slack MCP — read threads, get summaries, draft replies — all
+            without unblocking the app. No API key is ever stored in Ortus.
+          </p>
+        </article>
+
+        <!-- 6 — menu-bar native -->
+        <article class="card reveal">
+          <span class="card__icon" aria-hidden="true">
+            <!-- menu bar -->
+            <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="6" width="24" height="20" rx="3" />
+              <path d="M4 11h24" />
+              <path d="M22 8.5h.01M19 8.5h.01" />
+            </svg>
+          </span>
+          <h3 class="card__title">Menu-bar native</h3>
+          <p class="card__body">
+            Lives quietly in your menu bar — no dock icon, no clutter. Pure SwiftUI, zero
+            dependencies, macOS 14 and up.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============================== HOW IT WORKS ============================== -->
+    <section class="how" id="how" aria-labelledby="how-title">
+      <div class="section-head reveal">
+        <p class="eyebrow">How it works</p>
+        <h2 class="section-title" id="how-title">Three moments. Zero willpower required.</h2>
+      </div>
+
+      <ol class="steps">
+        <li class="step reveal">
+          <span class="step__num" aria-hidden="true">1</span>
+          <h3 class="step__title">Focus activates</h3>
+          <p class="step__body">On a schedule you set, or the moment you start a manual session with the slider.</p>
+        </li>
+        <li class="step reveal">
+          <span class="step__num" aria-hidden="true">2</span>
+          <h3 class="step__title">Slack goes dark</h3>
+          <p class="step__body">Ortus sets your status &amp; DND, then terminates Slack — and re-kills it if it dares come back.</p>
+        </li>
+        <li class="step reveal">
+          <span class="step__num" aria-hidden="true">3</span>
+          <h3 class="step__title">First light returns</h3>
+          <p class="step__body">When focus ends, your status clears and Slack is free to open again. Nothing to remember.</p>
+        </li>
+      </ol>
+    </section>
+
+    <!-- ============================== FAQ ============================== -->
+    <section class="faq" id="faq" aria-labelledby="faq-title">
+      <div class="section-head reveal">
+        <p class="eyebrow">FAQ</p>
+        <h2 class="section-title" id="faq-title">The honest details.</h2>
+      </div>
+
+      <div class="faq__list reveal">
+        <details class="qa">
+          <summary>What if there's a real emergency?</summary>
+          <p>There's a hidden emergency end, deliberately limited to once per calendar week. It exists for genuine emergencies — not for the 3pm urge to "just check one thing."</p>
+        </details>
+        <details class="qa">
+          <summary>Does Ortus read my Slack messages?</summary>
+          <p>No. Ortus only sets your status and Do&nbsp;Not&nbsp;Disturb. The optional AI assistant runs through your own local Claude Code and its Slack MCP — Ortus never stores an API key or your message content.</p>
+        </details>
+        <details class="qa">
+          <summary>Can't I just quit the app to get Slack back?</summary>
+          <p>No. Quitting Ortus is blocked during an active focus session. That's the whole point — the escape hatch is removed on purpose.</p>
+        </details>
+        <details class="qa">
+          <summary>What does it cost?</summary>
+          <p>Nothing. Ortus is free and open source. You can read every line on GitHub and build it yourself.</p>
+        </details>
+        <details class="qa">
+          <summary>What are the requirements?</summary>
+          <p>macOS 14 (Sonoma) or later. It's a native menu-bar app built in pure SwiftUI with zero third-party dependencies.</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- ============================== FINAL CTA ============================== -->
+    <section class="cta" aria-labelledby="cta-title">
+      <div class="cta__panel reveal">
+        <div class="cta__glow" aria-hidden="true"></div>
+        <h2 class="cta__title" id="cta-title">First light. First task.</h2>
+        <p class="cta__sub">Close the door on Slack and do the work that matters.</p>
+        <a class="btn btn--primary btn--lg" href="https://github.com/scandolo/Ortus" target="_blank" rel="noopener">
+          <span class="btn__icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3v12" /><path d="m7 11 5 5 5-5" /><path d="M5 20h14" />
+            </svg>
+          </span>
+          Download for macOS
+        </a>
+        <p class="cta__meta">macOS 14+ · Free &amp; open source</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================== FOOTER ============================== -->
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <span class="nav__mark" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="footDawn" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#2B294D"/>
+                <stop offset="0.4" stop-color="#A8457D"/>
+                <stop offset="0.72" stop-color="#E36333"/>
+                <stop offset="1" stop-color="#F7BC63"/>
+              </linearGradient>
+            </defs>
+            <path d="M28.5 66 A21.5 21.5 0 0 1 71.5 66 Z" fill="url(#footDawn)"/>
+            <g stroke="url(#footDawn)" stroke-width="6.5" stroke-linecap="round">
+              <line x1="10" y1="66" x2="18.8" y2="66"/>
+              <line x1="81.2" y1="66" x2="90" y2="66"/>
+              <line x1="50" y1="37.6" x2="50" y2="17.2"/>
+              <line x1="33.3" y1="43.0" x2="23.5" y2="29.5"/>
+              <line x1="66.7" y1="43.0" x2="76.5" y2="29.5"/>
+              <line x1="23.7" y1="55.4" x2="12.1" y2="50.7"/>
+              <line x1="76.3" y1="55.4" x2="87.9" y2="50.7"/>
+            </g>
+          </svg>
+        </span>
+        <div>
+          <p class="footer__word">Ortus</p>
+          <p class="footer__tag">Kill Slack. Do the work.</p>
+        </div>
+      </div>
+
+      <nav class="footer__links" aria-label="Footer">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#faq">FAQ</a>
+        <a href="https://github.com/scandolo/Ortus" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </div>
+
+    <div class="footer__base">
+      <p class="footer__latin">Carpe lucem.</p>
+      <p class="footer__copy">© 2026 Ortus · Free &amp; open source</p>
+    </div>
+  </footer>
+
+  <script src="script.js" defer></script>
+</body>
+</html>

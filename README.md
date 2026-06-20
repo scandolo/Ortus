@@ -181,13 +181,44 @@ Ortus/
 - All four are passed via `.environmentObject()`
 - Slack credentials stored in macOS Keychain via `KeychainService`
 
-### Design System (OrtusTheme.swift)
+### Design System — "First Light" (OrtusTheme.swift)
 
-- **Surfaces**: `.regularMaterial` for cards, `.thinMaterial` for buttons / text fields / chips, `.ultraThinMaterial` for the tab bar
-- **Shapes**: continuous corner radius everywhere. `radiusSM(8)`, `radiusMD(12)`, `radiusLG(18)`, `radiusXL(26)`. Capsules for pill controls
-- **Colors**: `accent` (sunrise green, light/dark adaptive), `accentSoft`, `accentHover`, `warning`, `danger`, `success` (= accent), `textMuted`, `innerHighlight` (white 10%), `hairline` (primary 8%)
-- **Spacing**: 4pt grid — `spacingXS(4)`, `spacingSM(8)`, `spacingMD(16)`, `spacingLG(22)`, `spacingXL(32)`
-- **Components**: `.ortusCard()` and `.ortusCard(tint:)` modifiers, `.ortusFloatingToolbar()` for input bars, `OrtusPrimaryButtonStyle` (tinted glass CTA), `OrtusSecondaryButtonStyle` (glass capsule), `OrtusGhostButtonStyle` (borderless), `OrtusTextFieldStyle` (glass with focus glow), `OrtusEmptyState`, `OrtusSectionHeader`, `VibrantBackground`
+A calm, premium, dawn-over-the-horizon aesthetic built on Apple's HIG. `OrtusTheme.swift`
+is the single source of truth — every view reaches for its tokens (no raw hex, no bare
+`.system(size:)`).
+
+- **One accent**: a warm "first light" coral-amber (`accent`, light/dark adaptive) drives
+  every interactive affordance. The multi-stop **dawn gradient** (`dawnColors` /
+  `dawnGradient` / `dawnGlow` — predawn indigo → mauve → coral → gold) is reserved for
+  brand + hero moments only (the timer ring/aura, the sunmark, the idle hero, the app icon).
+- **Brand glyph**: `OrtusSunmark` — an original half-sun-over-horizon mark drawn in pure
+  SwiftUI. Used in the idle hero, the About card, empty states; rasterised (via
+  `generate_app_icon.py` + `iconutil`) for the Finder app icon.
+- **Surfaces**: solid adaptive `canvas`/`canvasDeep` (a vertical "dawn sky" wash, never a
+  translucent material — avoids wallpaper bleed), `cardSurface` (e1) and `cardRaised` (e2/
+  popovers/nav) which lift above the canvas, `inputSurface` recessed below cards.
+- **Shapes**: continuous corner radius everywhere. `radiusSM(10)`, `radiusMD(14)`,
+  `radiusLG(20)`, `radiusXL(28)`. Capsules for pill controls.
+- **Elevation**: a three-step soft shadow scale (`OrtusTheme.Elevation.e1/e2`).
+- **Typography** (`Typo`): SF Pro for text, SF Pro Rounded for the hero clock & display
+  numerals; tabular figures for anything that ticks.
+- **Motion** (`Motion`): 140–260ms ease-out / spring-on-press tokens; respects reduced-motion.
+- **Spacing**: 4pt grid — `spacingXS(4)` … `spacingXL(32)`.
+- **Components**: `.ortusCard()` / `.ortusCard(tint:)` / `.ortusCard(raised:)`,
+  `OrtusPrimaryButtonStyle` (coral capsule CTA), `OrtusSecondaryButtonStyle` (glass capsule),
+  `OrtusDestructiveButtonStyle` (ember capsule), `OrtusGhostButtonStyle`, `OrtusTextFieldStyle`
+  (recessed input with focus glow), `OrtusEmptyState`, `OrtusSectionHeader`, `OrtusSunmark`,
+  `VibrantBackground`. The nav is a floating segmented capsule with a sliding
+  `matchedGeometryEffect` selection.
+
+### Landing page (`landing/`)
+
+A standalone, dependency-free marketing site (`index.html` / `styles.css` / `script.js`)
+in the same "First Light" language: a cinematic dark dawn hero with a faithful HTML/CSS
+mock of the app popover, a bento feature grid with original inline-SVG icons (drawn in the
+sunmark's line language), how-it-works, FAQ, and a dawn-gradient CTA. Open `landing/index.html`
+directly in a browser — no build step. Brand assets in `landing/assets/` (`sunmark.svg`,
+`favicon.svg`, `app-icon.png`).
 
 ### Build & Run
 

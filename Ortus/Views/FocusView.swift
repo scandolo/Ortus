@@ -4,6 +4,7 @@ struct FocusView: View {
     @EnvironmentObject var focusManager: FocusManager
     @State private var manualDuration: Double = 60
     @State private var isPulsing = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: OrtusTheme.spacingLG) {
@@ -18,14 +19,26 @@ struct FocusView: View {
             if !focusManager.isInFocus && !focusManager.isEmergencyEnded && !focusManager.schedules.isEmpty {
                 let activeSchedules = focusManager.schedules.filter(\.isEnabled)
                 if !activeSchedules.isEmpty {
-                    Text("\(activeSchedules.count) schedule\(activeSchedules.count == 1 ? "" : "s") active")
-                        .font(OrtusTheme.Typo.meta)
-                        .foregroundStyle(OrtusTheme.textMuted)
+                    scheduleBadge(count: activeSchedules.count)
                 }
             }
         }
         .padding(OrtusTheme.spacingMD)
         .frame(maxHeight: .infinity, alignment: .center)
+    }
+
+    private func scheduleBadge(count: Int) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: "calendar")
+                .font(.system(size: 10, weight: .semibold))
+            Text("\(count) schedule\(count == 1 ? "" : "s") active")
+                .font(OrtusTheme.Typo.meta)
+        }
+        .foregroundStyle(OrtusTheme.textMuted)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Capsule().fill(OrtusTheme.cardSurface))
+        .overlay(Capsule().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
     }
 
     // MARK: - Grace Period
@@ -37,13 +50,13 @@ struct FocusView: View {
                     let remaining = max(0, graceEnd.timeIntervalSince(context.date))
                     ZStack {
                         Circle()
-                            .stroke(OrtusTheme.accent.opacity(0.15), lineWidth: 4)
-                            .frame(width: 120, height: 120)
+                            .stroke(OrtusTheme.accent.opacity(0.14), lineWidth: 5)
+                            .frame(width: 124, height: 124)
 
                         Circle()
                             .trim(from: 0, to: remaining / 30)
-                            .stroke(OrtusTheme.accent, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                            .frame(width: 120, height: 120)
+                            .stroke(OrtusTheme.accent, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                            .frame(width: 124, height: 124)
                             .rotationEffect(.degrees(-90))
 
                         Text("\(Int(ceil(remaining)))")
@@ -54,19 +67,18 @@ struct FocusView: View {
                 }
             }
 
-            Text("Focus starting")
-                .font(OrtusTheme.Typo.title)
-
-            Text("Forgot something? You can still go back.")
-                .font(OrtusTheme.Typo.body)
-                .foregroundStyle(OrtusTheme.textMuted)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, OrtusTheme.spacingLG)
-
-            Button("Never mind") {
-                focusManager.revertFocusSession()
+            VStack(spacing: OrtusTheme.spacingXS) {
+                Text("Focus starting")
+                    .font(OrtusTheme.Typo.title)
+                Text("Forgot something? You can still go back.")
+                    .font(OrtusTheme.Typo.body)
+                    .foregroundStyle(OrtusTheme.textMuted)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, OrtusTheme.spacingLG)
             }
-            .buttonStyle(OrtusSecondaryButtonStyle())
+
+            Button("Never mind") { focusManager.revertFocusSession() }
+                .buttonStyle(OrtusSecondaryButtonStyle())
         }
     }
 
@@ -86,8 +98,8 @@ struct FocusView: View {
             VStack(spacing: OrtusTheme.spacingXS) {
                 Text("DEEP FOCUS")
                     .font(OrtusTheme.Typo.section)
-                    .tracking(1.4)
-                    .foregroundStyle(OrtusTheme.textMuted)
+                    .tracking(2.2)
+                    .foregroundStyle(OrtusTheme.accent)
 
                 if let name = focusManager.currentSessionName {
                     Text(name)
@@ -99,7 +111,7 @@ struct FocusView: View {
             Button {
                 focusManager.extendFocus(by: 15 * 60)
             } label: {
-                HStack(spacing: 4) {
+                HStack(spacing: 5) {
                     Image(systemName: "plus")
                         .font(.system(size: 10, weight: .bold))
                     Text("15 min")
@@ -109,14 +121,13 @@ struct FocusView: View {
             .help("Add 15 minutes to this focus session")
 
             if focusManager.developerModeEnabled {
-                Button("End focus (dev)") {
-                    focusManager.endFocusSession()
-                }
-                .buttonStyle(OrtusGhostButtonStyle())
+                Button("End focus (dev)") { focusManager.endFocusSession() }
+                    .buttonStyle(OrtusGhostButtonStyle())
             }
         }
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true)) {
                 isPulsing = true
             }
         }
@@ -124,56 +135,45 @@ struct FocusView: View {
 
     private func timerHero(remaining: TimeInterval, progress: Double) -> some View {
         ZStack {
-            // Outer breathing aura
+            // Breathing dawn aura
             Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            OrtusTheme.accentSoft.opacity(isPulsing ? 0.55 : 0.20),
-                            .clear
-                        ],
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: 130
-                    )
-                )
-                .frame(width: 260, height: 260)
-                .blur(radius: 10)
+                .fill(OrtusTheme.dawnGlow)
+                .frame(width: 270, height: 270)
+                .scaleEffect(isPulsing ? 1.06 : 0.92)
+                .opacity(isPulsing ? 0.9 : 0.55)
+                .blur(radius: 14)
 
-            // Glass disc — strong contrast against canvas
+            // Glass disc
             Circle()
-                .fill(OrtusTheme.cardSurface)
-                .frame(width: 190, height: 190)
-                .overlay(
-                    Circle().strokeBorder(OrtusTheme.innerHighlight, lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.16), radius: 20, y: 6)
+                .fill(OrtusTheme.cardRaised)
+                .frame(width: 196, height: 196)
+                .overlay(Circle().strokeBorder(OrtusTheme.innerHighlight, lineWidth: 1))
+                .shadow(color: .black.opacity(0.18), radius: 22, y: 7)
 
-            // Track + progress ring
+            // Track
             Circle()
-                .stroke(OrtusTheme.accent.opacity(0.12), lineWidth: 3)
-                .frame(width: 190, height: 190)
+                .stroke(OrtusTheme.accent.opacity(0.12), lineWidth: 4)
+                .frame(width: 196, height: 196)
 
+            // Dawn-gradient progress ring
             Circle()
                 .trim(from: 0, to: progress)
                 .stroke(
-                    AngularGradient(
-                        colors: [OrtusTheme.accent, OrtusTheme.accentHover, OrtusTheme.accent],
-                        center: .center
-                    ),
-                    style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                    AngularGradient(colors: OrtusTheme.dawnColors + [OrtusTheme.dawnColors[0]], center: .center),
+                    style: StrokeStyle(lineWidth: 4, lineCap: .round)
                 )
-                .frame(width: 190, height: 190)
+                .frame(width: 196, height: 196)
                 .rotationEffect(.degrees(-90))
                 .animation(.linear(duration: 1), value: progress)
 
-            // Hero timer
+            // Hero clock
             if remaining > 0 {
                 Text(formatDuration(remaining))
                     .font(OrtusTheme.Typo.hero)
                     .tracking(-2)
                     .foregroundStyle(.primary)
                     .monospacedDigit()
+                    .contentTransition(.numericText())
             } else {
                 Text("Ending")
                     .font(OrtusTheme.Typo.hero)
@@ -194,30 +194,22 @@ struct FocusView: View {
 
     private var idleState: some View {
         VStack(spacing: OrtusTheme.spacingLG) {
-            ZStack {
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [OrtusTheme.accentSoft.opacity(0.7), .clear],
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: 70
-                        )
-                    )
-                    .frame(width: 140, height: 140)
+            OrtusSunmark(showGlow: true)
+                .frame(width: 132, height: 132)
 
-                Image(systemName: "sunrise.fill")
-                    .font(.system(size: 58))
-                    .foregroundStyle(OrtusTheme.accent)
-                    .symbolRenderingMode(.hierarchical)
+            VStack(spacing: OrtusTheme.spacingXS) {
+                Text("Ready when you are")
+                    .font(OrtusTheme.Typo.title)
+                Text("Begin a session and Slack goes dark until you're done.")
+                    .font(OrtusTheme.Typo.body)
+                    .foregroundStyle(OrtusTheme.textMuted)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, OrtusTheme.spacingLG)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-
-            Text("Ready when you are")
-                .font(OrtusTheme.Typo.title)
 
             VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
                 OrtusSectionHeader(title: "Duration")
-
                 OrtusDurationSlider(
                     minutes: $manualDuration,
                     range: 15...240,
@@ -229,10 +221,7 @@ struct FocusView: View {
             .padding(.horizontal, OrtusTheme.spacingLG)
 
             Button("Begin focus") {
-                focusManager.startFocusSession(
-                    name: "Manual Focus",
-                    duration: manualDuration * 60
-                )
+                focusManager.startFocusSession(name: "Manual Focus", duration: manualDuration * 60)
             }
             .buttonStyle(OrtusPrimaryButtonStyle())
         }
@@ -244,9 +233,7 @@ struct FocusView: View {
         let h = Int(seconds) / 3600
         let m = (Int(seconds) % 3600) / 60
         let s = Int(seconds) % 60
-        if h > 0 {
-            return String(format: "%d:%02d:%02d", h, m, s)
-        }
+        if h > 0 { return String(format: "%d:%02d:%02d", h, m, s) }
         return String(format: "%d:%02d", m, s)
     }
 }

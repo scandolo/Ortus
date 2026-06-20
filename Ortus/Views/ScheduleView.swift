@@ -11,7 +11,7 @@ struct ScheduleView: View {
                 OrtusEmptyState(
                     icon: "calendar.badge.plus",
                     title: "No schedules yet",
-                    message: "Add a schedule to pause Slack automatically during focus hours"
+                    message: "Add recurring focus hours and Slack pauses itself — no thinking required."
                 )
             } else {
                 ScrollView {
@@ -25,26 +25,23 @@ struct ScheduleView: View {
                                         focusManager.updateSchedule(updated)
                                         editingScheduleID = nil
                                     },
-                                    onCancel: {
-                                        editingScheduleID = nil
-                                    }
+                                    onCancel: { editingScheduleID = nil }
                                 )
-                                .ortusCard()
+                                .ortusCard(raised: true)
+                                .transition(.opacity)
                             } else {
                                 ScheduleRow(
                                     schedule: schedule,
                                     onEdit: {
                                         isAddingNew = false
-                                        editingScheduleID = schedule.id
+                                        withAnimation(OrtusTheme.Motion.enter) { editingScheduleID = schedule.id }
                                     },
                                     onToggle: { enabled in
                                         var updated = schedule
                                         updated.isEnabled = enabled
                                         focusManager.updateSchedule(updated)
                                     },
-                                    onDelete: {
-                                        focusManager.deleteSchedule(schedule)
-                                    }
+                                    onDelete: { focusManager.deleteSchedule(schedule) }
                                 )
                                 .ortusCard()
                             }
@@ -58,20 +55,20 @@ struct ScheduleView: View {
                                     focusManager.addSchedule(schedule)
                                     isAddingNew = false
                                 },
-                                onCancel: {
-                                    isAddingNew = false
-                                }
+                                onCancel: { isAddingNew = false }
                             )
-                            .ortusCard()
+                            .ortusCard(raised: true)
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
                         }
                     }
                     .padding(OrtusTheme.spacingMD)
+                    .animation(OrtusTheme.Motion.enter, value: focusManager.schedules.count)
                 }
             }
 
             Button {
                 editingScheduleID = nil
-                isAddingNew = true
+                withAnimation(OrtusTheme.Motion.enter) { isAddingNew = true }
             } label: {
                 Label("Add schedule", systemImage: "plus")
                     .frame(maxWidth: .infinity)
@@ -92,44 +89,69 @@ struct ScheduleRow: View {
     let onToggle: (Bool) -> Void
     let onDelete: () -> Void
 
+    @State private var isHovering = false
+
     var body: some View {
         HStack(spacing: OrtusTheme.spacingMD) {
+            // Status rail
+            Capsule()
+                .fill(schedule.isEnabled ? OrtusTheme.accent : OrtusTheme.textMuted.opacity(0.4))
+                .frame(width: 3, height: 38)
+
             Button(action: onEdit) {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(schedule.name)
                         .font(OrtusTheme.Typo.headline)
                         .foregroundStyle(.primary)
 
-                    Text(daysSummary)
-                        .font(OrtusTheme.Typo.caption)
-                        .foregroundStyle(.secondary)
+                    HStack(spacing: 6) {
+                        Text(schedule.startTimeString)
+                        Text("–").foregroundStyle(.tertiary)
+                        Text(schedule.endTimeString)
+                    }
+                    .font(OrtusTheme.Typo.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
 
-                    Text("\(schedule.startTimeString) \u{2013} \(schedule.endTimeString)")
-                        .font(OrtusTheme.Typo.caption)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
+                    daysPill
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
-            Spacer()
-
-            Button(action: onDelete) {
-                Image(systemName: "trash")
-                    .font(.system(size: 13))
-                    .foregroundStyle(OrtusTheme.textMuted)
+            if isHovering {
+                Button(action: onDelete) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(OrtusTheme.textMuted)
+                        .frame(width: 26, height: 26)
+                        .background(Circle().fill(Color.primary.opacity(0.05)))
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .help("Delete schedule")
+                .transition(.opacity)
             }
-            .buttonStyle(.plain)
-            .help("Delete schedule")
 
-            Toggle("", isOn: Binding(
-                get: { schedule.isEnabled },
-                set: { onToggle($0) }
-            ))
-            .labelsHidden()
-            .tint(OrtusTheme.accent)
-            .accessibilityLabel("\(schedule.name) enabled")
+            Toggle("", isOn: Binding(get: { schedule.isEnabled }, set: { onToggle($0) }))
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .tint(OrtusTheme.accent)
+                .accessibilityLabel("\(schedule.name) enabled")
         }
+        .animation(OrtusTheme.Motion.hover, value: isHovering)
+        .onHover { isHovering = $0 }
+    }
+
+    private var daysPill: some View {
+        Text(daysSummary)
+            .font(OrtusTheme.Typo.badge)
+            .foregroundStyle(OrtusTheme.textMuted)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(OrtusTheme.inputSurface))
+            .padding(.top, 1)
     }
 
     private var daysSummary: String {
@@ -137,7 +159,7 @@ struct ScheduleRow: View {
         if sorted.count == 7 { return "Every day" }
         if sorted == [.monday, .tuesday, .wednesday, .thursday, .friday] { return "Weekdays" }
         if sorted == [.saturday, .sunday] { return "Weekends" }
-        return sorted.map(\.shortName).joined(separator: ", ")
+        return sorted.map(\.shortName).joined(separator: " · ")
     }
 }
 
@@ -172,33 +194,29 @@ struct ScheduleInlineEditor: View {
             TextField("Name", text: $schedule.name)
                 .textFieldStyle(OrtusTextFieldStyle())
 
-            HStack {
+            HStack(spacing: OrtusTheme.spacingSM) {
                 DatePicker("Start", selection: $startTime, displayedComponents: .hourAndMinute)
                     .labelsHidden()
-                Text("\u{2013}")
-                    .foregroundStyle(.secondary)
+                Text("–").foregroundStyle(.secondary)
                 DatePicker("End", selection: $endTime, displayedComponents: .hourAndMinute)
                     .labelsHidden()
+                Spacer()
             }
 
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: OrtusTheme.spacingSM) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: OrtusTheme.spacingSM), count: 7),
+                      spacing: OrtusTheme.spacingSM) {
                 ForEach(Weekday.allCases) { day in
                     DayToggleButton(day: day, isSelected: schedule.days.contains(day)) {
-                if schedule.days.contains(day) {
-                    schedule.days.remove(day)
-                } else {
-                    schedule.days.insert(day)
-                }
-            }
+                        if schedule.days.contains(day) { schedule.days.remove(day) }
+                        else { schedule.days.insert(day) }
+                    }
                 }
             }
 
             HStack {
                 Button("Cancel", action: onCancel)
                     .buttonStyle(OrtusGhostButtonStyle())
-
                 Spacer()
-
                 Button("Save") {
                     let calendar = Calendar.current
                     schedule.startHour = calendar.component(.hour, from: startTime)
@@ -231,7 +249,7 @@ struct DayToggleButton: View {
                 .padding(.vertical, OrtusTheme.spacingSM)
                 .background(
                     RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
-                        .fill(isSelected ? OrtusTheme.accent : (isHovering ? Color.primary.opacity(0.06) : .clear))
+                        .fill(isSelected ? OrtusTheme.accent : (isHovering ? Color.primary.opacity(0.06) : OrtusTheme.inputSurface))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
@@ -241,8 +259,8 @@ struct DayToggleButton: View {
                 .foregroundStyle(isSelected ? .white : .primary)
         }
         .buttonStyle(.plain)
-        .scaleEffect(isHovering ? 1.03 : 1.0)
-        .animation(.easeOut(duration: 0.15), value: isHovering)
+        .scaleEffect(isHovering ? 1.04 : 1.0)
+        .animation(OrtusTheme.Motion.press, value: isHovering)
         .onHover { isHovering = $0 }
     }
 }
