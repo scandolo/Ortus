@@ -372,14 +372,6 @@ struct SettingsView: View {
     private var generalSection: some View {
         section("General") {
             OrtusToggleRow(
-                title: "Relaunch Slack when focus ends",
-                isOn: $focusManager.relaunchSlackOnEnd
-            )
-            OrtusToggleRow(
-                title: "Show notifications",
-                isOn: $focusManager.showNotifications
-            )
-            OrtusToggleRow(
                 title: "Launch at login",
                 isOn: $launchAtLogin
             )
