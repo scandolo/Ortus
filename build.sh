@@ -2,7 +2,12 @@
 set -e
 cd "$(dirname "$0")"
 
-SIGNING_IDENTITY="Ortus Dev"
+# Signing identity. Defaults to the local self-signed "Ortus Dev" cert for dev
+# builds; CI sets ORTUS_SIGNING_IDENTITY=- for ad-hoc signing (no keychain). The
+# app isn't notarized and ships via `curl | bash` (quarantine-free), so ad-hoc is
+# fine for distribution — and Slack blocking uses NSWorkspace, not signature-bound
+# TCC permissions, so the signature changing between releases is harmless.
+SIGNING_IDENTITY="${ORTUS_SIGNING_IDENTITY:-Ortus Dev}"
 KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
 
 # Usage: ./build.sh [release]
@@ -21,7 +26,9 @@ fi
 # every rebuild as a new app and re-asks the keychain prompt on every launch.
 # Signing each build with the same self-signed cert gives Ortus a stable
 # identity, so "Always Allow" on the keychain prompt actually persists.
-if ! security find-identity -v -p codesigning "$KEYCHAIN" 2>/dev/null | grep -q "$SIGNING_IDENTITY"; then
+#
+# Skip the whole keychain dance for ad-hoc signing ("-"), which is what CI uses.
+if [ "$SIGNING_IDENTITY" != "-" ] && ! security find-identity -v -p codesigning "$KEYCHAIN" 2>/dev/null | grep -q "$SIGNING_IDENTITY"; then
     echo "→ One-time setup: creating local '$SIGNING_IDENTITY' code-signing identity"
     echo "  (macOS will prompt once for your login password to trust the cert)"
     TMP_DIR=$(mktemp -d)

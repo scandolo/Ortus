@@ -27,6 +27,7 @@ struct OrtusApp: App {
     @StateObject private var slackService = SlackService()
     @StateObject private var claudeCodeService = ClaudeCodeService()
     @StateObject private var slackOAuthService = SlackOAuthService()
+    @StateObject private var updateService = UpdateService()
 
     var body: some Scene {
         MenuBarExtra {
@@ -35,6 +36,7 @@ struct OrtusApp: App {
                 .environmentObject(slackService)
                 .environmentObject(claudeCodeService)
                 .environmentObject(slackOAuthService)
+                .environmentObject(updateService)
                 .onAppear {
                     appDelegate.focusManager = focusManager
                     // Inject SlackService here (not in App.init) — the StateObject

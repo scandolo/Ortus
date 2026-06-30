@@ -5,6 +5,7 @@ struct SettingsView: View {
     @EnvironmentObject var focusManager: FocusManager
     @EnvironmentObject var slackOAuthService: SlackOAuthService
     @EnvironmentObject var claudeCodeService: ClaudeCodeService
+    @EnvironmentObject var updateService: UpdateService
 
     @State private var slackClientId: String = ""
     @State private var slackClientSecret: String = ""
@@ -425,9 +426,15 @@ struct SettingsView: View {
 
     // MARK: - About
 
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    }
+
     private var aboutCard: some View {
         VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
             OrtusSectionHeader(title: "About")
+
+            updateRow
 
             HStack(alignment: .center, spacing: OrtusTheme.spacingMD) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -449,7 +456,7 @@ struct SettingsView: View {
                                 versionTapCount = 0
                             }
                         } label: {
-                            Text("v1.0")
+                            Text("v\(appVersion)")
                                 .font(OrtusTheme.Typo.meta)
                                 .foregroundStyle(.secondary)
                         }
@@ -484,6 +491,56 @@ struct SettingsView: View {
             }
         }
         .ortusCard()
+    }
+
+    @ViewBuilder
+    private var updateRow: some View {
+        switch updateService.state {
+        case let .available(version):
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: OrtusTheme.spacingSM) {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .foregroundStyle(OrtusTheme.accent)
+                        .font(.system(size: 16))
+                        .symbolRenderingMode(.hierarchical)
+                    Text("Update available — v\(version)")
+                        .font(OrtusTheme.Typo.bodyMedium)
+                        .foregroundStyle(.primary)
+                    Spacer(minLength: 0)
+                    Button("Restart & update") {
+                        Task { await updateService.downloadAndInstall(isInFocus: focusManager.isInFocus) }
+                    }
+                    .buttonStyle(OrtusPrimaryButtonStyle())
+                    .disabled(focusManager.isInFocus)
+                }
+                if focusManager.isInFocus {
+                    Text("Finish your focus session to update — Ortus restarts to apply it.")
+                        .font(OrtusTheme.Typo.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(.bottom, 2)
+
+        case .downloading:
+            HStack(spacing: OrtusTheme.spacingSM) {
+                ProgressView().scaleEffect(0.7).tint(OrtusTheme.accent)
+                Text("Downloading update — Ortus will restart…")
+                    .font(OrtusTheme.Typo.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.bottom, 2)
+
+        case let .failed(message):
+            Text(message)
+                .font(OrtusTheme.Typo.caption)
+                .foregroundStyle(OrtusTheme.danger)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.bottom, 2)
+
+        case .idle, .checking, .upToDate:
+            EmptyView()
+        }
     }
 
     private func setLaunchAtLogin(_ enabled: Bool) {
