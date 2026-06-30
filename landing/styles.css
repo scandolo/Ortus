@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Ortus — "First Light" landing page
+   Ortus - "First Light" landing page
    Dark cinematic dawn. All tokens from the binding design system.
    ========================================================================== */
 
@@ -7,11 +7,11 @@
    1. Design tokens (defined once)
    -------------------------------------------------------------------------- */
 :root {
-  /* Accent — the ONE interactive accent (dark values) */
+  /* Accent - the ONE interactive accent (dark values) */
   --accent: #FD9E4D;
   --accent-hover: #FFBA75;
 
-  /* Dawn gradient — BRAND / HERO ONLY */
+  /* Dawn gradient - BRAND / HERO ONLY */
   --dawn-1: #2B294D; /* predawn indigo */
   --dawn-2: #A8457D; /* mauve */
   --dawn-3: #E36333; /* coral */
@@ -110,11 +110,7 @@ img, svg { display: block; max-width: 100%; }
 
 /* Shared gradient-text treatment (brand moment) */
 .grad-text {
-  background: var(--dawn);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
+  color: var(--accent);
 }
 
 /* Section eyebrow */
@@ -187,6 +183,66 @@ img, svg { display: block; max-width: 100%; }
 .btn--capsule:hover { background: var(--accent-hover); transform: translateY(-1px); }
 
 .btn--lg { padding: 15px 30px; font-size: 1.05rem; }
+
+/* --------------------------------------------------------------------------
+   3b. Install command block (CLI-style)
+   -------------------------------------------------------------------------- */
+.install {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  max-width: 100%;
+  background: var(--canvas-deep);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-md);
+  padding: 12px 12px 12px 18px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), var(--shadow-card);
+}
+.install__cmd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.92rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow-x: auto;
+  letter-spacing: -0.01em;
+  -webkit-overflow-scrolling: touch;
+}
+.install__prompt {
+  color: var(--accent);
+  opacity: 0.7;
+  margin-right: 6px;
+  user-select: none;
+}
+.install__copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: color var(--t-fast) var(--ease),
+              background var(--t-mid) var(--ease),
+              border-color var(--t-mid) var(--ease);
+}
+.install__copy:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.09);
+  border-color: var(--hairline-strong);
+}
+.install__copy .install__icon-copy { flex: 0 0 auto; }
+.install__copy.is-copied {
+  color: var(--accent);
+  border-color: rgba(253, 158, 77, 0.4);
+  background: rgba(253, 158, 77, 0.1);
+}
 
 /* --------------------------------------------------------------------------
    4. Top nav
@@ -468,7 +524,7 @@ img, svg { display: block; max-width: 100%; }
 }
 
 /* --------------------------------------------------------------------------
-   8. Features — bento grid
+   8. Features - bento grid
    -------------------------------------------------------------------------- */
 .features {
   max-width: var(--maxw);
@@ -525,7 +581,7 @@ img, svg { display: block; max-width: 100%; }
 }
 
 /* --------------------------------------------------------------------------
-   9. How it works — steps
+   9. How it works - steps
    -------------------------------------------------------------------------- */
 .how {
   max-width: var(--maxw);
@@ -638,7 +694,18 @@ img, svg { display: block; max-width: 100%; }
 .cta__title,
 .cta__sub,
 .cta .btn,
+.cta .install,
 .cta__meta { position: relative; z-index: 1; }
+/* center the install block within the final CTA panel */
+.cta .install {
+  display: inline-flex;
+  margin: 0 auto;
+  background: rgba(14, 13, 17, 0.55);
+  border-color: rgba(255, 255, 255, 0.18);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.cta .install__cmd { color: #fff; }
 .cta__title {
   font-size: clamp(2rem, 6vw, 3.2rem);
   font-weight: 500;
@@ -698,11 +765,7 @@ img, svg { display: block; max-width: 100%; }
   font-family: var(--font-round);
   font-style: italic;
   font-size: 0.95rem;
-  background: var(--dawn);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
+  color: var(--accent);
 }
 .footer__copy { color: var(--muted); font-size: 0.84rem; }
 
@@ -742,6 +805,14 @@ img, svg { display: block; max-width: 100%; }
   .card--wide { grid-column: span 1; }
   .hero__cta .btn { flex: 1 1 auto; justify-content: center; }
   .footer__inner { flex-direction: column; }
+  /* Install block: full width, command + copy stack/scroll without overflow */
+  .install {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .install__cmd { min-width: 0; flex: 1 1 auto; }
+  .cta .install { width: 100%; }
 }
 
 /* --------------------------------------------------------------------------
@@ -761,4 +832,202 @@ img, svg { display: block; max-width: 100%; }
   }
   .timer__glow { animation: none; }
   .reveal-ready .reveal { opacity: 1 !important; transform: none !important; }
+}
+
+/* --------------------------------------------------------------------------
+   16. Minimal feature list (replaces the bento grid)
+   -------------------------------------------------------------------------- */
+.feature-list {
+  list-style: none;
+  margin: 40px auto 0;
+  padding: 0;
+  max-width: 860px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 36px 56px;
+}
+.feature-list h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+.feature-list p {
+  margin: 0;
+  font-size: 0.96rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+@media (max-width: 620px) {
+  .feature-list {
+    grid-template-columns: 1fr;
+    gap: 26px;
+    margin-top: 28px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   17. Hero redesign - glass badge, bigger headline, mockup glow, load-in
+   -------------------------------------------------------------------------- */
+.hero__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline-strong);
+  background: rgba(255, 255, 255, 0.04);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 28px;
+}
+.hero__badge svg { color: var(--accent); }
+
+/* Bigger, tighter hero headline */
+.hero__title {
+  font-size: clamp(2.9rem, 8.6vw, 5.4rem);
+  letter-spacing: -0.02em;
+  line-height: 0.98;
+  margin: 0;
+}
+
+/* Soft dawn glow behind the app mockup */
+.hero__device { position: relative; }
+.hero__device-glow {
+  position: absolute;
+  inset: -8% -4%;
+  background: radial-gradient(closest-side, rgba(247, 188, 99, 0.22), rgba(227, 99, 51, 0.12) 55%, transparent 76%);
+  filter: blur(34px);
+  z-index: 0;
+  pointer-events: none;
+}
+.hero__device .popover { position: relative; z-index: 1; }
+
+/* Staggered load-in for the hero */
+@keyframes heroFadeUp {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up {
+  opacity: 0;
+  animation: heroFadeUp 0.8s var(--ease, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+}
+.fade-up.d1 { animation-delay: 0.05s; }
+.fade-up.d2 { animation-delay: 0.16s; }
+.fade-up.d3 { animation-delay: 0.30s; }
+.fade-up.d4 { animation-delay: 0.44s; }
+.fade-up.d5 { animation-delay: 0.30s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-up { opacity: 1 !important; transform: none !important; animation: none !important; }
+}
+
+/* --------------------------------------------------------------------------
+   18. Interactive mockup panels (Focus / Schedule / Chat / Settings)
+   -------------------------------------------------------------------------- */
+.tab { cursor: pointer; transition: color 0.15s, background 0.15s; }
+.tab:not(.tab--active):hover { color: var(--text); }
+
+/* Keep the card height stable across panels */
+.popover__screen { min-height: 304px; justify-content: flex-start; }
+.panel { width: 100%; }
+.panel[hidden] { display: none; }
+.panel--active { animation: panelIn 0.28s var(--ease, ease) both; }
+@keyframes panelIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.popover__screen[data-panel="focus"] { justify-content: center; }
+
+/* Mock toggle switch */
+.toggle {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 21px;
+  border-radius: 999px;
+  background: var(--raised);
+  border: 1px solid var(--hairline-strong);
+  position: relative;
+}
+.toggle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--muted);
+  transform: translateY(-50%);
+}
+.toggle.is-on { background: var(--accent); border-color: transparent; }
+.toggle.is-on::after { transform: translateY(-50%) translateX(15px); background: #1A1410; }
+
+/* Schedule + Settings rows */
+.sched, .set {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sched__row, .set__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+}
+.sched__name { font-size: 0.92rem; font-weight: 600; color: var(--text); margin: 0; }
+.sched__time { font-size: 0.78rem; color: var(--muted); margin: 2px 0 0; }
+.set__row > span:first-child { font-size: 0.9rem; color: var(--text); }
+
+/* Settings placeholders (skeleton bars) */
+.ph {
+  display: block;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--hairline-strong);
+}
+.ph--lg { width: 58%; }
+.ph--md { width: 44%; }
+.ph--sm { width: 30%; }
+
+/* Chat */
+.chat {
+  width: 100%;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.chat__bubble {
+  max-width: 82%;
+  padding: 9px 12px;
+  border-radius: 14px;
+  border-bottom-left-radius: 4px;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  background: var(--raised);
+  border: 1px solid var(--hairline);
+  color: var(--text);
+  align-self: flex-start;
+}
+.chat__bubble--me {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #1A1410;
+  border: none;
+  border-radius: 14px;
+  border-bottom-right-radius: 4px;
 }

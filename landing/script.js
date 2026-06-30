@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Ortus landing — progressive enhancement only.
+   Ortus landing - progressive enhancement only.
    Content is fully visible without JS; this file just adds polish.
    ========================================================================== */
 (function () {
@@ -59,6 +59,54 @@
       window.scrollTo({
         top: top,
         behavior: prefersReduced ? "auto" : "smooth"
+      });
+    });
+  });
+
+  /* ----- 4. Copy-to-clipboard for install command blocks ----- */
+  document.querySelectorAll(".install__copy").forEach(function (btn) {
+    var resetTimer = null;
+    var label = btn.querySelector(".install__copy-label");
+    var originalText = label ? label.textContent : "";
+
+    btn.addEventListener("click", function () {
+      var text = btn.getAttribute("data-copy") || "";
+      if (!text || !navigator.clipboard || !navigator.clipboard.writeText) {
+        return;
+      }
+
+      navigator.clipboard.writeText(text).then(
+        function () {
+          btn.classList.add("is-copied");
+          if (label) label.textContent = "Copied!";
+          if (resetTimer) clearTimeout(resetTimer);
+          resetTimer = setTimeout(function () {
+            btn.classList.remove("is-copied");
+            if (label) label.textContent = originalText;
+          }, 1600);
+        },
+        function () {
+          /* clipboard write failed - leave button unchanged */
+        }
+      );
+    });
+  });
+  /* ----- 5. Interactive mockup tabs (Focus / Schedule / Chat / Settings) ----- */
+  document.querySelectorAll(".popover").forEach(function (pop) {
+    var tabs = pop.querySelectorAll(".tab");
+    var panels = pop.querySelectorAll(".panel");
+    tabs.forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        var name = tab.getAttribute("data-panel");
+        tabs.forEach(function (t) {
+          t.classList.toggle("tab--active", t === tab);
+          t.setAttribute("aria-selected", t === tab ? "true" : "false");
+        });
+        panels.forEach(function (p) {
+          var match = p.getAttribute("data-panel") === name;
+          p.hidden = !match;
+          p.classList.toggle("panel--active", match);
+        });
       });
     });
   });
