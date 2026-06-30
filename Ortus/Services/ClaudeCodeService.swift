@@ -18,12 +18,27 @@ final class ClaudeCodeService: ObservableObject {
     private var currentProcess: Process?
     private var currentTask: Task<Void, Never>?
 
-    /// Common Homebrew / system locations to probe when the user hasn't set an explicit path.
-    private static let defaultBinaryPaths = [
-        "/opt/homebrew/bin/claude",
-        "/usr/local/bin/claude",
-        "/run/current-system/sw/bin/claude",
-    ]
+    /// `claude` resolved from the user's login-shell PATH. Filled in asynchronously
+    /// by `detectIfNeeded()` so we catch installs that aren't in `defaultBinaryPaths`
+    /// (nvm/fnm/asdf, custom npm prefixes, anything on the user's PATH). Published so
+    /// the chat/settings UI unlocks the moment detection succeeds.
+    @Published private var shellResolvedPath: String?
+    private var hasRunDetection = false
+
+    /// Common install locations to probe when the user hasn't set an explicit path.
+    /// Ordered most-likely-first. Covers the native installer (`~/.local/bin`, the
+    /// `curl install.sh` method), Homebrew (Apple Silicon + Intel), the legacy local
+    /// install, and NixOS.
+    private static let defaultBinaryPaths: [String] = {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        return [
+            "\(home)/.local/bin/claude",          // native installer (curl install.sh)
+            "/opt/homebrew/bin/claude",           // Homebrew (Apple Silicon)
+            "/usr/local/bin/claude",              // Homebrew (Intel) / /usr/local
+            "\(home)/.claude/local/claude",       // legacy local install / migrate-installer
+            "/run/current-system/sw/bin/claude",  // NixOS
+        ]
+    }()
 
     var resolvedBinaryPath: String? {
         if !claudeBinaryPath.isEmpty, FileManager.default.isExecutableFile(atPath: claudeBinaryPath) {
@@ -34,11 +49,80 @@ final class ClaudeCodeService: ObservableObject {
                 return candidate
             }
         }
-        return nil
+        return shellResolvedPath
     }
 
     var isConfigured: Bool {
         resolvedBinaryPath != nil
+    }
+
+    /// Probe the user's login shell for `claude` once, off the main thread. Static
+    /// paths are checked first (synchronous, instant); the shell probe only runs as a
+    /// fallback when none of them hit. Safe to call repeatedly — it no-ops after the
+    /// first run unless `redetect()` resets it.
+    func detectIfNeeded() {
+        guard !hasRunDetection else { return }
+        hasRunDetection = true
+        // A static path (or user override) already resolves — no need to spawn a shell.
+        if resolvedBinaryPath != nil { return }
+        Task.detached(priority: .utility) {
+            let path = Self.resolveViaLoginShell()
+            if let path {
+                await MainActor.run { self.shellResolvedPath = path }
+            }
+        }
+    }
+
+    /// Force a fresh detection pass — used when the user may have just installed
+    /// Claude Code while the app was already running.
+    func redetect() {
+        hasRunDetection = false
+        shellResolvedPath = nil
+        detectIfNeeded()
+    }
+
+    /// Ask the user's login + interactive shell where `claude` lives. Using `-ilc`
+    /// sources the same profile files the user's terminal does, so PATH additions
+    /// from nvm/fnm/asdf/custom npm prefixes are visible — the common cases the
+    /// static path list can't anticipate. Bounded by a watchdog so a slow or noisy
+    /// shell profile can't hang detection.
+    nonisolated private static func resolveViaLoginShell() -> String? {
+        let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: shell)
+        process.arguments = ["-ilc", "command -v claude"]
+        let outPipe = Pipe()
+        process.standardOutput = outPipe
+        process.standardError = Pipe()
+        process.standardInput = FileHandle.nullDevice
+
+        do {
+            try process.run()
+        } catch {
+            return nil
+        }
+
+        // Don't let an interactive profile that prompts or stalls hang us forever.
+        let watchdog = DispatchWorkItem { if process.isRunning { process.terminate() } }
+        DispatchQueue.global().asyncAfter(deadline: .now() + 5, execute: watchdog)
+
+        // Read before waiting to avoid a full-pipe deadlock on chatty profiles.
+        let data = outPipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        watchdog.cancel()
+
+        guard process.terminationStatus == 0,
+              let output = String(data: data, encoding: .utf8) else { return nil }
+
+        // `command -v` prints the resolved path; profiles may add noise, so take the
+        // first line that's an absolute path to an executable file.
+        for line in output.split(separator: "\n") {
+            let candidate = line.trimmingCharacters(in: .whitespaces)
+            if candidate.hasPrefix("/"), FileManager.default.isExecutableFile(atPath: candidate) {
+                return candidate
+            }
+        }
+        return nil
     }
 
     // MARK: - Public API

@@ -1,7 +1,12 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject var claudeCodeService: ClaudeCodeService
     @State private var selectedTab = 0
+
+    /// The design size the whole UI is laid out at. On small/zoomed displays the
+    /// panel is scaled down to fit (see `fitScale`); it's never enlarged.
+    private static let designSize = CGSize(width: 420, height: 560)
 
     private let tabs: [(String, String, Int)] = [
         ("Focus", "sunrise.fill", 0),
@@ -10,6 +15,7 @@ struct ContentView: View {
     ]
 
     var body: some View {
+        let scale = Self.fitScale()
         VStack(spacing: 0) {
             tabBar
 
@@ -25,8 +31,29 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .transition(.opacity)
         }
-        .frame(width: 420, height: 560)
+        .frame(width: Self.designSize.width, height: Self.designSize.height)
         .background(VibrantBackground())
+        // Scale the entire panel uniformly so it fits the current screen. Keeps the
+        // exact same layout everywhere — it just shrinks (never grows) on smaller or
+        // more-zoomed displays instead of rendering at a fixed point size that can
+        // swallow a 13" screen set to "Larger Text".
+        .scaleEffect(scale, anchor: .topLeading)
+        .frame(width: Self.designSize.width * scale, height: Self.designSize.height * scale)
+        .onAppear { claudeCodeService.detectIfNeeded() }
+    }
+
+    /// How much to shrink the panel so it comfortably fits the active screen.
+    /// Returns 1 (no change) on any display with room to spare. The height budget
+    /// is the binding constraint on short/zoomed screens; width is rarely the limit.
+    private static func fitScale() -> CGFloat {
+        guard let visible = NSScreen.main?.visibleFrame else { return 1 }
+        // Leave headroom so the panel never butts against the menu bar or screen edge,
+        // and cap height usage so it never dominates a short screen even when it fits.
+        let heightBudget = visible.height * 0.72
+        let widthBudget = visible.width - 24
+        let scale = min(heightBudget / designSize.height, widthBudget / designSize.width, 1)
+        // Don't shrink into illegibility if someone is on a tiny external display.
+        return max(scale, 0.7)
     }
 
     // MARK: - Tab Bar
