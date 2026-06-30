@@ -467,3 +467,69 @@ struct OrtusSectionHeader: View {
             .foregroundStyle(OrtusTheme.textMuted)
     }
 }
+
+// MARK: - Settings Row (compact inline list row)
+
+/// A single inline settings row: a lifted surface holding leading content and a
+/// trailing control (toggle, button, status). Lighter than `ortusCard()` — rows
+/// stack densely in a list, so they carry only a whisper of elevation to avoid
+/// the noise that a full card shadow per row would create.
+struct OrtusRowModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
+        return content
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, OrtusTheme.spacingMD)
+            .padding(.vertical, 12)
+            .background(shape.fill(OrtusTheme.cardSurface))
+            .overlay(shape.strokeBorder(OrtusTheme.hairline, lineWidth: 1))
+            .overlay(
+                shape.strokeBorder(
+                    LinearGradient(
+                        colors: [OrtusTheme.innerHighlight, .clear],
+                        startPoint: .top,
+                        endPoint: .center
+                    ),
+                    lineWidth: 1
+                )
+            )
+            .clipShape(shape)
+            .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
+    }
+}
+
+extension View {
+    func ortusRow() -> some View { modifier(OrtusRowModifier()) }
+}
+
+// MARK: - Settings Toggle Row
+
+/// The workhorse settings control: a labelled switch on its own row. The switch
+/// tints amber when on, matching the rest of the sunrise palette.
+struct OrtusToggleRow: View {
+    let title: String
+    var subtitle: String? = nil
+    @Binding var isOn: Bool
+    var isEnabled: Bool = true
+
+    var body: some View {
+        Toggle(isOn: $isOn) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(OrtusTheme.Typo.bodyMedium)
+                    .foregroundStyle(.primary)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(OrtusTheme.Typo.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .toggleStyle(.switch)
+        .tint(OrtusTheme.accent)
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.5)
+        .ortusRow()
+    }
+}
