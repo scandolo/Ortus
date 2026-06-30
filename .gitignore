@@ -10,3 +10,4 @@ DerivedData/
 .gstack/
 *.zip
 ortus-next/
+.claude/
