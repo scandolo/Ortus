@@ -56,11 +56,20 @@ struct SettingsView: View {
     /// (no dividers, per the design guidelines).
     private func section<Content: View>(
         _ title: String,
+        description: String? = nil,
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
-            OrtusSectionHeader(title: title)
-                .padding(.horizontal, 4)
+            VStack(alignment: .leading, spacing: 4) {
+                OrtusSectionHeader(title: title)
+                if let description {
+                    Text(description)
+                        .font(OrtusTheme.Typo.caption)
+                        .foregroundStyle(OrtusTheme.textMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(.horizontal, 4)
             content()
         }
     }
@@ -68,16 +77,18 @@ struct SettingsView: View {
     // MARK: - Slack
 
     private var slackSection: some View {
-        section("Slack") {
+        section(
+            "Slack status",
+            description: "Connect the Slack API so Ortus can set your status and turn on Do Not Disturb while you focus."
+        ) {
             if slackOAuthService.isConnected {
                 connectedRow
                 OrtusToggleRow(
-                    title: "Update status during focus",
+                    title: "Set status during focus",
                     isOn: $focusManager.slackStatusEnabled
                 )
                 OrtusToggleRow(
-                    title: "Snooze notifications",
-                    subtitle: "Turns on Do Not Disturb in Slack",
+                    title: "Snooze notifications (Do Not Disturb)",
                     isOn: $focusManager.slackDndEnabled
                 )
                 if focusManager.slackStatusEnabled {
@@ -125,7 +136,7 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Not connected")
                     .font(OrtusTheme.Typo.bodyMedium)
-                Text("Connect to update your status during focus")
+                Text("Connect your Slack workspace")
                     .font(OrtusTheme.Typo.caption)
                     .foregroundStyle(.secondary)
             }

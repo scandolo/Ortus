@@ -478,7 +478,10 @@ struct OrtusRowModifier: ViewModifier {
     func body(content: Content) -> some View {
         let shape = RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
         return content
-            .frame(maxWidth: .infinity, alignment: .leading)
+            // A consistent minimum content height keeps single-line rows uniform
+            // regardless of whether they hold a switch, a button, or just text —
+            // so a stack of rows reads as an even, aligned list.
+            .frame(maxWidth: .infinity, minHeight: 26, alignment: .leading)
             .padding(.horizontal, OrtusTheme.spacingMD)
             .padding(.vertical, 12)
             .background(shape.fill(OrtusTheme.cardSurface))
@@ -505,29 +508,24 @@ extension View {
 // MARK: - Settings Toggle Row
 
 /// The workhorse settings control: a labelled switch on its own row. The switch
+/// is pinned hard-right (a plain `Toggle` label leaves it glued to the text), and
 /// tints amber when on, matching the rest of the sunrise palette.
 struct OrtusToggleRow: View {
     let title: String
-    var subtitle: String? = nil
     @Binding var isOn: Bool
     var isEnabled: Bool = true
 
     var body: some View {
-        Toggle(isOn: $isOn) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(OrtusTheme.Typo.bodyMedium)
-                    .foregroundStyle(.primary)
-                if let subtitle {
-                    Text(subtitle)
-                        .font(OrtusTheme.Typo.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
+        HStack(spacing: OrtusTheme.spacingMD) {
+            Text(title)
+                .font(OrtusTheme.Typo.bodyMedium)
+                .foregroundStyle(.primary)
+            Spacer(minLength: OrtusTheme.spacingSM)
+            Toggle("", isOn: $isOn)
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .tint(OrtusTheme.accent)
         }
-        .toggleStyle(.switch)
-        .tint(OrtusTheme.accent)
         .disabled(!isEnabled)
         .opacity(isEnabled ? 1 : 0.5)
         .ortusRow()
