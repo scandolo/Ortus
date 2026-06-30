@@ -7,3 +7,7 @@ DerivedData/
 .DS_Store
 .env
 .env.local
+.gstack/
+*.zip
+ortus-next/
+.claude/

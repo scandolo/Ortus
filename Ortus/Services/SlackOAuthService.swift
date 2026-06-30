@@ -97,6 +97,7 @@ final class SlackOAuthService: ObservableObject {
         invalidateCredentialsCache()
         isConnected = false
         teamName = nil
+        Analytics.capture("slack_disconnected")
         NotificationCenter.default.post(name: .ortusSlackTokenChanged, object: nil)
     }
 
@@ -229,6 +230,7 @@ final class SlackOAuthService: ObservableObject {
             teamName = team.name
         }
         isConnected = true
+        Analytics.capture("slack_connected")
         NotificationCenter.default.post(name: .ortusSlackTokenChanged, object: nil)
     }
 

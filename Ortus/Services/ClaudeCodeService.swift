@@ -63,6 +63,7 @@ final class ClaudeCodeService: ObservableObject {
         let session = sessionID
         let isFirstTurn = !hasStartedSession
         hasStartedSession = true
+        Analytics.capture("chat_message_sent", ["is_first_message": isFirstTurn])
 
         currentTask = Task { @MainActor in
             await runClaude(binary: binary, prompt: trimmed, sessionID: session, isFirstTurn: isFirstTurn)
@@ -79,6 +80,7 @@ final class ClaudeCodeService: ObservableObject {
 
     func clearConversation() {
         stop()
+        Analytics.capture("chat_cleared", ["message_count": messages.count])
         messages.removeAll()
         sessionID = UUID().uuidString
         hasStartedSession = false
@@ -222,7 +224,7 @@ final class ClaudeCodeService: ObservableObject {
             for key in ["query", "channel", "channel_id", "user", "user_id", "text", "name"] {
                 if let value = input[key] as? String, !value.isEmpty {
                     let trimmed = value.count > 60 ? String(value.prefix(60)) + "…" : value
-                    return "\(display) — \(trimmed)"
+                    return "\(display): \(trimmed)"
                 }
             }
         }
@@ -239,7 +241,7 @@ final class ClaudeCodeService: ObservableObject {
     Guidelines:
     - Use the Slack MCP (tools starting with `mcp__claude_ai_Slack__`) for all Slack operations.
     - Do not use other MCPs or tools unless the user explicitly asks for them.
-    - Be concise. Default to short answers. Skip preamble — don't say "I'll help you with that," just do it.
+    - Be concise. Default to short answers. Skip preamble. Don't say "I'll help you with that," just do it.
     - When summarizing messages, give the gist + sender + channel. Don't dump raw transcripts.
     - Resolve user IDs to display names before showing them.
     - Before any mutating Slack action (send message, schedule message, edit canvas), confirm the target \

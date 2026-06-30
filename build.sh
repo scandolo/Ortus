@@ -5,6 +5,16 @@ cd "$(dirname "$0")"
 SIGNING_IDENTITY="Ortus Dev"
 KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
 
+# Usage: ./build.sh [release]
+#   (no arg) → debug build for local dev
+#   release  → optimized build + Ortus-macOS.zip for distribution (what install.sh downloads)
+MODE="${1:-debug}"
+if [ "$MODE" = "release" ]; then
+    CONFIG="release"
+else
+    CONFIG="debug"
+fi
+
 # One-time bootstrap: create a local self-signed code-signing identity.
 #
 # Why: `swift build` produces a binary with no stable signature, so macOS treats
@@ -35,17 +45,36 @@ if ! security find-identity -v -p codesigning "$KEYCHAIN" 2>/dev/null | grep -q 
     echo "  ✓ '$SIGNING_IDENTITY' installed in login keychain"
 fi
 
-# Kill any running Ortus instances
-pkill -f Ortus 2>/dev/null || true
+# Kill any running Ortus instances. Match the app binary path specifically — a
+# bare `pkill -f Ortus` also matches anything with "Ortus" in its command line
+# (the build's own compiler subprocesses, editors, agents in an Ortus/ checkout).
+pkill -f 'Ortus.app/Contents/MacOS/Ortus' 2>/dev/null || true
 
-swift build
+if [ "$CONFIG" = "release" ]; then
+    swift build -c release
+else
+    swift build
+fi
 
 APP_DIR="Ortus.app/Contents/MacOS"
+RES_DIR="Ortus.app/Contents/Resources"
 rm -rf Ortus.app
-mkdir -p "$APP_DIR"
-cp .build/debug/Ortus "$APP_DIR/Ortus"
+mkdir -p "$APP_DIR" "$RES_DIR"
+cp ".build/$CONFIG/Ortus" "$APP_DIR/Ortus"
 chmod +x "$APP_DIR/Ortus"   # source may have been chmod -x'd by a prior run
 cp Ortus/Info.plist Ortus.app/Contents/Info.plist
+
+# Bundle the Finder app icon (AppIcon.icns) from the asset catalog PNGs, if present.
+ICONSET_SRC="Ortus/Assets.xcassets/AppIcon.appiconset"
+if [ -d "$ICONSET_SRC" ] && command -v iconutil >/dev/null 2>&1; then
+    TMP_ICONSET=$(mktemp -d)/AppIcon.iconset
+    mkdir -p "$TMP_ICONSET"
+    cp "$ICONSET_SRC"/icon_*.png "$TMP_ICONSET"/ 2>/dev/null || true
+    iconutil -c icns "$TMP_ICONSET" -o "$RES_DIR/AppIcon.icns" 2>/dev/null \
+        && echo "→ Bundled AppIcon.icns" \
+        || echo "⚠︎ iconutil failed; app will use a generic icon"
+    rm -rf "$(dirname "$TMP_ICONSET")"
+fi
 
 # Sign with the stable cert so keychain ACLs persist across rebuilds.
 codesign --force --sign "$SIGNING_IDENTITY" \
@@ -53,12 +82,19 @@ codesign --force --sign "$SIGNING_IDENTITY" \
     Ortus.app >/dev/null
 
 # Prevent bare binary execution (avoids duplicate System Settings entries)
-chmod -x .build/debug/Ortus 2>/dev/null || true
+chmod -x ".build/$CONFIG/Ortus" 2>/dev/null || true
+
+# Package a distributable zip for release builds (this is what install.sh downloads).
+if [ "$CONFIG" = "release" ]; then
+    rm -f Ortus-macOS.zip
+    ditto -c -k --keepParent Ortus.app Ortus-macOS.zip
+    echo "→ Packaged Ortus-macOS.zip ($(du -h Ortus-macOS.zip | cut -f1))"
+fi
 
 echo "Built Ortus.app — run with: open Ortus.app"
 echo ""
 echo "NOTE: If you see duplicate entries in System Settings > Login Items,"
 echo "remove any 'Ortus' entry that isn't the .app bundle."
 echo ""
-echo "First launch after signing change: macOS will prompt once per keychain"
-echo "item (slackToken, slackClientId, etc.). Click 'Always Allow' — it'll stick."
+echo "Credentials are stored in ~/Library/Application Support/Ortus/credentials.json"
+echo "(chmod 0600), so there are no macOS keychain prompts on launch."

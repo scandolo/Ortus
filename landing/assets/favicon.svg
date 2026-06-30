@@ -1,0 +1,12 @@
+<svg width="64" height="64" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ortus">
+  <defs>
+    <linearGradient id="favDawn" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2B294D"/>
+      <stop offset="0.4" stop-color="#A8457D"/>
+      <stop offset="0.72" stop-color="#E36333"/>
+      <stop offset="1" stop-color="#F7BC63"/>
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="22" fill="#151418"/>
+  <circle cx="50" cy="50" r="24" fill="none" stroke="url(#favDawn)" stroke-width="9"/>
+</svg>
