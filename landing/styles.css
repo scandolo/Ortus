@@ -245,55 +245,43 @@ img, svg { display: block; max-width: 100%; }
 }
 
 /* --------------------------------------------------------------------------
-   4. Top nav
+   4. Floating nav (logo only)
    -------------------------------------------------------------------------- */
 .nav {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: rgba(21, 20, 24, 0.6);
-  backdrop-filter: saturate(150%) blur(16px);
-  -webkit-backdrop-filter: saturate(150%) blur(16px);
-  border-bottom: 1px solid transparent;
-  transition: border-color var(--t-mid) var(--ease),
-              background var(--t-mid) var(--ease);
+  position: fixed;
+  top: clamp(14px, 2.5vw, 22px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  padding: 0 var(--gutter);
 }
-.nav.is-scrolled {
-  border-bottom-color: var(--hairline);
-  background: rgba(21, 20, 24, 0.82);
-}
-.nav__inner {
+.nav__bar {
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: 14px var(--gutter);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: rgba(32, 30, 37, 0.55);
+  border: 1px solid var(--hairline);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: var(--shadow-card);
 }
-.nav__brand { display: flex; align-items: center; gap: 10px; }
-.nav__mark { display: inline-flex; }
-.nav__word {
-  font-family: var(--font-round);
-  font-weight: 600;
-  font-size: 1.2rem;
-  letter-spacing: -0.01em;
+.nav__brand {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9px;
+  transition: transform var(--t-fast) var(--ease);
 }
-.nav__links { display: flex; align-items: center; gap: clamp(14px, 2.4vw, 28px); }
-.nav__links a:not(.btn) {
-  font-size: 0.92rem;
-  color: var(--muted);
-  transition: color var(--t-fast) var(--ease);
+.nav__brand:hover {
+  transform: translateY(-1px);
 }
-.nav__links a:not(.btn):hover { color: var(--text); }
+.nav__logo {
+  display: block;
+  border-radius: 8px;
+}
 
-/* Hide text anchors on small screens; keep brand + CTA */
-@media (max-width: 600px) {
-  .nav__links a:not(.btn) { display: none; }
-}
-
-/* --------------------------------------------------------------------------
-   5. Hero
-   -------------------------------------------------------------------------- */
 .hero {
   position: relative;
   overflow: hidden;
@@ -347,6 +335,10 @@ img, svg { display: block; max-width: 100%; }
   font-size: clamp(1.05rem, 2.3vw, 1.22rem);
   color: var(--muted);
   max-width: 480px;
+}
+.hero__sub--detail {
+  margin-top: 14px;
+  font-size: clamp(0.98rem, 2vw, 1.08rem);
 }
 .hero__cta {
   margin-top: 32px;
