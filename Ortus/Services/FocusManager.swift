@@ -71,6 +71,7 @@ final class FocusManager: ObservableObject {
     func addSchedule(_ schedule: FocusSchedule) {
         schedules.append(schedule)
         ScheduleStore.save(schedules)
+        Analytics.capture("schedule_added", ["days_count": schedule.days.count])
     }
 
     func updateSchedule(_ schedule: FocusSchedule) {
@@ -83,6 +84,7 @@ final class FocusManager: ObservableObject {
     func deleteSchedule(_ schedule: FocusSchedule) {
         schedules.removeAll { $0.id == schedule.id }
         ScheduleStore.save(schedules)
+        Analytics.capture("schedule_deleted")
     }
 
     // MARK: - Focus Session Control
@@ -103,6 +105,8 @@ final class FocusManager: ObservableObject {
         startMonitoringLaunches()
         applySlackStatusForFocus()
 
+        Analytics.capture("focus_started", ["scheduled": name != "Manual Focus"])
+
         // Grace period only for manual sessions — scheduled ones are expected
         if name == "Manual Focus" {
             startGracePeriod()
@@ -122,6 +126,8 @@ final class FocusManager: ObservableObject {
         currentSessionName = nil
         stopMonitoringLaunches()
         clearSlackStatusForFocus()
+
+        Analytics.capture("focus_reverted")
 
         if showNotifications {
             sendNotification(title: "Focus Reverted", body: "Focus session cancelled. You can reopen Slack when ready.")
@@ -164,6 +170,8 @@ final class FocusManager: ObservableObject {
         stopMonitoringLaunches()
         clearSlackStatusForFocus()
 
+        Analytics.capture("focus_ended")
+
         if relaunchSlackOnEnd {
             launchSlack()
         }
@@ -180,6 +188,7 @@ final class FocusManager: ObservableObject {
         guard isInFocus, seconds > 0, let currentEnd = focusEndTime else { return }
         focusEndTime = currentEnd.addingTimeInterval(seconds)
         applySlackStatusForFocus()
+        Analytics.capture("focus_extended", ["seconds_added": Int(seconds)])
     }
 
     func emergencyEndFocusSession() {
@@ -205,6 +214,8 @@ final class FocusManager: ObservableObject {
         stopMonitoringLaunches()
         clearSlackStatusForFocus()
         launchSlack()
+
+        Analytics.capture("focus_emergency_ended")
 
         if showNotifications {
             sendNotification(title: "Focus Ended", body: "Slack is available again.")

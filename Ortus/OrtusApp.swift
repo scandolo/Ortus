@@ -3,6 +3,12 @@ import SwiftUI
 class AppDelegate: NSObject, NSApplicationDelegate {
     var focusManager: FocusManager?
 
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        Analytics.start()
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+        Analytics.capture("app_launched", ["version": version])
+    }
+
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard let focusManager else { return .terminateNow }
         // Block quit only while focus is genuinely active. After an emergency end,

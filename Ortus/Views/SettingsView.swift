@@ -19,7 +19,7 @@ struct SettingsView: View {
     /// Index 0 is the default tagline so first launch shows nothing unusual.
     private let taglines = [
         "Focus mode for deep work",
-        "Ortus, n. — the rising of the sun",
+        "Ortus, n. the rising of the sun",
         "First light. First task.",
         "Carpe lucem.",
         "Wake. Work. Wonder."

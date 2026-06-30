@@ -1,0 +1,7 @@
+:{$PORT:80} {
+	root * /usr/share/caddy
+	encode gzip
+	header Cache-Control "no-cache"
+	file_server
+	try_files {path} {path}/ /index.html
+}
