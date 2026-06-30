@@ -80,11 +80,18 @@ struct SettingsView: View {
                         .truncationMode(.middle)
                 }
                 Spacer()
+                if !claudeCodeService.isConfigured {
+                    Button("Re-check") { claudeCodeService.redetect() }
+                        .buttonStyle(OrtusGhostButtonStyle())
+                }
             }
 
-            Text("Chat runs your local Claude Code and its Slack MCP. No API key needed.")
+            Text(claudeCodeService.isConfigured
+                ? "Chat runs your local Claude Code and its Slack MCP. No API key needed."
+                : "If you just installed it, click Re-check. Or run `which claude` in Terminal and paste the path below.")
                 .font(OrtusTheme.Typo.caption)
                 .foregroundStyle(OrtusTheme.textMuted)
+                .fixedSize(horizontal: false, vertical: true)
 
             VStack(alignment: .leading, spacing: OrtusTheme.spacingXS) {
                 Text("Custom binary path (optional)")
@@ -95,6 +102,7 @@ struct SettingsView: View {
             }
         }
         .ortusCard()
+        .onAppear { claudeCodeService.detectIfNeeded() }
     }
 
     // MARK: - Slack Status
