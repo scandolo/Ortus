@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var claudeCodeService: ClaudeCodeService
+    @EnvironmentObject var updateService: UpdateService
     @State private var selectedTab = 0
 
     /// The design size the whole UI is laid out at. On small/zoomed displays the
@@ -39,7 +40,10 @@ struct ContentView: View {
         // swallow a 13" screen set to "Larger Text".
         .scaleEffect(scale, anchor: .topLeading)
         .frame(width: Self.designSize.width * scale, height: Self.designSize.height * scale)
-        .onAppear { claudeCodeService.detectIfNeeded() }
+        .onAppear {
+            claudeCodeService.detectIfNeeded()
+            Task { await updateService.checkForUpdates() }
+        }
     }
 
     /// How much to shrink the panel so it comfortably fits the active screen.

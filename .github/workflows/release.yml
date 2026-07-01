@@ -1,0 +1,57 @@
+name: Release
+
+# Ships a release on every push to main, gated by the version in Info.plist:
+# if no release exists yet for the current CFBundleShortVersionString, build and
+# publish it. So the flow is: bump the version → merge to main → release is
+# published automatically → existing users auto-update (UpdateService).
+#
+# Commits that don't bump the version don't republish, so a docs/readme commit
+# won't push an identical update to every user. To force a release on a given
+# commit, bump CFBundleShortVersionString in Ortus/Info.plist.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version from Info.plist
+        id: ver
+        run: |
+          V=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Ortus/Info.plist)
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Version: $V"
+
+      - name: Check whether this version is already released
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "v${{ steps.ver.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Release v${{ steps.ver.outputs.version }} already exists — skipping."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build release (ad-hoc signed)
+        if: steps.check.outputs.exists == 'false'
+        run: ORTUS_SIGNING_IDENTITY=- ./build.sh release
+
+      - name: Publish GitHub release
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ steps.ver.outputs.version }}" \
+            Ortus-macOS.zip \
+            --title "Ortus ${{ steps.ver.outputs.version }}" \
+            --generate-notes

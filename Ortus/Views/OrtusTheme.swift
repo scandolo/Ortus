@@ -467,3 +467,67 @@ struct OrtusSectionHeader: View {
             .foregroundStyle(OrtusTheme.textMuted)
     }
 }
+
+// MARK: - Settings Row (compact inline list row)
+
+/// A single inline settings row: a lifted surface holding leading content and a
+/// trailing control (toggle, button, status). Lighter than `ortusCard()` — rows
+/// stack densely in a list, so they carry only a whisper of elevation to avoid
+/// the noise that a full card shadow per row would create.
+struct OrtusRowModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
+        return content
+            // A consistent minimum content height keeps single-line rows uniform
+            // regardless of whether they hold a switch, a button, or just text —
+            // so a stack of rows reads as an even, aligned list.
+            .frame(maxWidth: .infinity, minHeight: 26, alignment: .leading)
+            .padding(.horizontal, OrtusTheme.spacingMD)
+            .padding(.vertical, 12)
+            .background(shape.fill(OrtusTheme.cardSurface))
+            .overlay(shape.strokeBorder(OrtusTheme.hairline, lineWidth: 1))
+            .overlay(
+                shape.strokeBorder(
+                    LinearGradient(
+                        colors: [OrtusTheme.innerHighlight, .clear],
+                        startPoint: .top,
+                        endPoint: .center
+                    ),
+                    lineWidth: 1
+                )
+            )
+            .clipShape(shape)
+            .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
+    }
+}
+
+extension View {
+    func ortusRow() -> some View { modifier(OrtusRowModifier()) }
+}
+
+// MARK: - Settings Toggle Row
+
+/// The workhorse settings control: a labelled switch on its own row. The switch
+/// is pinned hard-right (a plain `Toggle` label leaves it glued to the text), and
+/// tints amber when on, matching the rest of the sunrise palette.
+struct OrtusToggleRow: View {
+    let title: String
+    @Binding var isOn: Bool
+    var isEnabled: Bool = true
+
+    var body: some View {
+        HStack(spacing: OrtusTheme.spacingMD) {
+            Text(title)
+                .font(OrtusTheme.Typo.bodyMedium)
+                .foregroundStyle(.primary)
+            Spacer(minLength: OrtusTheme.spacingSM)
+            Toggle("", isOn: $isOn)
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .tint(OrtusTheme.accent)
+        }
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.5)
+        .ortusRow()
+    }
+}
