@@ -19,9 +19,19 @@ permissions:
 
 jobs:
   release:
-    runs-on: macos-14
+    # macos-15 ships Xcode 16 / Swift 6, which Package.swift requires
+    # (swift-tools-version 6.0). macos-14 defaults to Swift 5.10 and can't build it.
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+
+      - name: Select Xcode 16 (Swift 6 toolchain)
+        run: |
+          # macos-15 already defaults to Xcode 16, but select the newest installed
+          # Xcode 16.x explicitly rather than hardcode a minor-version bundle name.
+          XCODE=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$XCODE" ]; then sudo xcode-select -s "$XCODE"; fi
+          swift --version
 
       - name: Read version from Info.plist
         id: ver
