@@ -1,208 +1,162 @@
+<div align="center">
+
+<img src="landing/assets/favicon.svg" width="72" height="72" alt="Ortus" />
+
 # Ortus
 
-## FOR HUMANS - WHAT IS ORTUS
+**A macOS menu-bar focus app that blocks distractions during deep work.**
+On a schedule or on demand. No end button until you're done.
 
-**A macOS menu bar app that blocks Slack during focus hours so you can do deep work.**
+[![Website](https://img.shields.io/badge/website-ortus.up.railway.app-FD9E4D)](https://ortus.up.railway.app)
+[![Latest release](https://img.shields.io/github/v/release/scandolo/Ortus?color=FD9E4D&label=download)](https://github.com/scandolo/Ortus/releases/latest)
+[![Platform](https://img.shields.io/badge/macOS-14%2B-111111?logo=apple&logoColor=white)](https://ortus.up.railway.app)
+[![Built with SwiftUI](https://img.shields.io/badge/SwiftUI-Swift%206-FA7343?logo=swift&logoColor=white)](Package.swift)
+[![License: MIT](https://img.shields.io/badge/license-MIT-FD9E4D)](LICENSE)
 
-Ortus kills Slack when focus mode activates (manually or on a schedule) and keeps it dead — if you try to reopen it, Ortus terminates it again. When focus ends, Slack comes back automatically.
+[Website](https://ortus.up.railway.app) · [Install](#install) · [How it works](#how-it-works) · [Development](#development)
 
-There's no "End Focus" button to tempt you. Quitting the app during focus is blocked. The only escape hatch is a hidden emergency end that's rate-limited to once per week.
+<br />
 
-While focused, your Slack profile flips to a configurable "Ortus mode" status with Do Not Disturb engaged, so teammates see you're heads-down. The status auto-clears when focus ends.
+<img src="landing/assets/mockup.png" width="720" alt="Ortus running a locked deep-focus session in the macOS menu bar" />
 
-An optional in-app AI chat lets you query Slack without unblocking it — powered by your local Claude Code install and its Slack MCP server.
+</div>
 
-### Why
+---
 
-Slack is the biggest productivity killer in most people's workday. "Just checking one message" turns into 30 minutes of context-switching. Existing focus tools set DND status or mute notifications — but Slack is still *right there*, one click away.
+## What is Ortus?
 
-Ortus takes a harder line: Slack is gone. Not minimized, not muted — terminated. And it can't come back until your focus time is over. This creates the kind of forced boundary that actually works for deep work.
+Ortus lives in your Mac menu bar and blocks your biggest distraction while you do
+deep work. When focus mode starts (manually or on a schedule), Ortus terminates
+Slack and keeps it terminated: reopen it and Ortus closes it again. When your
+session ends, Slack comes back on its own.
 
-### Features
+There is no "End Focus" button to talk yourself into. Quitting Ortus mid-session
+is blocked too. The only escape hatch is a hidden emergency end, rate-limited to
+once per week.
 
-- **Menu bar app** — lives in your menu bar with a sunrise icon, no dock icon
-- **Slack blocking** — kills Slack and prevents relaunch during focus
-- **Scheduled focus** — set recurring focus hours (e.g., weekdays 9am-12pm)
-- **Manual focus** — start a timed session with a slider (15 min to 4 hours)
-- **Quit blocking** — Cmd+Q and Dock quit are blocked during focus
-- **Emergency end** — hidden in Settings, rate-limited to once per week
-- **Developer mode** — tap the version number 7 times to get a dev-only end button
-- **Slack status sync** — auto-sets your Slack profile status + DND during focus, clears on exit
-- **AI Slack assistant** — chat with your Slack workspace through Claude Code without unblocking Slack
+An optional AI chat (powered by your own Claude) lets you check what is happening
+in Slack without opening it, so you stay heads-down.
 
-### Setup from scratch on a Mac
+> Willpower runs out. A locked session doesn't. Ortus holds the line so you can
+> stay in the work.
 
-If you're starting from a fresh Mac and want to install and run Ortus, follow these steps in order.
+## Features
 
-#### 1. Requirements
+- **Menu bar app** - lives in your menu bar with a sunrise icon, no dock clutter.
+- **Real blocking** - kills Slack and prevents relaunch during focus. Not muted, not DND. Gone.
+- **Scheduled focus** - set recurring focus hours (for example, weekdays 9:00-12:00).
+- **Manual focus** - start a timed session with a slider, from 15 minutes to 4 hours.
+- **No end button** - once a session starts, there is no off switch until the time is up.
+- **Quit blocking** - Cmd+Q and Dock quit are blocked while focus is active.
+- **Emergency end** - hidden in Settings and rate-limited to once per calendar week.
+- **AI Slack assistant** - ask your own Claude about your Slack channels without opening Slack.
+- **Native and dependency-light** - pure SwiftUI, no Electron, no background account required.
 
-- **macOS 14 Sonoma or later** (15 Sequoia / 26 Tahoe both work). Older versions are not supported.
-- **Apple Silicon or Intel Mac.**
-- **Swift toolchain.** Either:
-  - Apple CommandLineTools — install with `xcode-select --install` from Terminal (small, ~1.5 GB), or
-  - Full Xcode from the App Store (much larger, only needed if you want to develop Ortus itself).
+## Install
 
-#### 2. Get the code and build
+### One-line install (recommended)
+
+```bash
+curl -fsSL https://ortus.up.railway.app/install.sh | bash
+```
+
+This downloads the latest release into `/Applications` and launches it. Because it
+installs via the terminal (not a browser download), macOS does not quarantine the
+app, so Gatekeeper does not block it. Requires macOS 14 or later.
+
+### Download manually
+
+Grab the latest `Ortus-macOS.zip` from the
+[Releases page](https://github.com/scandolo/Ortus/releases/latest), unzip it, and
+move `Ortus.app` to `/Applications`.
+
+### Build from source
 
 ```bash
 git clone https://github.com/scandolo/Ortus.git
 cd Ortus
-./build.sh         # Compiles Swift sources, produces Ortus.app
-open Ortus.app     # Launches it
+./build.sh        # kills running instances, builds, and creates Ortus.app
+open Ortus.app
 ```
 
-The first launch may show a Gatekeeper warning ("Ortus can't be opened because the developer cannot be verified"). To bypass once:
-1. Right-click `Ortus.app` in Finder → **Open** → **Open** in the prompt.
-2. Or, System Settings → Privacy & Security → scroll to the "Ortus was blocked" entry → **Open Anyway**.
+Requires macOS 14+ and the Swift 6 toolchain (Xcode).
 
-Once launched, Ortus appears as a sunrise icon in your menu bar. There is no Dock icon (it's a menu bar app).
+### AI chat (optional)
 
-#### 3. Optional — enable AI chat (Claude Code subprocess)
+To enable the AI Slack assistant, add a Claude API key and connect Slack via OAuth
+in **Settings**. Credentials are stored in the macOS Keychain.
 
-Ortus's Chat tab runs your local `claude` CLI as a subprocess and talks to your Slack workspace through Claude Code's built-in Slack MCP. Nothing about the chat lives inside Ortus — no API keys, no custom tool definitions.
+## How it works
 
-```bash
-# Install Claude Code (one-time):
-npm install -g @anthropic-ai/claude-code
+1. When focus activates, Ortus terminates all Slack processes.
+2. It watches for app launches and closes Slack again if it tries to start.
+3. An `NSApplicationDelegate` intercepts `Cmd+Q` and termination requests so you
+   cannot quit your way out.
+4. When focus ends (or the scheduled window passes), monitoring stops and Slack
+   relaunches on its own.
 
-# Verify it's on PATH:
-which claude       # should print something like /opt/homebrew/bin/claude
-claude --version   # should print "2.x.x (Claude Code)"
-```
+## Privacy
 
-Then in Claude Code, authenticate (`claude` once and follow prompts) and connect the Slack MCP server (Claude Code → `/mcp` → add Slack). Ortus auto-detects the `claude` binary; if you've installed it somewhere unusual, set the path in **Settings → AI chat → Custom binary path**.
+Your Slack token and Claude API key are stored in the macOS Keychain and are only
+ever sent to Slack and Anthropic respectively. Ortus sends anonymous, aggregate
+usage events (via PostHog) to help improve the app. There are no accounts.
 
-#### 4. Optional — enable Slack status sync during focus
+## Development
 
-When focus mode activates, Ortus can set your Slack profile status to "Ortus mode" (or anything you want) and engage Do Not Disturb. Teammates see you're heads-down; you literally can't open Slack to be tempted by it.
+Ortus is a SwiftUI macOS menu-bar app built with Swift Package Manager. It runs as
+a `MenuBarExtra` with `.window` style (a popover panel) and no dock icon
+(`LSUIElement = true`).
 
-You need a Slack app you own — takes about a minute:
-
-1. Open [api.slack.com/apps](https://api.slack.com/apps?new_app=1) → **Create New App** → **From scratch**.
-   - **App Name:** anything (e.g. "My Ortus")
-   - **Workspace:** the workspace you want status updates in
-2. Once created, in the left sidebar go to **OAuth & Permissions**.
-3. Scroll to **Redirect URLs** → **Add New Redirect URL** → paste **exactly**:
-
-    ```
-    http://127.0.0.1:53124/callback
-    ```
-
-    Click **Add**, then **Save URLs**. (This must match what Ortus uses for the loopback OAuth callback — Slack does strict exact matching.)
-4. Scroll further down to **User Token Scopes** → **Add an OAuth Scope** → add:
-   - `users.profile:write`
-   - `dnd:write`
-5. Go to **Basic Information** in the left sidebar → scroll to **App Credentials** → copy your **Client ID** and **Client Secret**.
-6. In Ortus → menu bar icon → ⚙ Settings → **Slack status** card → **Set up** → paste Client ID and Client Secret → **Connect Slack**.
-7. A browser tab opens with Slack's authorization page. Click **Allow**. The tab will close itself and Ortus's Settings will show "Connected to {your workspace}".
-
-After this you can enable **Update Slack status during focus**, customize the status text + emoji, and toggle **Snooze notifications (DND)**.
-
-#### 5. Optional — start at login + scheduling
-
-- **Launch at login:** Settings → Preferences → toggle "Launch at login".
-- **Recurring focus hours:** Schedule tab → "+ Add schedule" → name it, pick days, set start/end time. Schedules fire automatically.
-
-### How It Works
-
-1. When focus activates, Ortus terminates all Slack processes
-2. It monitors app launches and kills Slack if it tries to start
-3. It calls Slack's `users.profile.set` + `dnd.setSnooze` to mirror "Ortus mode" on the server side
-4. An `NSApplicationDelegate` intercepts `Cmd+Q` and termination requests
-5. When focus ends, monitoring stops, Slack relaunches (if enabled), status clears, DND ends
-
----
-
-## FOR LLMs - HOW TO WORK IN THIS REPO
-
-### Architecture
-
-Ortus is a SwiftUI macOS menu bar app built with Swift Package Manager. It runs as a `MenuBarExtra` with `.window` style (popover panel). No dock icon (`LSUIElement = true` in Info.plist).
-
-The AI chat feature is **not** baked into the app — it spawns the user's local `claude` CLI as a subprocess (`Process()` with `--output-format stream-json`) and streams JSON events back into the chat UI. Slack queries inside the chat route through Claude Code's Slack MCP server, not through Ortus's own Slack client.
-
-### Project Structure
+### Project structure
 
 ```
 Ortus/
-├── Package.swift                 # SPM config, macOS 14+, swift-tools 6.0, single executable target
-├── build.sh                      # Build script: kills old instances, swift build, creates .app bundle
-├── Ortus/
-│   ├── OrtusApp.swift            # @main entry, MenuBarExtra scene, AppDelegate for quit blocking
-│   ├── Models/
-│   │   ├── ChatMessage.swift     # role + content + timestamp + kind (text / toolUse / error)
-│   │   ├── FocusSchedule.swift   # Schedule model + Weekday enum + ScheduleStore (UserDefaults)
-│   │   └── SlackModels.swift     # OAuth response types + generic ok/error response
-│   ├── Services/
-│   │   ├── FocusManager.swift    # Core: focus state, Slack kill/monitor, schedules, emergency end, status apply/clear
-│   │   ├── ClaudeCodeService.swift # Spawns `claude` CLI subprocess, parses stream-json, publishes ChatMessages
-│   │   ├── SlackService.swift    # Status + DND writer (users.profile.set, dnd.setSnooze/endSnooze)
-│   │   ├── SlackOAuthService.swift # OAuth flow with loopback HTTP server (write scopes only)
-│   │   └── KeychainService.swift # macOS Keychain wrapper for Slack credentials
-│   └── Views/
-│       ├── OrtusTheme.swift      # Design system: glass cards, capsule buttons, materials, tokens
-│       ├── ContentView.swift     # Tab container with floating glass tab bar
-│       ├── FocusView.swift       # Focus status, timer, start button (no end button)
-│       ├── ScheduleView.swift    # Schedule list with inline editing (no sheets)
-│       ├── ChatView.swift        # AI chat: text bubbles, tool-use chips, error pills, stop/clear
-│       └── SettingsView.swift    # AI chat config, Slack status section, preferences, emergency, about
+├── Package.swift              # SPM config, macOS 14+, single executable target
+├── build.sh                   # Build script: kills instances, builds, bundles Ortus.app
+├── landing/                   # The marketing site (ortus.up.railway.app), served by Caddy
+└── Ortus/
+    ├── OrtusApp.swift         # @main entry, MenuBarExtra scene, quit-blocking AppDelegate
+    ├── Models/                # ChatMessage, FocusSchedule + ScheduleStore, Slack API types
+    ├── Services/
+    │   ├── FocusManager.swift # Core logic: focus state, Slack kill/monitor, schedules, emergency end
+    │   ├── ClaudeService.swift# Claude API client with an agentic tool-use loop
+    │   ├── SlackService.swift # Slack Web API client
+    │   ├── SlackOAuthService.swift # OAuth flow via a loopback HTTP server
+    │   ├── KeychainService.swift   # macOS Keychain wrapper for secrets
+    │   └── Analytics.swift    # Thin PostHog wrapper (anonymous usage events)
+    ├── Views/
+    │   ├── OrtusTheme.swift   # Design system: sunrise-amber accent, glass materials, tokens
+    │   ├── ContentView.swift  # Tab container (Focus, Schedule, Chat, Settings)
+    │   ├── FocusView.swift    # Timer, start button, grace period (no end button)
+    │   ├── ScheduleView.swift # Recurring schedules with inline editing
+    │   ├── ChatView.swift     # AI chat with Claude
+    │   └── SettingsView.swift # API keys, Slack OAuth, preferences, emergency end
+    └── Tools/
+        └── SlackTools.swift   # Tool definitions for Claude's tool-use
 ```
 
-### Key Design Decisions
+### Key design decisions
 
-**No End Focus button**: The core UX insight is that having an easy escape defeats the purpose. The button is intentionally removed. Emergency end exists in Settings but is rate-limited to 1/week. Developer mode (7 taps on version label) adds a dev-only end button to FocusView.
-
-**Inline editing in ScheduleView**: `.sheet()` creates a new `NSWindow` which causes the `MenuBarExtra` panel to lose key window status and auto-dismiss. The fix is to expand an inline editor in-place using state variables (`editingScheduleID` / `isAddingNew`). `ScrollView` + `VStack` replaces `List` to avoid `NSTableView` focus issues. `Button` wraps only the text label (not the toggle) to prevent tap gesture conflicts.
-
-**Quit blocking via AppDelegate**: `NSApplicationDelegateAdaptor` with `applicationShouldTerminate` returning `.terminateCancel` when focus is active. This blocks Cmd+Q, Dock quit, and programmatic termination.
-
-**Emergency end keeps Slack blocked**: `emergencyEndFocusSession()` sets `isEmergencyEnded = true`, clears focus UI state, but does NOT stop launch monitoring. The schedule evaluator checks `originalFocusEndTime` and only cleans up monitoring when that time passes. Status is cleared immediately so teammates aren't confused.
-
-**Claude Code subprocess for chat**: Ortus does **not** hold an Anthropic API key. It spawns `claude -p <msg> --output-format stream-json --verbose --model sonnet --append-system-prompt <ortus context> --permission-mode bypassPermissions` per turn, using `--session-id <uuid>` on the first turn and `--resume <uuid>` for follow-ups. Stop button calls `process.terminate()`; Clear resets the session UUID.
-
-**Slack OAuth scoped to writes only**: After moving chat to Claude Code, the only thing Ortus's Slack OAuth does is set status and DND. Scopes are narrowed to `users.profile:write,dnd:write`. All read-side queries (search, history, channels, users) go through Claude Code's MCP.
-
-**Status update fire-and-forget**: `applySlackStatusForFocus` / `clearSlackStatusForFocus` in FocusManager use `Task { try? await ... }` so a Slack outage doesn't block focus state transitions.
-
-**StateObject injection on appear**: Cross-service wiring (FocusManager.slackService = slackService) happens in `.onAppear`, not `App.init` — accessing `_focusManager.wrappedValue` in init creates a phantom StateObject instance on macOS 14+.
-
-**Glass surfaces via Materials**: Cards use `.regularMaterial` in continuous RoundedRectangles; floating toolbars use Capsules. On macOS 26 (Tahoe) the system renders these with the new Liquid Glass treatment automatically, so the look is correct on both Sequoia and Tahoe without API drift. Inner highlight strokes + soft shadows add depth.
-
-### State Management
-
-- `FocusManager` (ObservableObject, `@MainActor`): central state for focus sessions, schedules, emergency end, Slack status apply/clear
-  - `@Published`: `isInFocus`, `isEmergencyEnded`, `focusEndTime`, `originalFocusEndTime`, `isInGracePeriod`, `gracePeriodEndTime`, `schedules`, `currentSessionName`
-  - `@AppStorage`: `relaunchSlackOnEnd`, `showNotifications`, `lastEmergencyEndTimestamp`, `developerModeEnabled`, `slackStatusEnabled`, `slackStatusText`, `slackStatusEmoji`, `slackDndEnabled`
-  - `slackService: SlackService?` injected by OrtusApp.onAppear
-  - Schedule evaluation runs on a 30-second timer
-- `ClaudeCodeService`: subprocess manager + stream-json parser, owns the chat message list
-- `SlackService`: status/DND writer
-- `SlackOAuthService`: loopback OAuth flow (write scopes only)
-- All four are passed via `.environmentObject()`
-- Slack credentials stored in macOS Keychain via `KeychainService`
-
-### Design System (OrtusTheme.swift)
-
-- **Surfaces**: `.regularMaterial` for cards, `.thinMaterial` for buttons / text fields / chips, `.ultraThinMaterial` for the tab bar
-- **Shapes**: continuous corner radius everywhere. `radiusSM(8)`, `radiusMD(12)`, `radiusLG(18)`, `radiusXL(26)`. Capsules for pill controls
-- **Colors**: `accent` (sunrise green, light/dark adaptive), `accentSoft`, `accentHover`, `warning`, `danger`, `success` (= accent), `textMuted`, `innerHighlight` (white 10%), `hairline` (primary 8%)
-- **Spacing**: 4pt grid — `spacingXS(4)`, `spacingSM(8)`, `spacingMD(16)`, `spacingLG(22)`, `spacingXL(32)`
-- **Components**: `.ortusCard()` and `.ortusCard(tint:)` modifiers, `.ortusFloatingToolbar()` for input bars, `OrtusPrimaryButtonStyle` (tinted glass CTA), `OrtusSecondaryButtonStyle` (glass capsule), `OrtusGhostButtonStyle` (borderless), `OrtusTextFieldStyle` (glass with focus glow), `OrtusEmptyState`, `OrtusSectionHeader`, `VibrantBackground`
-
-### Build & Run
-
-```bash
-./build.sh         # swift build, creates Ortus.app bundle
-open Ortus.app     # Launch from .app bundle
-```
-
-Direct binary execution is blocked (`chmod -x` on `.build/debug/Ortus`) to avoid duplicate System Settings entries.
+- **No End Focus button.** An easy escape defeats the purpose. Emergency end lives
+  in Settings and is gated to once per calendar week. Developer mode (tap the version
+  label 7 times) adds a dev-only end button.
+- **Inline editing in ScheduleView.** `.sheet()` spawns a new `NSWindow`, which makes
+  the `MenuBarExtra` panel lose key-window status and dismiss. Schedules are edited
+  in place with state variables instead.
+- **Quit blocking via AppDelegate.** `applicationShouldTerminate` returns
+  `.terminateCancel` while focus is active, blocking Cmd+Q, Dock quit, and
+  programmatic termination.
+- **Glass material design.** Cards and the status ring use `.ultraThinMaterial` with
+  continuous (supercircle) corner radii, adapting to light and dark mode.
 
 ### Dependencies
 
-None. Pure Swift/SwiftUI with Apple frameworks only (AppKit, Security, Network, UserNotifications, ServiceManagement). The Claude Code subprocess is the user's own install, spawned via `Process()`.
+[PostHog](https://github.com/PostHog/posthog-ios) for anonymous usage analytics.
+Everything else is Apple frameworks only (AppKit, Security, Network,
+UserNotifications, ServiceManagement).
 
-### Integrations
+## License
 
-- **Claude Code (subprocess)**: ` /opt/homebrew/bin/claude -p <prompt> --output-format stream-json --verbose --model sonnet --append-system-prompt <prompt> --permission-mode bypassPermissions [--session-id | --resume]`. Path auto-detected; custom path settable in Settings. Uses the user's Claude auth and MCP config — Slack queries route through their Slack MCP server.
-- **Slack Web API (status only)**: OAuth v2 user token flow with loopback HTTP server. Scopes: `users.profile:write,dnd:write`. Endpoints: `users.profile.set`, `dnd.setSnooze`, `dnd.endSnooze`.
+[MIT](LICENSE). Free and open source.
+
+<div align="center"><sub>Carpe lucem.</sub></div>

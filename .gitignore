@@ -11,3 +11,10 @@ DerivedData/
 *.zip
 ortus-next/
 .claude/
+.conductor/
+
+# Internal working docs — keep out of the public repo
+*-transcript-*.md
+*launch-strategy*.md
+*-setup-report.md
+office-hours-*.md
