@@ -4,8 +4,8 @@
 
 # Ortus
 
-**A macOS menu-bar focus app that blocks distractions during deep work.**
-On a schedule or on demand. No end button until you're done.
+**The most hardcore focus app for makers.**
+A Mac menu-bar app that blocks distractions so you can do deep work.
 
 [![Website](https://img.shields.io/badge/website-ortus.up.railway.app-FD9E4D)](https://ortus.up.railway.app)
 [![Latest release](https://img.shields.io/github/v/release/scandolo/Ortus?color=FD9E4D&label=download)](https://github.com/scandolo/Ortus/releases/latest)
@@ -39,18 +39,6 @@ in Slack without opening it, so you stay heads-down.
 
 > Willpower runs out. A locked session doesn't. Ortus holds the line so you can
 > stay in the work.
-
-## Features
-
-- **Menu bar app** - lives in your menu bar with a sunrise icon, no dock clutter.
-- **Real blocking** - kills Slack and prevents relaunch during focus. Not muted, not DND. Gone.
-- **Scheduled focus** - set recurring focus hours (for example, weekdays 9:00-12:00).
-- **Manual focus** - start a timed session with a slider, from 15 minutes to 4 hours.
-- **No end button** - once a session starts, there is no off switch until the time is up.
-- **Quit blocking** - Cmd+Q and Dock quit are blocked while focus is active.
-- **Emergency end** - hidden in Settings and rate-limited to once per calendar week.
-- **AI Slack assistant** - ask your own Claude about your Slack channels without opening Slack.
-- **Native and dependency-light** - pure SwiftUI, no Electron, no background account required.
 
 ## Install
 
