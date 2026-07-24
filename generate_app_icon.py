@@ -5,9 +5,12 @@ Produces all required sizes for macOS AppIcon.appiconset.
 """
 
 import math
+import os
 from PIL import Image, ImageDraw
 
-OUTPUT_DIR = "/Users/federico/fyxer/Ortus/Ortus/Assets.xcassets/AppIcon.appiconset"
+# Repo-relative output path so this runs on any machine.
+_REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_DIR = os.path.join(_REPO_ROOT, "Ortus", "Assets.xcassets", "AppIcon.appiconset")
 
 # Colors
 BG_COLOR = (250, 250, 248)       # #FAFAF8 warm off-white

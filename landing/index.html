@@ -12,12 +12,18 @@
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://ortus.up.railway.app/" />
+  <meta property="og:site_name" content="Ortus" />
   <meta property="og:title" content="Ortus: the hardcore focus app for makers" />
   <meta property="og:description" content="A macOS menu-bar app that blocks distractions on a schedule or on demand. No end button. Free & open source." />
-  <meta property="og:image" content="assets/favicon.svg" />
+  <meta property="og:image" content="https://ortus.up.railway.app/assets/social-preview.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Ortus, a macOS menu-bar focus app, showing a locked 52:00 deep-focus session." />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Ortus: the hardcore focus app for makers" />
   <meta name="twitter:description" content="A macOS menu-bar app that blocks distractions while you do deep work. No end button." />
+  <meta name="twitter:image" content="https://ortus.up.railway.app/assets/social-preview.png" />
 
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
   <link rel="stylesheet" href="styles.css" />
@@ -61,10 +67,22 @@
           </div>
         </div>
 
-        <!-- ===== APP POPOVER MOCK (the proof) ===== -->
+        <!-- ===== macOS MENU-BAR MOCKUP (the proof) ===== -->
         <div class="hero__device fade-up d5">
-          <div class="hero__device-glow"></div>
-          <div class="popover">
+          <div class="hero__device-glow" aria-hidden="true"></div>
+          <div class="macscene">
+            <!-- macOS menu bar with the Ortus sun lit -->
+            <div class="menubar" aria-hidden="true">
+              <div class="menubar__sys">
+                <svg width="20" height="14" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="18" height="10" rx="2.5"/><rect x="3" y="5" width="12" height="6" rx="1" fill="currentColor" stroke="none"/><path d="M21 6v4" stroke-linecap="round"/></svg>
+                <svg width="17" height="15" viewBox="0 0 24 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 7.5a15 15 0 0 1 20 0"/><path d="M5 11a10 10 0 0 1 14 0"/><path d="M8.5 14.5a5 5 0 0 1 7 0"/><circle cx="12" cy="18" r="0.6" fill="currentColor"/></svg>
+                <span class="menubar__clock">9:41</span>
+                <span class="menubar__ortus"><img src="assets/sunmark.svg" width="18" height="18" alt="" /></span>
+              </div>
+            </div>
+
+            <div class="popover">
+              <span class="popover__notch" aria-hidden="true"></span>
             <!-- floating capsule tab bar -->
             <div class="popover__tabs" role="tablist" aria-label="Ortus">
               <button class="tab tab--active" type="button" role="tab" data-panel="focus">
@@ -94,16 +112,21 @@
 
             <!-- FOCUS -->
             <div class="popover__screen panel panel--active" data-panel="focus">
-              <p class="popover__eyebrow">Deep focus</p>
               <div class="timer">
                 <div class="timer__glow"></div>
                 <div class="timer__ring">
                   <div class="timer__center">
                     <span class="timer__time">52:00</span>
-                    <span class="timer__label">remaining</span>
                   </div>
                 </div>
               </div>
+              <p class="focus__eyebrow">Deep focus</p>
+              <p class="focus__name">Deep work · until 12:00</p>
+              <span class="focus__extend">+ 15 min</span>
+              <p class="focus__locked">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                No end button. Locked until you're done.
+              </p>
             </div>
 
             <!-- SCHEDULE -->
@@ -148,12 +171,13 @@
             <div class="popover__screen panel" data-panel="settings" hidden>
               <p class="popover__eyebrow">Settings</p>
               <ul class="set">
-                <li class="set__row"><span class="ph ph--lg"></span><span class="toggle is-on"></span></li>
-                <li class="set__row"><span class="ph ph--md"></span><span class="toggle is-on"></span></li>
-                <li class="set__row"><span class="ph ph--sm"></span><span class="toggle"></span></li>
-                <li class="set__row"><span class="ph ph--md"></span><span class="toggle is-on"></span></li>
+                <li class="set__row"><span>Launch at login</span><span class="toggle is-on"></span></li>
+                <li class="set__row"><span>Focus notifications</span><span class="toggle is-on"></span></li>
+                <li class="set__row"><span>Relaunch apps after focus</span><span class="toggle is-on"></span></li>
+                <li class="set__row"><span>Emergency end · 1 left this week</span><span class="toggle"></span></li>
               </ul>
             </div>
+          </div>
           </div>
         </div>
       </div>
