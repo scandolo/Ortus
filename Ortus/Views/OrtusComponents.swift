@@ -35,7 +35,7 @@ struct OrtusModal<Content: View>: View {
                             .foregroundStyle(OrtusTheme.textMuted)
                             .frame(width: 26, height: 26).background(Circle().fill(Color.primary.opacity(0.06)))
                     }
-                    .buttonStyle(.plain).keyboardShortcut(.cancelAction).accessibilityLabel("Close")
+                    .buttonStyle(OrtusPressableStyle(cornerRadius: 13)).keyboardShortcut(.cancelAction).accessibilityLabel("Close")
                 }
                 .padding(OrtusTheme.spacingMD)
                 ScrollView {
@@ -124,19 +124,61 @@ struct OrtusStepRow<Trailing: View>: View {
 /// Compact capsule for the trailing action of a row.
 struct OrtusRowButtonStyle: ButtonStyle {
     var role: ButtonRole? = nil
-    @Environment(\.isEnabled) private var isEnabled
-    @State private var isHovering = false
+    func makeBody(configuration: Configuration) -> some View { RowButton(configuration: configuration, destructive: role == .destructive) }
 
+    private struct RowButton: View {
+        let configuration: Configuration
+        let destructive: Bool
+        @Environment(\.isEnabled) private var isEnabled
+        @State private var isHovering = false
+        var body: some View {
+            let tint = destructive ? OrtusTheme.danger : Color.primary
+            configuration.label
+                .font(OrtusTheme.Typo.button)
+                .foregroundStyle(destructive ? OrtusTheme.danger : .primary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 6)
+                .background(Capsule().fill(tint.opacity(configuration.isPressed ? 0.16 : isHovering && isEnabled ? 0.1 : 0.05)))
+                .scaleEffect(configuration.isPressed ? 0.94 : 1)
+                .opacity(isEnabled ? 1 : 0.45)
+                .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+                .animation(.easeOut(duration: 0.15), value: isHovering)
+                .onHover { isHovering = $0 }
+        }
+    }
+}
+
+/// For anything clickable that has no button chrome of its own (rows, chips, icons,
+/// text actions): a soft highlight on hover and a small press-in on click.
+struct OrtusPressableStyle: ButtonStyle {
+    /// Extra room for the hover highlight around the label, without changing layout.
+    var inset: CGFloat = 0
+    var cornerRadius: CGFloat = 8
+    /// Off for controls that already draw their own hover state.
+    var highlight = true
     func makeBody(configuration: Configuration) -> some View {
-        let destructive = role == .destructive
-        return configuration.label
-            .font(OrtusTheme.Typo.button)
-            .foregroundStyle(destructive ? OrtusTheme.danger : .primary)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 6)
-            .background(Capsule().fill(Color.primary.opacity(isHovering || configuration.isPressed ? 0.09 : 0.05)))
-            .opacity(isEnabled ? 1 : 0.45)
-            .onHover { isHovering = $0 }
+        Pressable(configuration: configuration, inset: inset, cornerRadius: cornerRadius, highlight: highlight)
+    }
+
+    private struct Pressable: View {
+        let configuration: Configuration
+        let inset: CGFloat
+        let cornerRadius: CGFloat
+        let highlight: Bool
+        @Environment(\.isEnabled) private var isEnabled
+        @State private var isHovering = false
+        var body: some View {
+            let fill = !highlight || !isEnabled ? 0 : configuration.isPressed ? 0.09 : isHovering ? 0.05 : 0
+            configuration.label
+                .padding(inset)
+                .background(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous).fill(Color.primary.opacity(fill)))
+                .contentShape(Rectangle())
+                .padding(-inset)
+                .scaleEffect(configuration.isPressed && isEnabled ? 0.97 : 1)
+                .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+                .animation(.easeOut(duration: 0.15), value: isHovering)
+                .onHover { isHovering = $0 }
+        }
     }
 }
 

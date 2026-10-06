@@ -43,7 +43,7 @@ struct EmojiPickerButton: View {
                     .strokeBorder(OrtusTheme.hairline, lineWidth: 1)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(OrtusPressableStyle())
         .popover(isPresented: $showPopover, arrowEdge: .bottom) {
             EmojiPickerPopover(code: $code, isPresented: $showPopover)
         }
@@ -142,7 +142,7 @@ struct EmojiPickerPopover: View {
                         .strokeBorder(isSelected ? OrtusTheme.accent : .clear, lineWidth: 1)
                 )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(OrtusPressableStyle())
         .help(entry.code)
     }
 
@@ -184,13 +184,13 @@ struct EmojiPickerPopover: View {
                     .font(OrtusTheme.Typo.caption)
                     .foregroundStyle(OrtusTheme.accentInk)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(OrtusPressableStyle(inset: 4))
                 Spacer()
                 Button("Clear") {
                     code = ""
                     isPresented = false
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(OrtusPressableStyle(inset: 4))
                 .font(OrtusTheme.Typo.caption)
                 .foregroundStyle(OrtusTheme.textMuted)
             }

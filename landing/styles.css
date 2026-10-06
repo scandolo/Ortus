@@ -231,7 +231,8 @@ img, svg { display: block; max-width: 100%; }
   cursor: pointer;
   transition: color var(--t-fast) var(--ease),
               background var(--t-mid) var(--ease),
-              border-color var(--t-mid) var(--ease);
+              border-color var(--t-mid) var(--ease),
+              transform var(--t-fast) var(--ease);
 }
 .install__copy:hover {
   color: var(--text);
@@ -1091,6 +1092,10 @@ img, svg { display: block; max-width: 100%; }
   border-radius: 14px;
   border-bottom-right-radius: 4px;
 }
+
+/* Press feedback for everything clickable (hover states live with each component). */
+.tab { transition: color var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease); }
+.btn:active, .install__copy:active, .tab:active, .nav__brand:active { transform: scale(0.97); }
 
 /* --------------------------------------------------------------------------
    20. Focus panel labels (matches the real app: session name + targets below the ring)

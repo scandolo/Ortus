@@ -128,7 +128,7 @@ private struct TabButton: View {
                 .contentShape(Capsule())
                 .foregroundStyle(isSelected ? OrtusTheme.accentInk : OrtusTheme.textMuted)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(OrtusPressableStyle(highlight: false))
         .accessibilityLabel(title)
         .onHover { isHovering = $0 }
     }
@@ -159,7 +159,7 @@ private struct SettingsGearButton: View {
                 .contentShape(Capsule())
                 .foregroundStyle(isSelected ? OrtusTheme.accentInk : OrtusTheme.textMuted)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(OrtusPressableStyle(highlight: false))
         .accessibilityLabel("Settings")
         .onHover { isHovering = $0 }
     }

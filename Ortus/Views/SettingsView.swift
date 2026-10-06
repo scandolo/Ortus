@@ -177,6 +177,7 @@ struct SettingsView: View {
         OrtusListRow(title: "Ortus \(appVersion)",
                      subtitle: focusManager.isInFocus ? "You can quit after this session" : taglines[taglineIndex]) {
             Image(systemName: "sunrise.fill").foregroundStyle(OrtusTheme.accent)
+                .symbolEffect(.bounce, value: versionTapCount)
                 .onTapGesture {
                     taglineIndex = (taglineIndex + 1) % taglines.count
                     versionTapCount += 1

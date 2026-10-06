@@ -33,7 +33,7 @@ struct ModePicker: View {
                 }
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(OrtusPressableStyle(inset: 6, cornerRadius: 10))
             .accessibilityLabel("Mode: \(current?.name ?? "Custom")")
 
             if expanded {
@@ -43,7 +43,7 @@ struct ModePicker: View {
                         Label("New custom mode", systemImage: "plus").font(OrtusTheme.Typo.button).foregroundStyle(OrtusTheme.accentInk)
                             .padding(.vertical, 8)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(OrtusPressableStyle(inset: 4))
                 }
                 .padding(.top, OrtusTheme.spacingSM)
             }
@@ -66,7 +66,7 @@ struct ModePicker: View {
                 .padding(.vertical, 5)
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(OrtusPressableStyle(inset: 4))
             if !mode.isBuiltIn {
                 Button("Edit") { edit(mode) }.buttonStyle(OrtusGhostButtonStyle())
             }
@@ -105,7 +105,7 @@ struct ModeEditor: View {
                         Button { focusManager.deleteMode(mode); router.modal = nil } label: {
                             Text("Delete").font(OrtusTheme.Typo.button).foregroundStyle(OrtusTheme.danger)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(OrtusPressableStyle(inset: 4))
                     }
                     Spacer()
                     Button("Save mode") {
@@ -175,7 +175,7 @@ struct BlockingTargetsEditor: View {
                     .padding(.horizontal, OrtusTheme.spacingMD).padding(.vertical, 11)
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(OrtusPressableStyle(cornerRadius: 0))
             }
 
             if let inputError {
@@ -199,7 +199,7 @@ struct BlockingTargetsEditor: View {
                                 .background(Capsule().fill(Color.primary.opacity(0.05)))
                                 .foregroundStyle(.primary)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(OrtusPressableStyle(cornerRadius: 20))
                             .accessibilityLabel("Add \(preset.title)")
                         }
                     }
@@ -214,7 +214,7 @@ struct BlockingTargetsEditor: View {
                 Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(OrtusTheme.textMuted)
                     .frame(width: 24, height: 24).contentShape(Rectangle())
             }
-            .buttonStyle(.plain).accessibilityLabel("Remove \(title)")
+            .buttonStyle(OrtusPressableStyle(cornerRadius: 12)).accessibilityLabel("Remove \(title)")
         }
     }
 

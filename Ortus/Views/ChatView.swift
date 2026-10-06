@@ -46,7 +46,7 @@ struct ChatView: View {
                             .background(Capsule().fill(OrtusTheme.cardSurface))
                             .overlay(Capsule().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(OrtusPressableStyle(cornerRadius: 20))
                 }
             }
             .padding(.top, OrtusTheme.spacingXS)
@@ -106,7 +106,7 @@ struct ChatView: View {
                         .font(.callout)
                         .foregroundStyle(OrtusTheme.textMuted)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(OrtusPressableStyle(inset: 6, cornerRadius: 14))
                 .help("Clear conversation")
                 .disabled(claudeCodeService.isProcessing)
             }
@@ -132,7 +132,11 @@ struct ChatView: View {
         // The whole capsule is the field: clicks on its padding focus the text box.
         .contentShape(Capsule())
         .onTapGesture { isInputFocused = true }
-        .onHover { isBarHovering = $0 }
+        .onHover { hovering in
+            isBarHovering = hovering
+            // The whole capsule behaves like the text field, cursor included.
+            if hovering { NSCursor.iBeam.push() } else { NSCursor.pop() }
+        }
         .padding(.horizontal, OrtusTheme.spacingMD)
         .padding(.bottom, OrtusTheme.spacingSM)
         .animation(.easeOut(duration: 0.18), value: isInputFocused)
@@ -143,19 +147,15 @@ struct ChatView: View {
         Capsule()
             .fill(OrtusTheme.cardSurface)
             .overlay(
-                Capsule()
-                    .fill(isBarHovering && !isInputFocused ? Color.primary.opacity(0.04) : .clear)
-            )
-            .overlay(
                 Capsule().strokeBorder(
-                    isInputFocused ? OrtusTheme.accent : OrtusTheme.hairline,
+                    isInputFocused ? OrtusTheme.accent : isBarHovering ? OrtusTheme.accent.opacity(0.45) : OrtusTheme.hairline,
                     lineWidth: isInputFocused ? 1.5 : 1
                 )
             )
             .shadow(
-                color: isInputFocused ? OrtusTheme.accent.opacity(0.30) : .black.opacity(0.12),
-                radius: isInputFocused ? 8 : 14,
-                y: isInputFocused ? 2 : 4
+                color: isInputFocused ? OrtusTheme.accent.opacity(0.30) : .black.opacity(isBarHovering ? 0.16 : 0.12),
+                radius: isInputFocused ? 8 : isBarHovering ? 16 : 14,
+                y: isInputFocused ? 2 : isBarHovering ? 5 : 4
             )
     }
 
@@ -208,7 +208,7 @@ private struct ChatSendButton: View {
                 )
                 .scaleEffect(canSend && isHovering ? 1.08 : 1.0)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(OrtusPressableStyle(highlight: false))
         .disabled(!canSend)
         .help("Send message")
         .animation(.easeOut(duration: 0.18), value: isHovering)
@@ -238,7 +238,7 @@ private struct ChatStopButton: View {
                 )
                 .scaleEffect(isHovering ? 1.08 : 1.0)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(OrtusPressableStyle(highlight: false))
         .help("Stop")
         .animation(.easeOut(duration: 0.18), value: isHovering)
         .onHover { isHovering = $0 }

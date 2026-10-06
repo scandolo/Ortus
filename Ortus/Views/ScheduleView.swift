@@ -121,7 +121,7 @@ struct ScheduleRow: View {
                 .contentShape(Rectangle())
                 .opacity(isHovering && !isLocked ? 0.75 : 1)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(OrtusPressableStyle(highlight: false))
             .disabled(isLocked)
             .onHover { isHovering = $0 }
             .help(isLocked ? "Editable after this session ends" : "Edit schedule")
@@ -220,7 +220,7 @@ struct ScheduleInlineEditor: View {
                     Button(action: onDelete) {
                         Text("Delete").font(OrtusTheme.Typo.button).foregroundStyle(OrtusTheme.danger)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(OrtusPressableStyle(inset: 4))
                 }
 
                 Spacer()
@@ -266,7 +266,7 @@ struct DayToggleButton: View {
                 .clipShape(RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous))
                 .foregroundStyle(isSelected ? OrtusTheme.onAccent : .primary)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(OrtusPressableStyle(highlight: false))
         .scaleEffect(isHovering ? 1.03 : 1.0)
         .animation(.easeOut(duration: 0.15), value: isHovering)
         .onHover { isHovering = $0 }

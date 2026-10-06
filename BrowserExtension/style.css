@@ -35,7 +35,9 @@ button {
   color: var(--on-accent); background: var(--accent-ink);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 30%, transparent);
 }
-button:hover { background: var(--accent-ink-hover); }
+button { transition: background-color .15s ease-out, transform .12s ease-out, box-shadow .15s ease-out; }
+button:hover { background: var(--accent-ink-hover); box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 38%, transparent); }
+button:active { transform: scale(.96); box-shadow: 0 1px 4px color-mix(in srgb, var(--accent) 30%, transparent); }
 button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
 /* Blocked page */
@@ -45,7 +47,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .emblem { width: 140px; height: 140px; margin: 0 auto 16px; display: grid; place-items: center; border-radius: 50%;
   background: radial-gradient(circle, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%); }
 .emblem .mark { width: 68px; height: 68px; overflow: visible; }
-.emblem { cursor: pointer; user-select: none; }
+.emblem { cursor: pointer; user-select: none; transition: transform .18s ease-out; }
+.emblem:hover { transform: scale(1.05); }
+.emblem:active { transform: scale(.96); }
 /* Click the mark: the sun rises, the arrow lifts, the rays and glow brighten. */
 .emblem.rise { animation: glow 1.3s ease-out; }
 .emblem.rise .disc { animation: sunrise 1.3s cubic-bezier(.2,.8,.2,1); transform-box: view-box; transform-origin: 24px 35px; }
