@@ -160,21 +160,20 @@ struct ModeGlyphs: View {
 }
 
 /// One mark of the cluster, drifting a point up and down on its own slow rhythm.
+/// The phase animator scopes the motion to this offset; starting a repeating
+/// `withAnimation` on appear also animated the menu bar panel's own layout.
 private struct FloatingMark: View {
     let id: String
     let index: Int
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var raised = false
 
     var body: some View {
         ModeGlyphs.circle(BrandGlyph(id: id, size: 12))
             .shadow(color: .black.opacity(0.10), radius: 3, y: 2)
-            .offset(y: raised ? -1.2 : 1.2)
-            .onAppear {
-                guard !reduceMotion else { return }
-                withAnimation(.easeInOut(duration: 2.2 + Double(index) * 0.45).repeatForever(autoreverses: true).delay(Double(index) * 0.35)) {
-                    raised = true
-                }
+            .phaseAnimator(reduceMotion ? [0.0] : [1.2, -1.2]) { mark, offset in
+                mark.offset(y: offset)
+            } animation: { _ in
+                .easeInOut(duration: 2.2 + Double(index) * 0.45)
             }
     }
 }
