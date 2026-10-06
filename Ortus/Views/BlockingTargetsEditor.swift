@@ -29,7 +29,10 @@ struct ModePicker: View {
                         Text(selection.summary).font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted).lineLimit(1)
                     }
                     Spacer(minLength: 8)
-                    Text(expanded ? "Done" : "Change").font(OrtusTheme.Typo.button).foregroundStyle(OrtusTheme.accentInk)
+                    // Same capsule as the row actions in Settings, so it has room to breathe.
+                    Text(expanded ? "Done" : "Change").font(OrtusTheme.Typo.button).foregroundStyle(.primary)
+                        .padding(.horizontal, 14).padding(.vertical, 6)
+                        .background(Capsule().fill(Color.primary.opacity(0.06)))
                 }
                 .contentShape(Rectangle())
             }
