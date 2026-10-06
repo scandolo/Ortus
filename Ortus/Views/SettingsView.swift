@@ -1,5 +1,6 @@
 import SwiftUI
 import ServiceManagement
+import OrtusCore
 
 struct SettingsView: View {
     @EnvironmentObject var focusManager: FocusManager
@@ -10,6 +11,7 @@ struct SettingsView: View {
     @State private var slackClientId: String = ""
     @State private var slackClientSecret: String = ""
     @State private var showSlackSetup = false
+    @Environment(\.snapshotState) private var snapshotState
     @State private var launchAtLogin = false
     @State private var versionTapCount = 0
     @State private var showEmergencyConfirm = false
@@ -30,13 +32,9 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: OrtusTheme.spacingLG) {
-                Text("SETTINGS")
-                    .font(OrtusTheme.Typo.section)
-                    .tracking(2.2)
-                    .foregroundStyle(OrtusTheme.accent)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.top, OrtusTheme.spacingXS)
-
+                section("Website blocking") {
+                    BrowserSetupView(service: focusManager.websites)
+                }
                 slackSection
                 aiChatSection
                 generalSection
@@ -49,6 +47,7 @@ struct SettingsView: View {
             }
             .padding(OrtusTheme.spacingMD)
         }
+        .onAppear { if snapshotState == "slack-setup" { showSlackSetup = true } }
     }
 
     /// A titled group of rows. The header is the only chrome — rows carry their
@@ -77,10 +76,7 @@ struct SettingsView: View {
     // MARK: - Slack
 
     private var slackSection: some View {
-        section(
-            "Slack status",
-            description: "Connect the Slack API so Ortus can set your status and turn on Do Not Disturb while you focus."
-        ) {
+        section("Slack") {
             if slackOAuthService.isConnected {
                 connectedRow
                 OrtusToggleRow(
@@ -119,7 +115,7 @@ struct SettingsView: View {
                     .font(OrtusTheme.Typo.bodyMedium)
                 Text(slackOAuthService.teamName ?? "Slack")
                     .font(OrtusTheme.Typo.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(OrtusTheme.textMuted)
             }
             Spacer(minLength: 0)
             Button("Disconnect") { slackOAuthService.disconnect() }
@@ -130,18 +126,11 @@ struct SettingsView: View {
 
     private var connectRow: some View {
         HStack(spacing: OrtusTheme.spacingSM) {
-            Image(systemName: "link.badge.plus")
-                .foregroundStyle(.secondary)
-                .font(.system(size: 16))
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Not connected")
-                    .font(OrtusTheme.Typo.bodyMedium)
-                Text("Connect your Slack workspace")
-                    .font(OrtusTheme.Typo.caption)
-                    .foregroundStyle(.secondary)
-            }
+            Text("Set your status and Do Not Disturb while you focus")
+                .font(OrtusTheme.Typo.body)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
-            Button(showSlackSetup ? "Hide" : "Set up") {
+            Button(showSlackSetup ? "Cancel" : "Connect") {
                 if !showSlackSetup { loadSlackCredentialsIfNeeded() }
                 withAnimation(.easeOut(duration: 0.2)) { showSlackSetup.toggle() }
             }
@@ -167,7 +156,7 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: OrtusTheme.spacingXS) {
             Text("Status")
                 .font(OrtusTheme.Typo.meta)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(OrtusTheme.textMuted)
             HStack(spacing: OrtusTheme.spacingSM) {
                 EmojiPickerButton(code: $focusManager.slackStatusEmoji)
                 TextField("Ortus mode", text: $focusManager.slackStatusText)
@@ -189,7 +178,7 @@ struct SettingsView: View {
                     Text(showSlackPreview ? "Hide preview" : "Preview in Slack")
                 }
                 .font(OrtusTheme.Typo.caption)
-                .foregroundStyle(OrtusTheme.accent)
+                .foregroundStyle(OrtusTheme.accentInk)
             }
             .buttonStyle(.plain)
 
@@ -197,7 +186,7 @@ struct SettingsView: View {
                 SlackStatusPreview(
                     statusText: focusManager.slackStatusText,
                     emojiCode: focusManager.slackStatusEmoji,
-                    userName: NSFullUserName().isEmpty ? "You" : NSFullUserName(),
+                    userName: "Example user",
                     dndEnabled: focusManager.slackDndEnabled
                 )
                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -207,16 +196,11 @@ struct SettingsView: View {
 
     private var setupForm: some View {
         VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
-            Text("Status updates use a Slack app you own. Three steps:")
-                .font(OrtusTheme.Typo.caption)
-                .foregroundStyle(OrtusTheme.textMuted)
-                .fixedSize(horizontal: false, vertical: true)
-
             VStack(alignment: .leading, spacing: 6) {
                 setupStep(1, "Create a Slack app at api.slack.com/apps")
                 setupStep(2, "In OAuth & Permissions → Redirect URLs, add:")
                 redirectURIChip
-                setupStep(3, "Copy the Client ID + Client Secret from Basic Information below.")
+                setupStep(3, "Paste the Client ID and Client Secret from Basic Information")
             }
 
             Link(destination: URL(string: "https://api.slack.com/apps?new_app=1")!) {
@@ -227,7 +211,7 @@ struct SettingsView: View {
                 }
                 .font(OrtusTheme.Typo.button)
             }
-            .foregroundStyle(OrtusTheme.accent)
+            .foregroundStyle(OrtusTheme.accentInk)
 
             TextField("Client ID", text: $slackClientId)
                 .textFieldStyle(OrtusTextFieldStyle())
@@ -249,7 +233,7 @@ struct SettingsView: View {
                     ProgressView().scaleEffect(0.7).tint(OrtusTheme.accent)
                     Text("Waiting for Slack authorization…")
                         .font(OrtusTheme.Typo.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(OrtusTheme.textMuted)
                 }
             }
 
@@ -265,7 +249,7 @@ struct SettingsView: View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text("\(n).")
                 .font(OrtusTheme.Typo.caption)
-                .foregroundStyle(OrtusTheme.accent)
+                .foregroundStyle(OrtusTheme.accentInk)
                 .monospacedDigit()
             Text(text)
                 .font(OrtusTheme.Typo.caption)
@@ -335,13 +319,13 @@ struct SettingsView: View {
                 .font(.system(size: 16))
                 .symbolRenderingMode(.hierarchical)
             VStack(alignment: .leading, spacing: 2) {
-                Text(claudeCodeService.isConfigured ? "Claude Code detected" : "Claude Code not found")
+                Text(claudeCodeService.isConfigured ? "Claude Code is ready" : "Claude Code not found")
                     .font(OrtusTheme.Typo.bodyMedium)
-                Text(claudeCodeService.resolvedBinaryPath ?? "Install at docs.claude.com/claude-code")
-                    .font(OrtusTheme.Typo.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
+                if !claudeCodeService.isConfigured {
+                    Text("Install it from docs.claude.com/claude-code")
+                        .font(OrtusTheme.Typo.caption)
+                        .foregroundStyle(OrtusTheme.textMuted)
+                }
             }
             Spacer(minLength: 0)
             if !claudeCodeService.isConfigured {
@@ -356,13 +340,9 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: OrtusTheme.spacingXS) {
             Text("Custom binary path")
                 .font(OrtusTheme.Typo.meta)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(OrtusTheme.textMuted)
             TextField("/opt/homebrew/bin/claude", text: $claudeCodeService.claudeBinaryPath)
                 .textFieldStyle(OrtusTextFieldStyle())
-            Text("If you just installed it, tap Re-check. Or run `which claude` in Terminal and paste the path.")
-                .font(OrtusTheme.Typo.caption)
-                .foregroundStyle(OrtusTheme.textMuted)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .ortusRow()
     }
@@ -409,7 +389,7 @@ struct SettingsView: View {
                 if focusManager.canUseEmergencyEnd {
                     if showEmergencyConfirm {
                         HStack(alignment: .center, spacing: OrtusTheme.spacingMD) {
-                            Text("Ends focus now and lets you back into Slack. Once per week.")
+                            Text("Makes your selected apps and websites available now. Once per week.")
                                 .font(OrtusTheme.Typo.caption)
                                 .foregroundStyle(OrtusTheme.warning)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -426,7 +406,7 @@ struct SettingsView: View {
                         HStack(alignment: .center, spacing: OrtusTheme.spacingMD) {
                             Text("Use only for genuine emergencies. Limited to once per week.")
                                 .font(OrtusTheme.Typo.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(OrtusTheme.textMuted)
                                 .fixedSize(horizontal: false, vertical: true)
                             Spacer(minLength: 0)
                             Button("Emergency end") { showEmergencyConfirm = true }
@@ -436,7 +416,7 @@ struct SettingsView: View {
                 } else if let nextDate = focusManager.nextEmergencyAvailableDate {
                     Text("Emergency end unavailable until \(nextDate.formatted(date: .abbreviated, time: .shortened))")
                         .font(OrtusTheme.Typo.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(OrtusTheme.textMuted)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
@@ -447,12 +427,14 @@ struct SettingsView: View {
     // MARK: - About
 
     private var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.1.0-preview"
     }
 
     private var aboutSection: some View {
         section("About") {
-            updateRow
+            if !BuildProfile.isPreview {
+                updateRow
+            }
             aboutRow
         }
     }
@@ -464,7 +446,7 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: OrtusTheme.spacingSM) {
                     Image(systemName: "arrow.down.circle.fill")
-                        .foregroundStyle(OrtusTheme.accent)
+                        .foregroundStyle(OrtusTheme.accentInk)
                         .font(.system(size: 16))
                         .symbolRenderingMode(.hierarchical)
                     VStack(alignment: .leading, spacing: 2) {
@@ -472,7 +454,7 @@ struct SettingsView: View {
                             .font(OrtusTheme.Typo.bodyMedium)
                         Text("Version \(version)")
                             .font(OrtusTheme.Typo.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(OrtusTheme.textMuted)
                     }
                     Spacer(minLength: 0)
                     Button("Restart & update") {
@@ -484,7 +466,7 @@ struct SettingsView: View {
                 if focusManager.isInFocus {
                     Text("Finish your focus session to update — Ortus restarts to apply it.")
                         .font(OrtusTheme.Typo.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(OrtusTheme.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -495,7 +477,7 @@ struct SettingsView: View {
                 ProgressView().scaleEffect(0.7).tint(OrtusTheme.accent)
                 Text("Downloading update — Ortus will restart…")
                     .font(OrtusTheme.Typo.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(OrtusTheme.textMuted)
                 Spacer(minLength: 0)
             }
             .ortusRow()
@@ -541,7 +523,7 @@ struct SettingsView: View {
                     } label: {
                         Text("v\(appVersion)")
                             .font(OrtusTheme.Typo.meta)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(OrtusTheme.textMuted)
                     }
                     .buttonStyle(.plain)
                 }
@@ -549,7 +531,7 @@ struct SettingsView: View {
                 Text(taglines[taglineIndex])
                     .font(OrtusTheme.Typo.caption)
                     .italic(taglineIndex > 0)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(OrtusTheme.textMuted)
 
                 if focusManager.developerModeEnabled {
                     Text("Developer mode active")
@@ -560,7 +542,7 @@ struct SettingsView: View {
                 if focusManager.isInFocus {
                     Text("Cannot quit during focus")
                         .font(OrtusTheme.Typo.meta)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(OrtusTheme.textMuted)
                 }
             }
 

@@ -14,6 +14,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Launch at login is on by default. Register once on first run; after that
     /// we never touch it again, so a user who turns it off in Settings stays off.
     private func enableLaunchAtLoginByDefault() {
+        guard Bundle.main.object(forInfoDictionaryKey: "OrtusPreviewBuild") as? Bool != true else { return }
         let key = "didSetDefaultLoginItem"
         guard !UserDefaults.standard.bool(forKey: key) else { return }
         UserDefaults.standard.set(true, forKey: key)
@@ -21,7 +22,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard let focusManager else { return .terminateNow }
+        guard let focusManager = focusManager ?? FocusManager.current else { return .terminateNow }
         // Block quit only while focus is genuinely active. After an emergency end,
         // Slack is already unblocked, so there's no reason to trap the app open.
         if focusManager.isInFocus {
@@ -40,23 +41,49 @@ struct OrtusApp: App {
     @StateObject private var slackOAuthService = SlackOAuthService()
     @StateObject private var updateService = UpdateService()
 
+    private var panel: some View { panel() }
+
+    private func panel(tab: Int = 0, height: CGFloat? = nil, state: String? = nil) -> some View {
+        ContentView(initialTab: tab, fixedHeight: height)
+            .environment(\.snapshotState, state)
+            .environmentObject(focusManager)
+            .environmentObject(slackService)
+            .environmentObject(claudeCodeService)
+            .environmentObject(slackOAuthService)
+            .environmentObject(updateService)
+            .onAppear {
+                appDelegate.focusManager = focusManager
+                // Inject SlackService here (not in App.init) — the StateObject
+                // backing store isn't ready until a view installs it.
+                focusManager.slackService = slackService
+            }
+    }
+
     var body: some Scene {
         MenuBarExtra {
-            ContentView()
-                .environmentObject(focusManager)
-                .environmentObject(slackService)
-                .environmentObject(claudeCodeService)
-                .environmentObject(slackOAuthService)
-                .environmentObject(updateService)
-                .onAppear {
-                    appDelegate.focusManager = focusManager
-                    // Inject SlackService here (not in App.init) — the StateObject
-                    // backing store isn't ready until a view installs it.
-                    focusManager.slackService = slackService
-                }
+            panel
         } label: {
             Image(systemName: focusManager.isInFocus ? "sunrise.fill" : "sunrise")
+                #if DEBUG
+                .onAppear(perform: openDebugWindowIfRequested)
+                #endif
         }
         .menuBarExtraStyle(.window)
     }
+
+    #if DEBUG
+    /// Screenshot harness: launch with ORTUS_DEBUG_WINDOW=1 to also show the panel
+    /// in a regular window that UI scripting and screencapture can reach.
+    private func openDebugWindowIfRequested() {
+        SnapshotHarness.runIfRequested(focusManager: focusManager) { tab, height, state in
+            AnyView(panel(tab: tab, height: height, state: state))
+        }
+        guard ProcessInfo.processInfo.environment["ORTUS_DEBUG_WINDOW"] != nil else { return }
+        let window = NSWindow(contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        window.title = "Ortus (debug)"
+        window.contentView = NSHostingView(rootView: panel)
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+    }
+    #endif
 }

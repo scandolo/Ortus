@@ -168,7 +168,7 @@ struct OrtusDurationSlider: View {
 
                 Text("min")
                     .font(.system(size: 10, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(OrtusTheme.textMuted)
             }
             // Offset upward by half the tail height so visual center sits in the bubble portion.
             .offset(y: -chipTailHeight / 2)

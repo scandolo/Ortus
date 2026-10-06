@@ -1,9 +1,11 @@
 import SwiftUI
+import OrtusCore
 
 struct ScheduleView: View {
     @EnvironmentObject var focusManager: FocusManager
     @State private var editingScheduleID: UUID?
     @State private var isAddingNew = false
+    @Environment(\.snapshotState) private var snapshotState
 
     var body: some View {
         VStack(spacing: 0) {
@@ -11,7 +13,7 @@ struct ScheduleView: View {
                 OrtusEmptyState(
                     icon: "calendar.badge.plus",
                     title: "No schedules yet",
-                    message: "Add a schedule to pause Slack automatically during focus hours"
+                    message: "Choose the apps and websites to set aside during each focus window."
                 )
             } else {
                 ScrollView {
@@ -27,12 +29,17 @@ struct ScheduleView: View {
                                     },
                                     onCancel: {
                                         editingScheduleID = nil
+                                    },
+                                    onDelete: {
+                                        focusManager.deleteSchedule(schedule)
+                                        editingScheduleID = nil
                                     }
                                 )
                                 .ortusCard()
                             } else {
                                 ScheduleRow(
                                     schedule: schedule,
+                                    isLocked: focusManager.activeScheduleIDs.contains(schedule.id),
                                     onEdit: {
                                         isAddingNew = false
                                         editingScheduleID = schedule.id
@@ -41,9 +48,6 @@ struct ScheduleView: View {
                                         var updated = schedule
                                         updated.isEnabled = enabled
                                         focusManager.updateSchedule(updated)
-                                    },
-                                    onDelete: {
-                                        focusManager.deleteSchedule(schedule)
                                     }
                                 )
                                 .ortusCard()
@@ -81,6 +85,7 @@ struct ScheduleView: View {
             .padding(.horizontal, OrtusTheme.spacingMD)
             .padding(.bottom, OrtusTheme.spacingSM)
         }
+        .onAppear { if snapshotState == "new-schedule" { isAddingNew = true } }
     }
 }
 
@@ -88,9 +93,10 @@ struct ScheduleView: View {
 
 struct ScheduleRow: View {
     let schedule: FocusSchedule
+    let isLocked: Bool
     let onEdit: () -> Void
     let onToggle: (Bool) -> Void
-    let onDelete: () -> Void
+    @State private var isHovering = false
 
     var body: some View {
         HStack(spacing: OrtusTheme.spacingMD) {
@@ -100,35 +106,35 @@ struct ScheduleRow: View {
                         .font(OrtusTheme.Typo.headline)
                         .foregroundStyle(.primary)
 
-                    Text(daysSummary)
-                        .font(OrtusTheme.Typo.caption)
-                        .foregroundStyle(.secondary)
-
-                    Text("\(schedule.startTimeString) \u{2013} \(schedule.endTimeString)")
-                        .font(OrtusTheme.Typo.caption)
-                        .foregroundStyle(.secondary)
+                    Text("\(daysSummary) · \(schedule.startTimeString)\u{2013}\(schedule.endTimeString)")
+                        .font(OrtusTheme.Typo.body)
+                        .foregroundStyle(OrtusTheme.textMuted)
                         .monospacedDigit()
+
+                    Text(isLocked ? "Active now · \(schedule.blocked.summary)" : schedule.blocked.summary)
+                        .font(OrtusTheme.Typo.caption)
+                        .foregroundStyle(isLocked ? OrtusTheme.accentInk : OrtusTheme.textMuted)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .opacity(isHovering && !isLocked ? 0.75 : 1)
             }
             .buttonStyle(.plain)
-
-            Spacer()
-
-            Button(action: onDelete) {
-                Image(systemName: "trash")
-                    .font(.system(size: 13))
-                    .foregroundStyle(OrtusTheme.textMuted)
-            }
-            .buttonStyle(.plain)
-            .help("Delete schedule")
+            .disabled(isLocked)
+            .onHover { isHovering = $0 }
+            .help(isLocked ? "Editable after this session ends" : "Edit schedule")
 
             Toggle("", isOn: Binding(
                 get: { schedule.isEnabled },
                 set: { onToggle($0) }
             ))
             .labelsHidden()
+            .toggleStyle(.switch)
+            .controlSize(.small)
             .tint(OrtusTheme.accent)
             .accessibilityLabel("\(schedule.name) enabled")
+            .disabled(isLocked)
         }
     }
 
@@ -148,15 +154,17 @@ struct ScheduleInlineEditor: View {
     let title: String
     let onSave: (FocusSchedule) -> Void
     let onCancel: () -> Void
+    var onDelete: (() -> Void)? = nil
 
     @State private var startTime: Date
     @State private var endTime: Date
 
-    init(schedule: FocusSchedule, title: String, onSave: @escaping (FocusSchedule) -> Void, onCancel: @escaping () -> Void) {
+    init(schedule: FocusSchedule, title: String, onSave: @escaping (FocusSchedule) -> Void, onCancel: @escaping () -> Void, onDelete: (() -> Void)? = nil) {
         self._schedule = State(initialValue: schedule)
         self.title = title
         self.onSave = onSave
         self.onCancel = onCancel
+        self.onDelete = onDelete
 
         let calendar = Calendar.current
         let start = calendar.date(bySettingHour: schedule.startHour, minute: schedule.startMinute, second: 0, of: Date()) ?? Date()
@@ -176,7 +184,7 @@ struct ScheduleInlineEditor: View {
                 DatePicker("Start", selection: $startTime, displayedComponents: .hourAndMinute)
                     .labelsHidden()
                 Text("\u{2013}")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(OrtusTheme.textMuted)
                 DatePicker("End", selection: $endTime, displayedComponents: .hourAndMinute)
                     .labelsHidden()
             }
@@ -184,18 +192,30 @@ struct ScheduleInlineEditor: View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: OrtusTheme.spacingSM) {
                 ForEach(Weekday.allCases) { day in
                     DayToggleButton(day: day, isSelected: schedule.days.contains(day)) {
-                if schedule.days.contains(day) {
-                    schedule.days.remove(day)
-                } else {
-                    schedule.days.insert(day)
+                        if schedule.days.contains(day) {
+                            schedule.days.remove(day)
+                        } else {
+                            schedule.days.insert(day)
+                        }
+                    }
                 }
             }
-                }
+
+            if Calendar.current.component(.hour, from: startTime) * 60 + Calendar.current.component(.minute, from: startTime) > Calendar.current.component(.hour, from: endTime) * 60 + Calendar.current.component(.minute, from: endTime) {
+                Text("Ends the following day.").font(OrtusTheme.Typo.meta).foregroundStyle(OrtusTheme.textMuted)
             }
+
+            BlockingTargetsEditor(selection: $schedule.blocked)
 
             HStack {
                 Button("Cancel", action: onCancel)
                     .buttonStyle(OrtusGhostButtonStyle())
+                if let onDelete {
+                    Button(action: onDelete) {
+                        Text("Delete").font(OrtusTheme.Typo.button).foregroundStyle(OrtusTheme.danger)
+                    }
+                    .buttonStyle(.plain)
+                }
 
                 Spacer()
 
@@ -208,7 +228,7 @@ struct ScheduleInlineEditor: View {
                     onSave(schedule)
                 }
                 .buttonStyle(OrtusPrimaryButtonStyle())
-                .disabled(schedule.name.isEmpty || schedule.days.isEmpty)
+                .disabled(schedule.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || schedule.days.isEmpty || schedule.blocked.isEmpty || Calendar.current.isDate(startTime, equalTo: endTime, toGranularity: .minute))
             }
         }
     }
@@ -231,14 +251,14 @@ struct DayToggleButton: View {
                 .padding(.vertical, OrtusTheme.spacingSM)
                 .background(
                     RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
-                        .fill(isSelected ? OrtusTheme.accent : (isHovering ? Color.primary.opacity(0.06) : .clear))
+                        .fill(isSelected ? OrtusTheme.accentInk : (isHovering ? Color.primary.opacity(0.06) : .clear))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
                         .strokeBorder(isSelected ? .clear : OrtusTheme.hairline, lineWidth: 1)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous))
-                .foregroundStyle(isSelected ? .white : .primary)
+                .foregroundStyle(isSelected ? OrtusTheme.onAccent : .primary)
         }
         .buttonStyle(.plain)
         .scaleEffect(isHovering ? 1.03 : 1.0)

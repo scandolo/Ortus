@@ -1,0 +1,64 @@
+/* Mirrors OrtusTheme (Ortus/Views/OrtusTheme.swift): warm cream canvas with a sunrise
+   glow, white cards, SF type, capsule buttons. Bright amber is decorative only; text
+   and filled buttons use the deeper accent-ink so they stay readable. */
+:root {
+  color-scheme: light dark;
+  --canvas: #f5efe8; --card: #fff; --ink: #1f1c18; --muted: #66615c;
+  --accent: #e07327; --accent-ink: #ae4e16; --accent-ink-hover: #96420f; --on-accent: #fff;
+  --hairline: rgb(0 0 0 / .08); --glow: rgb(224 115 39 / .18); --shadow: rgb(0 0 0 / .12);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #1a1a1c; --card: #292929; --ink: #f2eee8; --muted: #b8b3a8;
+    --accent: #fa9f47; --accent-ink: #fa9f47; --accent-ink-hover: #ffb76a; --on-accent: #281b10;
+    --hairline: rgb(255 255 255 / .08); --glow: rgb(250 159 71 / .24); --shadow: rgb(0 0 0 / .4);
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; color: var(--ink);
+  font: 13px/1.45 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  background: linear-gradient(to bottom, var(--glow), color-mix(in srgb, var(--glow) 30%, transparent) 25%, transparent 50%) no-repeat, var(--canvas);
+  min-height: 100vh;
+}
+h1 { font-size: 22px; line-height: 1.25; font-weight: 700; margin: 0 0 6px; }
+p { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
+p:empty { display: none; }
+[hidden] { display: none !important; }
+
+.mark { display: block; fill: none; stroke: var(--accent); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.mark .disc { fill: var(--accent); stroke: none; opacity: .75; }
+
+button {
+  font: 600 14px/1 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  border: 0; border-radius: 999px; padding: 12px 24px; cursor: pointer;
+  color: var(--on-accent); background: var(--accent-ink);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+button:hover { background: var(--accent-ink-hover); }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+/* Blocked page */
+.blocked { display: grid; place-items: center; padding: 32px 20px;
+  background: radial-gradient(ellipse 60% 55% at 50% 38%, var(--glow), transparent 70%), var(--canvas); }
+.blocked main { max-width: 600px; text-align: center; }
+.emblem { width: 140px; height: 140px; margin: 0 auto 16px; display: grid; place-items: center; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%); }
+.emblem .mark { width: 68px; height: 68px; }
+.blocked h1 { font-size: clamp(28px, 4.4vw, 44px); letter-spacing: -.6px; margin-bottom: 10px; }
+.blocked p { font-size: 17px; }
+.blocked button { margin-top: 28px; font-size: 15px; padding: 14px 28px; }
+
+/* Popup */
+.popup { width: 300px; min-height: 0; }
+.popup main { padding: 20px; }
+.brand { display: flex; align-items: center; gap: 6px; font-weight: 600; margin-bottom: 16px; }
+.brand .mark { width: 20px; height: 20px; stroke-width: 3; }
+.sites { list-style: none; margin: 16px 0 0; padding: 4px 14px; background: var(--card); border: 1px solid var(--hairline);
+  border-radius: 14px; box-shadow: 0 5px 14px var(--shadow); }
+.sites li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; font-weight: 500; }
+.sites li + li { border-top: 1px solid var(--hairline); }
+.sites time { color: var(--muted); font-weight: 400; white-space: nowrap; }
+.popup button { width: 100%; margin-top: 16px; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

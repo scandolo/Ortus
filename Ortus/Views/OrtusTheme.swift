@@ -57,6 +57,21 @@ enum OrtusTheme {
             : NSColor(red: 0.76, green: 0.36, blue: 0.10, alpha: 1)
     })
 
+    /// Accent for text and filled controls. The bright amber above is for decoration
+    /// (timer ring, glow, emblem); on light surfaces it is too pale to carry text, so
+    /// labels and filled buttons use this deeper burnt orange (at least 4.5:1).
+    static let accentInk = adaptive(dark: (0.98, 0.62, 0.28), light: (0.68, 0.31, 0.09))      // #FA9F47 / #AE4E16
+    static let accentInkHover = adaptive(dark: (1.00, 0.72, 0.42), light: (0.59, 0.26, 0.06)) // #FFB76A / #96420F
+    /// Text and icons placed on an `accentInk` fill.
+    static let onAccent = adaptive(dark: (0.16, 0.11, 0.06), light: (1, 1, 1))
+
+    private static func adaptive(dark: (CGFloat, CGFloat, CGFloat), light: (CGFloat, CGFloat, CGFloat)) -> Color {
+        Color(nsColor: NSColor(name: nil) { appearance in
+            let c = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
+            return NSColor(red: c.0, green: c.1, blue: c.2, alpha: 1)
+        })
+    }
+
     /// Twilight indigo — a deep evening-sky companion accent for emphasis and badges.
     static let twilight = Color(nsColor: NSColor(name: nil) { appearance in
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
@@ -242,6 +257,7 @@ extension View {
 // MARK: - Primary Button (warm amber CTA)
 
 struct OrtusPrimaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
     @State private var isHovering = false
 
     func makeBody(configuration: Configuration) -> some View {
@@ -249,12 +265,12 @@ struct OrtusPrimaryButtonStyle: ButtonStyle {
         let active = isHovering || pressed
         return configuration.label
             .font(OrtusTheme.Typo.buttonPrimary)
-            .foregroundStyle(.white)
+            .foregroundStyle(OrtusTheme.onAccent)
             .padding(.horizontal, 24)
             .padding(.vertical, 12)
             .background(
                 Capsule()
-                    .fill(active ? OrtusTheme.accentHover : OrtusTheme.accent)
+                    .fill(active ? OrtusTheme.accentInkHover : OrtusTheme.accentInk)
             )
             .overlay(
                 Capsule()
@@ -262,6 +278,7 @@ struct OrtusPrimaryButtonStyle: ButtonStyle {
             )
             .clipShape(Capsule())
             .shadow(color: OrtusTheme.accent.opacity(active ? 0.50 : 0.30), radius: active ? 14 : 8, y: active ? 4 : 2)
+            .opacity(isEnabled ? 1 : 0.45)
             .scaleEffect(pressed ? 0.96 : 1.0)
             .animation(.easeOut(duration: 0.14), value: pressed)
             .animation(.easeOut(duration: 0.18), value: isHovering)
@@ -339,8 +356,8 @@ struct OrtusGhostButtonStyle: ButtonStyle {
         let pressed = configuration.isPressed
         let active = isHovering || pressed
         return configuration.label
-            .font(OrtusTheme.Typo.meta)
-            .foregroundStyle(active ? .primary : .secondary)
+            .font(OrtusTheme.Typo.button)
+            .foregroundStyle(active ? OrtusTheme.accentInkHover : OrtusTheme.accentInk)
             .padding(.horizontal, 14)
             .padding(.vertical, 7)
             .background(
@@ -413,7 +430,7 @@ struct OrtusEmptyState: View {
             Spacer()
             Image(systemName: icon)
                 .font(.system(size: 44, weight: .light))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(OrtusTheme.accent)
                 .symbolRenderingMode(.hierarchical)
             Text(title)
                 .font(OrtusTheme.Typo.title)

@@ -25,12 +25,12 @@ struct EmojiPickerButton: View {
                 if hasCustomCode {
                     Text(EmojiCatalog.normalize(code))
                         .font(OrtusTheme.Typo.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(OrtusTheme.textMuted)
                         .lineLimit(1)
                 }
                 Image(systemName: "chevron.down")
                     .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(OrtusTheme.textMuted)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 7)
@@ -66,7 +66,7 @@ struct EmojiPickerPopover: View {
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(OrtusTheme.textMuted)
                 TextField("Search emoji", text: $query)
                     .textFieldStyle(.plain)
                     .font(OrtusTheme.Typo.body)
@@ -152,7 +152,7 @@ struct EmojiPickerPopover: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Custom Slack code (for workspace emoji)")
                     .font(OrtusTheme.Typo.meta)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(OrtusTheme.textMuted)
                 HStack(spacing: 6) {
                     TextField(":my_company_logo:", text: $customCode)
                         .textFieldStyle(OrtusTextFieldStyle())
@@ -182,7 +182,7 @@ struct EmojiPickerPopover: View {
                         Text("Use a custom code")
                     }
                     .font(OrtusTheme.Typo.caption)
-                    .foregroundStyle(OrtusTheme.accent)
+                    .foregroundStyle(OrtusTheme.accentInk)
                 }
                 .buttonStyle(.plain)
                 Spacer()
@@ -192,7 +192,7 @@ struct EmojiPickerPopover: View {
                 }
                 .buttonStyle(.plain)
                 .font(OrtusTheme.Typo.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(OrtusTheme.textMuted)
             }
         }
     }

@@ -76,7 +76,7 @@ struct ChatView: View {
                 } label: {
                     Image(systemName: "trash")
                         .font(.callout)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(OrtusTheme.textMuted)
                 }
                 .buttonStyle(.plain)
                 .help("Clear conversation")
@@ -154,12 +154,12 @@ private struct ChatSendButton: View {
         Button(action: action) {
             Image(systemName: "arrow.up")
                 .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(OrtusTheme.onAccent)
                 .frame(width: 28, height: 28)
                 .background(
                     Circle().fill(
                         canSend
-                            ? (isHovering ? OrtusTheme.accentHover : OrtusTheme.accent)
+                            ? (isHovering ? OrtusTheme.accentInkHover : OrtusTheme.accentInk)
                             : Color.secondary.opacity(0.22)
                     )
                 )
@@ -230,7 +230,7 @@ private struct ThinkingPill: View {
                 }
                 Text("Thinking…")
                     .font(OrtusTheme.Typo.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(OrtusTheme.textMuted)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -266,11 +266,11 @@ private struct MessageRow: View {
                 Text(renderMarkdown(message.content))
                     .font(OrtusTheme.Typo.body)
                     .textSelection(.enabled)
-                    .foregroundStyle(message.role == .user ? .white : .primary)
+                    .foregroundStyle(message.role == .user ? OrtusTheme.onAccent : .primary)
 
                 Text(message.timestamp, style: .time)
                     .font(OrtusTheme.Typo.meta)
-                    .foregroundStyle(message.role == .user ? Color.white.opacity(0.7) : .secondary)
+                    .foregroundStyle(message.role == .user ? OrtusTheme.onAccent.opacity(0.8) : OrtusTheme.textMuted)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
@@ -292,7 +292,7 @@ private struct MessageRow: View {
 
     private var userBubbleBackground: some View {
         RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous)
-            .fill(OrtusTheme.accent)
+            .fill(OrtusTheme.accentInk)
             .overlay(
                 RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous)
                     .strokeBorder(OrtusTheme.innerHighlightStrong, lineWidth: 1)
@@ -315,7 +315,7 @@ private struct MessageRow: View {
                 .foregroundStyle(OrtusTheme.accent)
             Text(message.content)
                 .font(OrtusTheme.Typo.meta)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(OrtusTheme.textMuted)
                 .lineLimit(2)
                 .truncationMode(.tail)
             Spacer(minLength: 0)

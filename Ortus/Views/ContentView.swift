@@ -3,10 +3,17 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var claudeCodeService: ClaudeCodeService
     @EnvironmentObject var updateService: UpdateService
-    @State private var selectedTab = 0
+    @State private var selectedTab: Int
+    private let fixedHeight: CGFloat?
 
-    /// The design size the whole UI is laid out at. On small/zoomed displays the
-    /// panel is scaled down to fit (see `fitScale`); it's never enlarged.
+    /// `initialTab` and `fixedHeight` exist for the debug snapshot harness.
+    init(initialTab: Int = 0, fixedHeight: CGFloat? = nil) {
+        _selectedTab = State(initialValue: initialTab)
+        self.fixedHeight = fixedHeight
+    }
+
+    /// Size the host itself. Scaling a sized MenuBarExtra can leave drawing and
+    /// clipping bounds out of sync during presentation.
     private static let designSize = CGSize(width: 420, height: 560)
 
     private let tabs: [(String, String, Int)] = [
@@ -16,7 +23,7 @@ struct ContentView: View {
     ]
 
     var body: some View {
-        let scale = Self.fitScale()
+        let size = fixedHeight.map { CGSize(width: Self.designSize.width, height: $0) } ?? Self.panelSize()
         VStack(spacing: 0) {
             tabBar
 
@@ -32,32 +39,24 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .transition(.opacity)
         }
-        .frame(width: Self.designSize.width, height: Self.designSize.height)
+        .frame(width: size.width, height: size.height)
         .background(VibrantBackground())
-        // Scale the entire panel uniformly so it fits the current screen. Keeps the
-        // exact same layout everywhere — it just shrinks (never grows) on smaller or
-        // more-zoomed displays instead of rendering at a fixed point size that can
-        // swallow a 13" screen set to "Larger Text".
-        .scaleEffect(scale, anchor: .topLeading)
-        .frame(width: Self.designSize.width * scale, height: Self.designSize.height * scale)
+        // The menu panel's geometry never participates in content animations.
+        .transaction { $0.animation = nil }
         .onAppear {
             claudeCodeService.detectIfNeeded()
             Task { await updateService.checkForUpdates() }
         }
     }
 
-    /// How much to shrink the panel so it comfortably fits the active screen.
-    /// Returns 1 (no change) on any display with room to spare. The height budget
-    /// is the binding constraint on short/zoomed screens; width is rarely the limit.
-    private static func fitScale() -> CGFloat {
-        guard let visible = NSScreen.main?.visibleFrame else { return 1 }
-        // Leave headroom so the panel never butts against the menu bar or screen edge,
-        // and cap height usage so it never dominates a short screen even when it fits.
-        let heightBudget = visible.height * 0.72
-        let widthBudget = visible.width - 24
-        let scale = min(heightBudget / designSize.height, widthBudget / designSize.width, 1)
-        // Don't shrink into illegibility if someone is on a tiny external display.
-        return max(scale, 0.7)
+    /// Constrain the viewport on smaller screens; the content scrolls at its
+    /// normal text size instead of transforming the entire hosted window.
+    private static func panelSize() -> CGSize {
+        guard let visible = NSScreen.main?.visibleFrame else { return designSize }
+        return CGSize(
+            width: min(designSize.width, max(280, visible.width - 24)),
+            height: min(designSize.height, max(320, visible.height * 0.72))
+        )
     }
 
     // MARK: - Tab Bar
@@ -117,7 +116,7 @@ private struct TabButton: View {
                 )
                 .clipShape(Capsule())
                 .contentShape(Capsule())
-                .foregroundStyle(isSelected ? OrtusTheme.accent : .secondary)
+                .foregroundStyle(isSelected ? OrtusTheme.accentInk : OrtusTheme.textMuted)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
@@ -148,7 +147,7 @@ private struct SettingsGearButton: View {
                 )
                 .clipShape(Capsule())
                 .contentShape(Capsule())
-                .foregroundStyle(isSelected ? OrtusTheme.accent : .secondary)
+                .foregroundStyle(isSelected ? OrtusTheme.accentInk : OrtusTheme.textMuted)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Settings")
