@@ -4,35 +4,32 @@ import SwiftUI
 // MARK: - Design System
 //
 // ┌─────────────────────────────────────────────────────────────────────┐
-// │  ORTUS VISUAL GUIDELINES — Sunrise palette + lifted glass cards    │
+// │  ORTUS VISUAL GUIDELINES — Sunrise palette + lifted cards          │
+// │  The browser extension (BrowserExtension/style.css) and the landing │
+// │  page (landing/styles.css) mirror these tokens. Change all three.   │
 // │                                                                     │
-// │  1. CARDS LIFT: Cards use OrtusTheme.cardSurface — an adaptive      │
-// │     color that's clearly LIGHTER than the popover background in     │
-// │     both light and dark mode. Cards float above the canvas, never   │
-// │     sink below it.                                                  │
+// │  1. CARDS LIFT: cardSurface is lighter than the canvas in light and │
+// │     dark mode. ortusCard() for content, OrtusGroup for lists.       │
 // │                                                                     │
-// │  2. WARM ACCENT: Sunrise amber for CTAs, primary affordances, and   │
-// │     the focus hero. Cool sage for "all-clear" semantic moments.     │
-// │     Don't introduce other accents — keep the palette tight.         │
+// │  2. ACCENT: bright amber (accent) is decoration only: timer ring,   │
+// │     glow, emblem. Text and filled buttons use accentInk (≥4.5:1).   │
+// │     Muted text uses textMuted, never system secondary grey.         │
 // │                                                                     │
-// │  3. SHAPE LANGUAGE: Continuous corner radius everywhere.            │
+// │  3. SHAPE: continuous corners; capsules for buttons.                │
 // │                                                                     │
-// │  4. NO DIVIDERS: Use spacing or distinct cards. Lines fight glass.  │
+// │  4. ROWS: every list item is OrtusListRow (icon, title, one status  │
+// │     line, one control) inside an OrtusGroup, hairline between rows. │
 // │                                                                     │
-// │  5. BUTTON HIERARCHY:                                               │
-// │     - OrtusPrimaryButtonStyle → tinted-amber capsule (one CTA / view)│
-// │     - OrtusSecondaryButtonStyle → glass capsule                     │
-// │     - OrtusDestructiveButtonStyle → ember-tinted capsule (Disconnect,│
-// │       Quit, end-session). On-brand sunset tone, never raw red.      │
-// │     - OrtusGhostButtonStyle → borderless                            │
+// │  5. BUTTONS: OrtusPrimaryButtonStyle (one CTA per view),            │
+// │     OrtusSecondaryButtonStyle, OrtusGhostButtonStyle (text actions), │
+// │     OrtusRowButtonStyle for a row's control (role: .destructive).   │
 // │                                                                     │
-// │  6. TEXT FIELDS: Always OrtusTextFieldStyle().                      │
+// │  6. SETUP FLOWS: OrtusModal with OrtusStepRow steps.                │
 // │                                                                     │
-// │  7. TYPOGRAPHY: Headers use uppercase tracked caption2.semibold.    │
-// │     Hero text uses SF Rounded thin at large sizes. Body weights     │
-// │     err on the slightly-bold side for a more intentional feel.      │
+// │  7. TYPE: section headers are uppercase tracked; titles 22 bold;    │
+// │     body 13; status lines 12. Hero timer is SF Rounded.             │
 // │                                                                     │
-// │  8. TOKENS: Use only OrtusTheme spacing/radius/color tokens.        │
+// │  8. TOKENS: use only OrtusTheme spacing/radius/color tokens.        │
 // └─────────────────────────────────────────────────────────────────────┘
 
 enum OrtusTheme {
@@ -312,41 +309,6 @@ struct OrtusSecondaryButtonStyle: ButtonStyle {
     }
 }
 
-// MARK: - Destructive Button (ember-tinted capsule)
-
-/// Used for irreversible actions: Disconnect, Quit Ortus, end-session.
-/// Shape matches the secondary capsule so destructive actions sit cleanly
-/// next to other buttons; the ember tint communicates "careful" without
-/// importing a foreign red into the sunrise palette.
-struct OrtusDestructiveButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-    @State private var isHovering = false
-
-    func makeBody(configuration: Configuration) -> some View {
-        let pressed = configuration.isPressed
-        let active = (isHovering || pressed) && isEnabled
-        return configuration.label
-            .font(OrtusTheme.Typo.button)
-            .foregroundStyle(isEnabled ? OrtusTheme.danger : OrtusTheme.danger.opacity(0.45))
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
-            .background(
-                Capsule().fill(OrtusTheme.danger.opacity(active ? 0.18 : 0.10))
-            )
-            .overlay(
-                Capsule().strokeBorder(
-                    OrtusTheme.danger.opacity(isEnabled ? (active ? 0.60 : 0.38) : 0.18),
-                    lineWidth: 1
-                )
-            )
-            .clipShape(Capsule())
-            .scaleEffect(pressed ? 0.96 : 1.0)
-            .animation(.easeOut(duration: 0.14), value: pressed)
-            .animation(.easeOut(duration: 0.18), value: isHovering)
-            .onHover { isHovering = $0 }
-    }
-}
-
 // MARK: - Ghost Button (borderless)
 
 struct OrtusGhostButtonStyle: ButtonStyle {
@@ -482,69 +444,5 @@ struct OrtusSectionHeader: View {
             .font(OrtusTheme.Typo.section)
             .tracking(1.4)
             .foregroundStyle(OrtusTheme.textMuted)
-    }
-}
-
-// MARK: - Settings Row (compact inline list row)
-
-/// A single inline settings row: a lifted surface holding leading content and a
-/// trailing control (toggle, button, status). Lighter than `ortusCard()` — rows
-/// stack densely in a list, so they carry only a whisper of elevation to avoid
-/// the noise that a full card shadow per row would create.
-struct OrtusRowModifier: ViewModifier {
-    func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
-        return content
-            // A consistent minimum content height keeps single-line rows uniform
-            // regardless of whether they hold a switch, a button, or just text —
-            // so a stack of rows reads as an even, aligned list.
-            .frame(maxWidth: .infinity, minHeight: 26, alignment: .leading)
-            .padding(.horizontal, OrtusTheme.spacingMD)
-            .padding(.vertical, 12)
-            .background(shape.fill(OrtusTheme.cardSurface))
-            .overlay(shape.strokeBorder(OrtusTheme.hairline, lineWidth: 1))
-            .overlay(
-                shape.strokeBorder(
-                    LinearGradient(
-                        colors: [OrtusTheme.innerHighlight, .clear],
-                        startPoint: .top,
-                        endPoint: .center
-                    ),
-                    lineWidth: 1
-                )
-            )
-            .clipShape(shape)
-            .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
-    }
-}
-
-extension View {
-    func ortusRow() -> some View { modifier(OrtusRowModifier()) }
-}
-
-// MARK: - Settings Toggle Row
-
-/// The workhorse settings control: a labelled switch on its own row. The switch
-/// is pinned hard-right (a plain `Toggle` label leaves it glued to the text), and
-/// tints amber when on, matching the rest of the sunrise palette.
-struct OrtusToggleRow: View {
-    let title: String
-    @Binding var isOn: Bool
-    var isEnabled: Bool = true
-
-    var body: some View {
-        HStack(spacing: OrtusTheme.spacingMD) {
-            Text(title)
-                .font(OrtusTheme.Typo.bodyMedium)
-                .foregroundStyle(.primary)
-            Spacer(minLength: OrtusTheme.spacingSM)
-            Toggle("", isOn: $isOn)
-                .labelsHidden()
-                .toggleStyle(.switch)
-                .tint(OrtusTheme.accent)
-        }
-        .disabled(!isEnabled)
-        .opacity(isEnabled ? 1 : 0.5)
-        .ortusRow()
     }
 }
