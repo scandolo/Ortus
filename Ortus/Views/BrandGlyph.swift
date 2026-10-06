@@ -15,6 +15,7 @@ struct BrandGlyph: View {
             if parts.isEmpty { Image(systemName: "globe").resizable().scaledToFit() }
             ForEach(parts.indices, id: \.self) { index in render(parts[index]) }
         }
+        .foregroundStyle(OrtusTheme.ink)
         .frame(width: size, height: size)
         .compositingGroup()
         .accessibilityHidden(true)

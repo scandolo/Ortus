@@ -59,6 +59,9 @@ enum OrtusTheme {
     /// labels and filled buttons use this deeper burnt orange (at least 4.5:1).
     static let accentInk = adaptive(dark: (0.98, 0.62, 0.28), light: (0.68, 0.31, 0.09))      // #FA9F47 / #AE4E16
     static let accentInkHover = adaptive(dark: (1.00, 0.72, 0.42), light: (0.59, 0.26, 0.06)) // #FFB76A / #96420F
+    /// Solid text colour for marks drawn as shapes; matches the extension's --ink.
+    /// The panel's vibrancy washes out `.primary` on filled shapes.
+    static let ink = adaptive(dark: (0.95, 0.93, 0.91), light: (0.12, 0.11, 0.09))                 // #F2EEE8 / #1F1C18
     /// Text and icons placed on an `accentInk` fill.
     static let onAccent = adaptive(dark: (0.16, 0.11, 0.06), light: (1, 1, 1))
 
