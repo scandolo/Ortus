@@ -70,8 +70,17 @@ struct OrtusBrowserBridge {
             }
             var previous: Data?
             var lastHeartbeat = Date.distantPast
+            // A browser keeps this process alive across app updates. When the installed
+            // helper changes, exit so the extension reconnects to the new version.
+            let executable = Bundle.main.executablePath
+            let modified = { (path: String) in (try? FileManager.default.attributesOfItem(atPath: path))?[.modificationDate] as? Date }
+            let launchedVersion = executable.flatMap(modified)
             while true {
                 let now = Date()
+                if let executable, now.timeIntervalSince(lastHeartbeat) >= 5, modified(executable) != launchedVersion {
+                    try? FileManager.default.removeItem(at: clientURL)
+                    exit(0)
+                }
                 let url = directory.appendingPathComponent("policy.json")
                 var policy = BrowserPolicy(sessions: [], now: now)
                 policy.heartbeatExpiresAt = 0 // missing/invalid policy means Ortus is offline
