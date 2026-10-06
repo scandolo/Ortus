@@ -21,7 +21,12 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Ortus"
+    "default_title": "Ortus",
+    "default_icon": {
+      "16": "icon-16.png",
+      "32": "icon-32.png",
+      "48": "icon-48.png"
+    }
   },
   "web_accessible_resources": [
     {
@@ -29,7 +34,9 @@
         "blocked.html",
         "blocked.js",
         "style.css",
-        "core.js"
+        "core.js",
+        "icon-32.png",
+        "glyphs.js"
       ],
       "matches": [
         "http://*/*",
@@ -37,5 +44,11 @@
       ]
     }
   ],
-  "minimum_chrome_version": "120"
+  "minimum_chrome_version": "120",
+  "icons": {
+    "16": "icon-16.png",
+    "32": "icon-32.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  }
 }
