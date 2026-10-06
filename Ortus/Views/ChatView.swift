@@ -10,22 +10,49 @@ struct ChatView: View {
         VStack(spacing: 0) {
             if !claudeCodeService.isConfigured {
                 OrtusEmptyState(
-                    icon: "terminal",
-                    title: "Claude Code not found",
-                    message: "Install Claude Code (docs.claude.com/claude-code), or set its binary path in Settings, to enable AI chat."
+                    icon: "sparkles",
+                    title: "Chat needs Claude Code",
+                    message: "Install Claude Code from docs.claude.com/claude-code, then check again in Settings."
                 )
             } else if claudeCodeService.messages.isEmpty {
-                OrtusEmptyState(
-                    icon: "sparkles",
-                    title: "Ask about Slack",
-                    message: "Catch up on channels, search messages, or send replies without unblocking Slack"
-                )
+                emptyState
             } else {
                 messageList
             }
 
             inputBar
         }
+    }
+
+    // MARK: - Empty state
+
+    private let suggestions = ["Catch me up on Slack", "Anything urgent in my email?", "What’s on my calendar today?"]
+
+    private var emptyState: some View {
+        VStack(spacing: OrtusTheme.spacingMD) {
+            Spacer()
+            Image(systemName: "sparkles").font(.system(size: 40, weight: .light)).foregroundStyle(OrtusTheme.accent)
+            Text("Stay in focus, still get answers").font(OrtusTheme.Typo.title).multilineTextAlignment(.center)
+            Text("Look something up, catch up on messages or get a task done, without opening the apps you’ve set aside.")
+                .font(OrtusTheme.Typo.body).foregroundStyle(OrtusTheme.textMuted)
+                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, OrtusTheme.spacingLG)
+            VStack(spacing: OrtusTheme.spacingSM) {
+                ForEach(suggestions, id: \.self) { suggestion in
+                    Button { inputText = suggestion; isInputFocused = true } label: {
+                        Text(suggestion).font(OrtusTheme.Typo.body)
+                            .padding(.horizontal, 14).padding(.vertical, 8)
+                            .background(Capsule().fill(OrtusTheme.cardSurface))
+                            .overlay(Capsule().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.top, OrtusTheme.spacingXS)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .padding(OrtusTheme.spacingMD)
     }
 
     // MARK: - Message List
@@ -83,7 +110,7 @@ struct ChatView: View {
                 .disabled(claudeCodeService.isProcessing)
             }
 
-            TextField("What's happening in Slack?", text: $inputText)
+            TextField("Ask anything…", text: $inputText)
                 .textFieldStyle(.plain)
                 .font(OrtusTheme.Typo.body)
                 .focused($isInputFocused)
