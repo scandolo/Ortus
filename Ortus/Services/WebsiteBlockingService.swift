@@ -34,7 +34,7 @@ final class WebsiteBlockingService: ObservableObject {
     func publish(sessions: [FocusSession], now: Date = Date()) {
         do {
             try BrowserPaths.prepare(directory)
-            try BrowserPaths.write(BrowserPolicy(sessions: sessions, now: now, appearance: BuildProfile.appearance, appName: BuildProfile.name,
+            try BrowserPaths.write(BrowserPolicy(sessions: sessions, now: now, appName: BuildProfile.name,
                                                     tone: UserDefaults.standard.bool(forKey: "genZMode") ? "genz" : nil), to: directory.appendingPathComponent("policy.json"))
             error = nil
         } catch { self.error = "Website rules could not be saved: \(error.localizedDescription)" }
@@ -45,7 +45,7 @@ final class WebsiteBlockingService: ObservableObject {
         do {
             let folder = directory.appendingPathComponent("presence")
             try BrowserPaths.prepare(folder)
-            try BrowserPaths.write(BrowserPresence(appName: BuildProfile.name, appearance: BuildProfile.appearance, startedAt: startedAt, updatedAt: now.timeIntervalSince1970), to: folder.appendingPathComponent(instanceID + ".json"))
+            try BrowserPaths.write(BrowserPresence(appName: BuildProfile.name, startedAt: startedAt, updatedAt: now.timeIntervalSince1970), to: folder.appendingPathComponent(instanceID + ".json"))
         } catch { self.error = "Ortus could not update browser readiness. Try reopening the app." }
         refreshConnections(now: now)
     }

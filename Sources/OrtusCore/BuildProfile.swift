@@ -2,10 +2,7 @@ import Foundation
 import Darwin
 
 public enum BuildProfile {
-    public static var appearance: String { ProcessInfo.processInfo.environment["ORTUS_APPEARANCE"] ?? Bundle.main.object(forInfoDictionaryKey: "OrtusAppearance") as? String ?? "native" }
-    public static var isGlass: Bool { appearance == "glass" }
     public static var isPreview: Bool { Bundle.main.object(forInfoDictionaryKey: "OrtusPreviewBuild") as? Bool == true }
-    public static var isComparison: Bool { Bundle.main.object(forInfoDictionaryKey: "OrtusComparisonBuild") as? Bool == true }
     public static var name: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "Ortus" }
 }
 
@@ -36,10 +33,9 @@ public final class FocusEngineLock {
 
 public struct BrowserPresence: Codable, Sendable {
     public var appName: String
-    public var appearance: String
     public var startedAt: Double
     public var updatedAt: Double
-    public init(appName: String, appearance: String, startedAt: Double, updatedAt: Double) {
-        self.appName = appName; self.appearance = appearance; self.startedAt = startedAt; self.updatedAt = updatedAt
+    public init(appName: String, startedAt: Double, updatedAt: Double) {
+        self.appName = appName; self.startedAt = startedAt; self.updatedAt = updatedAt
     }
 }

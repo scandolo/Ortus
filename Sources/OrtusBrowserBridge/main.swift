@@ -97,7 +97,7 @@ struct OrtusBrowserBridge {
                         return value
                     }.max { $0.startedAt < $1.startedAt }
                     if let presence {
-                        policy = BrowserPolicy(sessions: [], now: Date(timeIntervalSince1970: presence.updatedAt), appearance: presence.appearance, appName: presence.appName)
+                        policy = BrowserPolicy(sessions: [], now: Date(timeIntervalSince1970: presence.updatedAt), appName: presence.appName)
                     }
                 }
                 policy.browserName = browser

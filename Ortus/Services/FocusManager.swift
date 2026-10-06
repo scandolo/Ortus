@@ -25,22 +25,8 @@ final class FocusManager: ObservableObject {
     @Published var customModes: [FocusMode] = [] {
         didSet { if let data = try? JSONEncoder().encode(customModes) { UserDefaults.standard.set(data, forKey: "customFocusModes") } }
     }
-    @Published var scheduleDraft: FocusSchedule? {
-        didSet {
-            if let scheduleDraft, let data = try? JSONEncoder().encode(scheduleDraft) { UserDefaults.standard.set(data, forKey: "scheduleDraft") }
-            else { UserDefaults.standard.removeObject(forKey: "scheduleDraft") }
-        }
-    }
-    @Published var manualDraft: BlockSelection? {
-        didSet {
-            if let manualDraft, let data = try? JSONEncoder().encode(manualDraft) { UserDefaults.standard.set(data, forKey: "manualDraft") }
-            else { UserDefaults.standard.removeObject(forKey: "manualDraft") }
-        }
-    }
     @Published var blockingError: String?
-    @Published var draftError: String?
     @Published var completionMessage: String?
-    @Published private(set) var deletedSchedules: [FocusSchedule] = []
     let websites = WebsiteBlockingService()
     private lazy var engine = FocusEngineLock(directory: websites.directory)
     private let apps = ApplicationBlocker()
@@ -79,8 +65,6 @@ final class FocusManager: ObservableObject {
         if emergencyScheduleSuppressUntil > Date().timeIntervalSince1970 {
             timeline.suppressedUntil = Date(timeIntervalSince1970: emergencyScheduleSuppressUntil)
         }
-        if let data = UserDefaults.standard.data(forKey: "scheduleDraft") { scheduleDraft = try? JSONDecoder().decode(FocusSchedule.self, from: data) }
-        if let data = UserDefaults.standard.data(forKey: "manualDraft") { manualDraft = try? JSONDecoder().decode(BlockSelection.self, from: data) }
         if let data = UserDefaults.standard.data(forKey: "customFocusModes"), let saved = try? JSONDecoder().decode([FocusMode].self, from: data) { customModes = saved }
         migrateToModesIfNeeded()
         websites.registerCompanion()
@@ -140,35 +124,10 @@ final class FocusManager: ObservableObject {
     }
     func deleteSchedule(_ schedule: FocusSchedule) {
         guard !activeScheduleIDs.contains(schedule.id) else { return }
-        deletedSchedules.append(schedule)
         schedules.removeAll { $0.id == schedule.id }; ScheduleStore.save(schedules); refresh()
-    }
-    func undoDelete() {
-        guard let schedule = deletedSchedules.popLast() else { return }
-        schedules.append(schedule); ScheduleStore.save(schedules); refresh()
-    }
-    func saveDraft() {
-        guard let draft = scheduleDraft else { return }
-        guard !activeScheduleIDs.contains(draft.id) else {
-            draftError = "This schedule has started. Your draft is kept; save it after focus ends."
-            return
-        }
-        guard draft.hasValidTimeRange, !draft.days.isEmpty, !draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !draft.blocked.isEmpty else {
-            draftError = "Check the name, days, times and focus choices before saving."
-            return
-        }
-        draftError = nil
-        if schedules.contains(where: { $0.id == draft.id }) { updateSchedule(draft) }
-        else { addSchedule(draft) }
-        scheduleDraft = nil
     }
     private func acquireEngine() -> Bool {
         if engine.isHeld { return true }
-        if BuildProfile.isComparison,
-           NSWorkspace.shared.runningApplications.contains(where: { $0.bundleIdentifier == "com.ortus.preview" && $0.processIdentifier != ProcessInfo.processInfo.processIdentifier }) {
-            blockingError = "Ortus Preview is open. Quit it when its session ends, then start focus here. You can explore both designs now."
-            return false
-        }
         guard engine.acquire() else {
             blockingError = "Another Ortus app has an active session. Finish that session before starting one here."
             return false

@@ -8,18 +8,14 @@ SIGNING_IDENTITY="${ORTUS_SIGNING_IDENTITY:--}"
 MODE="${1:-debug}"
 CONFIG=debug
 APP_NAME="Ortus.app"
-APPEARANCE=native
 BUNDLE_ID=com.ortus.app
 URL_SCHEME=ortus
 IS_PREVIEW=false
-IS_COMPARISON=false
 case "$MODE" in
     release) CONFIG=release ;;
     preview) CONFIG=release; APP_NAME="Ortus Preview.app"; BUNDLE_ID=com.ortus.preview; URL_SCHEME=ortus-preview; IS_PREVIEW=true ;;
-    native) CONFIG=release; APP_NAME="Ortus Native.app"; BUNDLE_ID=com.ortus.preview.native; URL_SCHEME=ortus-native; IS_PREVIEW=true; IS_COMPARISON=true ;;
-    glass) CONFIG=release; APP_NAME="Ortus Glass.app"; BUNDLE_ID=com.ortus.preview.glass; URL_SCHEME=ortus-glass; IS_PREVIEW=true; IS_COMPARISON=true; APPEARANCE=glass ;;
     debug) ;;
-    *) echo "Usage: ./build.sh [debug|release|preview|native|glass]" >&2; exit 1 ;;
+    *) echo "Usage: ./build.sh [debug|release|preview]" >&2; exit 1 ;;
 esac
 
 swift build -c "$CONFIG"
@@ -44,11 +40,6 @@ if [[ "$IS_PREVIEW" == true ]]; then
     /usr/libexec/PlistBuddy -c 'Add :OrtusPreviewBuild bool true' "$APP/Contents/Info.plist"
     /usr/libexec/PlistBuddy -c "Add :OrtusSourceCommit string $(git rev-parse --short HEAD)" "$APP/Contents/Info.plist"
     printf "export const NATIVE_HOST = 'com.ortus.browser.preview';\n" > "$APP/Contents/Resources/BrowserExtension/config.js"
-fi
-/usr/libexec/PlistBuddy -c "Add :OrtusAppearance string $APPEARANCE" "$APP/Contents/Info.plist"
-/usr/libexec/PlistBuddy -c "Add :OrtusComparisonBuild bool $IS_COMPARISON" "$APP/Contents/Info.plist"
-if [[ "$IS_COMPARISON" == true ]]; then
-    /usr/libexec/PlistBuddy -c 'Set :LSUIElement false' "$APP/Contents/Info.plist"
 fi
 /usr/libexec/PlistBuddy -c 'Add :CFBundleURLTypes array' "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c 'Add :CFBundleURLTypes:0 dict' "$APP/Contents/Info.plist"

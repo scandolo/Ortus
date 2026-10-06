@@ -10,15 +10,14 @@ from pathlib import Path
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--browser-only', action='store_true', help='Prepare the companion for the installed preview without restarting the app.')
-parser.add_argument("--variant", choices=["preview", "native", "glass"], default="preview")
 args = parser.parse_args()
 root = Path(__file__).resolve().parent.parent
-app_name = {'preview':'Ortus Preview','native':'Ortus Native','glass':'Ortus Glass'}[args.variant]
+app_name = 'Ortus Preview'
 source = root / (app_name + '.app')
 destination = Path('/Applications') / (app_name + '.app')
 if not args.browser_only:
     if not source.is_dir():
-        raise SystemExit(f'Run ./build.sh {args.variant} first.')
+        raise SystemExit('Run ./build.sh preview first.')
     running = subprocess.run(['pgrep', '-f', '^' + re.escape(str(destination / 'Contents/MacOS/Ortus')) + '$'], capture_output=True)
     if running.returncode == 0:
         raise SystemExit(f'Quit {app_name} before replacing it, then run this installer again.')
