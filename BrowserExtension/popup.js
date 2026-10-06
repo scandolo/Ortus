@@ -1,4 +1,5 @@
 import { effectiveRules, siteGroups, connectionMessage } from './core.js';
+import { glyph } from './glyphs.js';
 const title = document.querySelector('#title');
 const status = document.querySelector('#status');
 const list = document.querySelector('#sites');
@@ -20,8 +21,9 @@ async function render() {
   if (list.dataset.signature !== signature) {
     list.replaceChildren(...groups.map(group => {
       const row = document.createElement('li');
-      const name = document.createElement('span'); name.textContent = group.name;
-      row.append(name);
+      const mark = document.createElement('span'); mark.className = 'glyph'; mark.innerHTML = glyph(group.name);
+      const name = document.createElement('span'); name.className = 'name'; name.textContent = group.name;
+      row.append(mark, name);
       // Only sites ending at a different time need their own time.
       if (group.expiresAt !== end) { const time = document.createElement('time'); time.textContent = clock(group.expiresAt); row.append(time); }
       return row;

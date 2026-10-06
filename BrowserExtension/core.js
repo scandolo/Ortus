@@ -37,7 +37,10 @@ export function originalURL(hash) {
   } catch { return null; }
 }
 
-const siteNames = { 'mail.google.com':'Gmail', 'gmail.com':'Gmail', 'linkedin.com':'LinkedIn', 'slack.com':'Slack' };
+// Keep in step with BlockingPreset in Sources/OrtusCore/BlockSelection.swift.
+const siteNames = { 'mail.google.com':'Gmail', 'gmail.com':'Gmail', 'linkedin.com':'LinkedIn', 'slack.com':'Slack',
+  'x.com':'X', 'twitter.com':'X', 'instagram.com':'Instagram', 'facebook.com':'Facebook', 'reddit.com':'Reddit',
+  'tiktok.com':'TikTok', 'web.whatsapp.com':'WhatsApp' };
 export const siteName = domain => siteNames[domain] || domain;
 
 export function siteGroups(rules) {
