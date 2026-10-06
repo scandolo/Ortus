@@ -40,6 +40,130 @@ in Slack without opening it, so you stay heads-down.
 > Willpower runs out. A locked session doesn't. Ortus holds the line so you can
 > stay in the work.
 
+## Compare the two local designs
+
+```bash
+./build.sh native
+./build.sh glass
+python3 scripts/install-preview.py --variant native
+python3 scripts/install-preview.py --variant glass
+```
+
+Open **Ortus Native** and **Ortus Glass** from Applications. Their first windows
+position themselves side by side. Native uses compact solid surfaces; Glass uses
+softer materials and a circular active timer. Both have the same blocking features,
+keyboard controls, draft recovery, validation, and emergency rules. Preferences
+are separate. Both start with Focus Time **off** until you enable it. New schedules are also
+saved off by default. Every preset states its actual coverage, including partial
+Slack app or website selections.
+
+The browser companion is shared at `/Applications/Ortus Preview Browser`; it
+uses the appearance of the active controller. Reload its card once in your
+browser's extensions page after updating these builds. You do not need to load
+a second extension. Only one app can own an active focus session. The other can
+be explored and configured safely; it cannot erase the active app's website rules.
+Quit an older Ortus Preview before starting focus in a comparison app.
+
+The optional Assistant retains unsent drafts, offers retry after a failed request,
+and uses Claude Code’s normal permission mode. It does not bypass tool approval.
+
+The local builds are ad-hoc signed and publish no release. The public installer
+and published GitHub release are unaffected by building these candidates.
+
+## Local preview: apps and websites per schedule
+
+This branch includes an unreleased blocking preview. The public installer still
+ships the published release; building this branch does not publish or update it.
+
+```bash
+./build.sh preview
+python3 scripts/install-preview.py
+open "/Applications/Ortus Preview.app"
+```
+
+The preview has its own app identity and focus preferences. It does not enable
+launch at login automatically, and its release updater is disabled. Quit the
+regular Ortus app before testing to avoid having two sets of schedules running.
+Local builds use ad-hoc signing and require no keychain or administrator setup.
+
+### Choose what each schedule blocks
+
+In **Schedules**, create or edit a schedule and choose Gmail, LinkedIn, Slack,
+custom website domains, and applications from your Mac. The default **Focus Time**
+schedule is weekdays **09:00–12:00** and selects Gmail, LinkedIn, and Slack
+(including Slack in the browser). Manual focus has its own saved selection.
+
+Websites include all subdomains. Gmail uses `mail.google.com` and `gmail.com`, so
+Google Docs and other Google services remain available. Applications are matched
+by bundle identifier, including reopened instances. Finder, System Settings, and
+Ortus itself cannot be selected. Selected applications are closed during focus;
+save work in those applications before starting.
+
+Overlapping schedules combine their selections and expire independently.
+Overnight schedules use the weekday on which they start. Active sessions keep a
+snapshot of their choices; their schedule cannot be weakened while it is running.
+Manual sessions survive restarting Ortus. Grace cancellation only cancels the
+manual session; emergency end releases all current targets and suppresses the
+current schedule window, including across restarts.
+
+### Connect Chrome, Arc, Edge, or Brave once
+
+1. Open `arc://extensions` in Arc or `chrome://extensions` in Chrome and enable **Developer mode**.
+2. Choose **Load unpacked** and select
+   `/Applications/Ortus Preview Browser`.
+   Choose this ordinary folder in Applications. The folder and its path are also available in **Ortus → Settings → Website blocking**.
+3. Leave the companion enabled. Ortus shows the connection when the browser has
+   successfully applied its rules. In Arc, you can label the connection **Arc**
+   in the extension popup.
+
+After loading, confirm the **Ortus · Website blocking** card appears and the app reports **Browser companion connected**. Website blocking is inactive until that connection exists.
+
+Do this for each browser profile you use. Private windows need the extension's
+**Allow in Incognito** setting. Safari and Firefox are not covered by this preview.
+Browser extensions can be disabled or removed by their owner; this is a focus
+commitment tool, not a tamper-proof parental control or device security system.
+
+There are no administrator, Accessibility, or Apple Events permission prompts.
+The extension permission to operate on websites is necessary for arbitrary domain
+blocking. It redirects selected websites to a local focus page, handles tabs that
+are already open, and blocks background requests to selected domains. At the end,
+the page offers to return to the original URL. It does not reload tabs automatically.
+
+### How the blocking pieces fit together
+
+- `Sources/OrtusCore`: validated targets, saved schedules, session snapshots,
+  overlap/overnight resolution, browser deadlines, and the native message format.
+- `ApplicationBlocker`: native macOS app termination and relaunch monitoring.
+- `WebsiteBlockingService`: publishes a local policy with a short heartbeat lease.
+- `OrtusBrowserBridge`: unprivileged Native Messaging process; reads only that
+  policy and exchanges connection acknowledgements with the extension.
+- `BrowserExtension`: Chromium Manifest V3 session rules, open-tab enforcement,
+  and the local blocked page. No browsing URLs or page content are sent to Ortus.
+
+The browser clears stale rules within 20 seconds if Ortus stops updating its
+heartbeat; it also removes rules at their individual deadlines and clears rules
+on a native connection failure. This avoids leaving websites stuck behind an
+abandoned session. Existing credentials and network settings are untouched.
+
+The shared target/session model is independent of these two enforcement methods.
+A future Safari companion or signed macOS network filter can use the same schedule
+and deadline policy without redesigning the schedule editor.
+
+### Verify without using the screen
+
+```bash
+swift run OrtusCoreChecks
+node --test BrowserExtension/tests/*.test.js
+bash scripts/test-app-blocking.sh
+```
+
+The Swift checks run with Command Line Tools alone; they do not require Xcode's
+XCTest/Testing frameworks. App integration checks launch only a disposable,
+windowless fixture app. For a real browser integration check, install Python
+Playwright and its Chromium runtime, then run `python3 scripts/test-browser.py`.
+That test uses a disposable **headless** profile, a temporary native host, and
+local website fixtures. It never opens personal browser profiles or contacts Gmail.
+
 ## Install
 
 ### One-line install (recommended)
@@ -106,7 +230,7 @@ Ortus/
     ├── OrtusApp.swift         # @main entry, MenuBarExtra scene, quit-blocking AppDelegate
     ├── Models/                # ChatMessage, FocusSchedule + ScheduleStore, Slack API types
     ├── Services/
-    │   ├── FocusManager.swift # Core logic: focus state, Slack kill/monitor, schedules, emergency end
+    │   ├── FocusManager.swift # Coordinates sessions, selected targets, schedules, emergency end
     │   ├── ClaudeService.swift# Claude API client with an agentic tool-use loop
     │   ├── SlackService.swift # Slack Web API client
     │   ├── SlackOAuthService.swift # OAuth flow via a loopback HTTP server

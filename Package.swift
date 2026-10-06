@@ -8,9 +8,13 @@ let package = Package(
         .package(url: "https://github.com/PostHog/posthog-ios.git", from: "3.59.3"),
     ],
     targets: [
+        .target(name: "OrtusCore"),
+        .executableTarget(name: "OrtusBrowserBridge", dependencies: ["OrtusCore"]),
+        .executableTarget(name: "OrtusCoreChecks", dependencies: ["OrtusCore"], path: "Tests/OrtusCoreTests"),
         .executableTarget(
             name: "Ortus",
             dependencies: [
+                "OrtusCore",
                 .product(name: "PostHog", package: "posthog-ios"),
             ],
             path: "Ortus",

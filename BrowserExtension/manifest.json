@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Ortus \u00b7 Website blocking",
+  "version": "0.2.0",
+  "description": "Keep the websites you choose out of your focus time. Controlled locally by Ortus.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuKSXXG4HDJfWSYg36+Y+1Nm3JuQ/mPOSNKJW3QanUcQOZszcXJyq5RWrG0p34nzn2Z/3eFtGV8R6zJBwXK4Sa7XzZoPmedJrTqPP8gmH3Nph5WrDRA5MmwuR0CHYLTXaOY4fqukmkwPsxyyA2XRp1VDrKAN0z9DOlOdSVo+JyTkVfcOy6mPPUc2zKq76lyfyt/25sxhRbnEk2txbml5CRk+f4q+spAbaNMWjGG8aDXGo0Io6ofsDPc9zRjCRaLiD+f923xk+JEeCJkSk+k5KIigXbSXok/RSHFnfkzTG4qOU4wr741ogBcjR+DPbXLtD8O68lkyszBYgizP338pEtwIDAQAB",
+  "permissions": [
+    "declarativeNetRequest",
+    "tabs",
+    "nativeMessaging",
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Ortus"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "blocked.html",
+        "blocked.js",
+        "style.css",
+        "core.js"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ]
+    }
+  ],
+  "minimum_chrome_version": "120"
+}
