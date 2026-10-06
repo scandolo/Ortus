@@ -22,7 +22,7 @@ struct ModePicker: View {
         VStack(alignment: .leading, spacing: 0) {
             Button { withAnimation(.easeOut(duration: 0.18)) { expanded.toggle() } } label: {
                 HStack(spacing: 12) {
-                    ModeGlyphs(selection: selection)
+                    ModeGlyphs(selection: selection, cluster: true)
                     VStack(alignment: .leading, spacing: 2) {
                         (Text("Block mode  ").foregroundColor(OrtusTheme.textMuted) + Text(current?.name ?? "Custom"))
                             .font(OrtusTheme.Typo.bodyMedium)

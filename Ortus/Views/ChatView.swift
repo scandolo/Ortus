@@ -34,10 +34,6 @@ struct ChatView: View {
             Spacer()
             Image(systemName: "sparkles").font(.system(size: 40, weight: .light)).foregroundStyle(OrtusTheme.accent)
             Text(genZ ? "stay locked in, still in the loop" : "Stay in focus, still get answers").font(OrtusTheme.Typo.title).multilineTextAlignment(.center)
-            Text(genZ ? "ask me whatever so you don’t doomscroll your inbox. no cap." : "Look something up, catch up on messages or get a task done, without opening the apps you’ve set aside.")
-                .font(OrtusTheme.Typo.body).foregroundStyle(OrtusTheme.textMuted)
-                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, OrtusTheme.spacingLG)
             VStack(spacing: OrtusTheme.spacingSM) {
                 ForEach(suggestions, id: \.self) { suggestion in
                     Button { inputText = suggestion; isInputFocused = true } label: {

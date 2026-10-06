@@ -112,22 +112,69 @@ struct BrandGlyph: View {
     }
 }
 
-/// Up to three overlapping marks that summarise a mode at a glance.
+/// Up to three marks that summarise a mode. `cluster` arranges them as a small
+/// floating triangle (used where the mode is the subject); otherwise they sit in a
+/// compact overlapping row (used in lists).
 struct ModeGlyphs: View {
     let selection: BlockSelection
+    var cluster = false
+
     var body: some View {
-        let ids = BlockingPreset.all.filter { selection.fullyContains($0) }.map(\.id)
-        HStack(spacing: -4) {
+        let ids = Array(BlockingPreset.all.filter { selection.fullyContains($0) }.map(\.id).prefix(3))
+        Group {
             if ids.isEmpty {
                 Image(systemName: "square.dashed").font(.system(size: 13)).frame(width: 22, height: 22)
-            }
-            ForEach(Array(ids.prefix(3)), id: \.self) { id in
-                BrandGlyph(id: id, size: 12)
-                    .frame(width: 22, height: 22)
-                    .background(Circle().fill(OrtusTheme.cardSurface))
-                    .overlay(Circle().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
+            } else if cluster {
+                ZStack {
+                    ForEach(Array(ids.enumerated()), id: \.element) { index, id in
+                        FloatingMark(id: id, index: index).offset(Self.triangle(count: ids.count)[index])
+                    }
+                }
+                .frame(width: 46, height: 40)
+            } else {
+                HStack(spacing: -4) {
+                    ForEach(ids, id: \.self) { id in mark(id) }
+                }
             }
         }
         .foregroundStyle(.primary)
+    }
+
+    /// Top mark sits behind; the lower two overlap in front of it.
+    private static func triangle(count: Int) -> [CGSize] {
+        switch count {
+        case 1: [.zero]
+        case 2: [CGSize(width: -9, height: 0), CGSize(width: 9, height: 0)]
+        default: [CGSize(width: 0, height: -8), CGSize(width: -10, height: 7), CGSize(width: 10, height: 7)]
+        }
+    }
+
+    fileprivate static func circle<Content: View>(_ content: Content) -> some View {
+        content
+            .frame(width: 22, height: 22)
+            .background(Circle().fill(OrtusTheme.cardSurface))
+            .overlay(Circle().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
+    }
+
+    private func mark(_ id: String) -> some View { Self.circle(BrandGlyph(id: id, size: 12)) }
+}
+
+/// One mark of the cluster, drifting a point up and down on its own slow rhythm.
+private struct FloatingMark: View {
+    let id: String
+    let index: Int
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var raised = false
+
+    var body: some View {
+        ModeGlyphs.circle(BrandGlyph(id: id, size: 12))
+            .shadow(color: .black.opacity(0.10), radius: 3, y: 2)
+            .offset(y: raised ? -1.2 : 1.2)
+            .onAppear {
+                guard !reduceMotion else { return }
+                withAnimation(.easeInOut(duration: 2.2 + Double(index) * 0.45).repeatForever(autoreverses: true).delay(Double(index) * 0.35)) {
+                    raised = true
+                }
+            }
     }
 }
