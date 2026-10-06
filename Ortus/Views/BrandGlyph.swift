@@ -1,96 +1,113 @@
 import SwiftUI
 import OrtusCore
 
-/// Monochrome, logo-like marks for the sites and apps Ortus can block. Drawn from
-/// simple shapes in the current foreground colour so they sit quietly next to text.
-/// The browser extension uses SVG versions of the same marks (BrowserExtension/glyphs.js).
+/// Monochrome, logo-like marks for the sites and apps Ortus can block. Built from
+/// plain SwiftUI shapes in the current foreground colour (Canvas does not draw
+/// inside the menu bar panel). The browser extension uses SVG versions of the same
+/// marks (BrowserExtension/glyphs.js); keep the two in step.
 struct BrandGlyph: View {
     let id: String
     var size: CGFloat = 16
 
     var body: some View {
-        Canvas { context, canvas in
-            let s = canvas.width
-            let ink = GraphicsContext.Shading.foreground
-            func line(_ points: [CGPoint], width: CGFloat) {
-                var path = Path(); path.addLines(points.map { CGPoint(x: $0.x * s, y: $0.y * s) })
-                context.stroke(path, with: ink, style: StrokeStyle(lineWidth: width * s, lineCap: .round, lineJoin: .round))
-            }
-            func rounded(_ rect: CGRect, radius: CGFloat) -> Path {
-                Path(roundedRect: CGRect(x: rect.minX * s, y: rect.minY * s, width: rect.width * s, height: rect.height * s), cornerRadius: radius * s, style: .continuous)
-            }
-            func circle(_ x: CGFloat, _ y: CGFloat, _ r: CGFloat) -> Path {
-                Path(ellipseIn: CGRect(x: (x - r) * s, y: (y - r) * s, width: 2 * r * s, height: 2 * r * s))
-            }
-            switch id {
-            case "gmail":
-                context.stroke(rounded(CGRect(x: 0.08, y: 0.2, width: 0.84, height: 0.62), radius: 0.12), with: ink, lineWidth: 0.09 * s)
-                line([CGPoint(x: 0.14, y: 0.28), CGPoint(x: 0.5, y: 0.56), CGPoint(x: 0.86, y: 0.28)], width: 0.09)
-            case "slack":
-                // Rounded hash, like Slack's mark. Avoid rotated-hook arrangements.
-                for bar in [CGRect(x: 0.28, y: 0.08, width: 0.15, height: 0.84), CGRect(x: 0.57, y: 0.08, width: 0.15, height: 0.84),
-                            CGRect(x: 0.08, y: 0.28, width: 0.84, height: 0.15), CGRect(x: 0.08, y: 0.57, width: 0.84, height: 0.15)] {
-                    context.fill(rounded(bar, radius: 0.075), with: ink)
-                }
-            case "linkedin":
-                context.fill(rounded(CGRect(x: 0.06, y: 0.06, width: 0.88, height: 0.88), radius: 0.2), with: ink)
-                context.blendMode = .destinationOut
-                context.fill(circle(0.3, 0.29, 0.075), with: ink)
-                line([CGPoint(x: 0.3, y: 0.45), CGPoint(x: 0.3, y: 0.76)], width: 0.13)
-                line([CGPoint(x: 0.5, y: 0.76), CGPoint(x: 0.5, y: 0.45)], width: 0.12)
-                var arch = Path()
-                arch.move(to: CGPoint(x: 0.5 * s, y: 0.58 * s))
-                arch.addQuadCurve(to: CGPoint(x: 0.72 * s, y: 0.58 * s), control: CGPoint(x: 0.6 * s, y: 0.42 * s))
-                arch.addLine(to: CGPoint(x: 0.72 * s, y: 0.76 * s))
-                context.stroke(arch, with: ink, style: StrokeStyle(lineWidth: 0.12 * s, lineCap: .round, lineJoin: .round))
-            case "x":
-                line([CGPoint(x: 0.16, y: 0.12), CGPoint(x: 0.84, y: 0.88)], width: 0.16)
-                line([CGPoint(x: 0.84, y: 0.12), CGPoint(x: 0.16, y: 0.88)], width: 0.07)
-            case "instagram":
-                context.stroke(rounded(CGRect(x: 0.1, y: 0.1, width: 0.8, height: 0.8), radius: 0.24), with: ink, lineWidth: 0.09 * s)
-                context.stroke(circle(0.5, 0.5, 0.18), with: ink, lineWidth: 0.09 * s)
-                context.fill(circle(0.71, 0.29, 0.055), with: ink)
-            case "facebook":
-                context.fill(circle(0.5, 0.5, 0.44), with: ink)
-                context.blendMode = .destinationOut
-                var f = Path()
-                f.move(to: CGPoint(x: 0.56 * s, y: 0.94 * s))
-                f.addLine(to: CGPoint(x: 0.56 * s, y: 0.42 * s))
-                f.addQuadCurve(to: CGPoint(x: 0.72 * s, y: 0.26 * s), control: CGPoint(x: 0.56 * s, y: 0.26 * s))
-                context.stroke(f, with: ink, style: StrokeStyle(lineWidth: 0.13 * s, lineCap: .round))
-                line([CGPoint(x: 0.42, y: 0.53), CGPoint(x: 0.7, y: 0.53)], width: 0.11)
-            case "reddit":
-                context.fill(Path(ellipseIn: CGRect(x: 0.1 * s, y: 0.34 * s, width: 0.8 * s, height: 0.56 * s)), with: ink)
-                context.fill(circle(0.76, 0.14, 0.08), with: ink)
-                line([CGPoint(x: 0.5, y: 0.36), CGPoint(x: 0.56, y: 0.12), CGPoint(x: 0.72, y: 0.15)], width: 0.06)
-                context.blendMode = .destinationOut
-                context.fill(circle(0.36, 0.58, 0.07), with: ink)
-                context.fill(circle(0.64, 0.58, 0.07), with: ink)
-            case "tiktok":
-                context.fill(circle(0.36, 0.72, 0.18), with: ink)
-                line([CGPoint(x: 0.53, y: 0.72), CGPoint(x: 0.53, y: 0.1)], width: 0.13)
-                var tail = Path()
-                tail.move(to: CGPoint(x: 0.53 * s, y: 0.12 * s))
-                tail.addQuadCurve(to: CGPoint(x: 0.84 * s, y: 0.36 * s), control: CGPoint(x: 0.6 * s, y: 0.34 * s))
-                context.stroke(tail, with: ink, style: StrokeStyle(lineWidth: 0.11 * s, lineCap: .round))
-            case "whatsapp":
-                var bubble = Path(ellipseIn: CGRect(x: 0.12 * s, y: 0.08 * s, width: 0.8 * s, height: 0.8 * s))
-                bubble.move(to: CGPoint(x: 0.2 * s, y: 0.7 * s))
-                bubble.addLine(to: CGPoint(x: 0.08 * s, y: 0.94 * s))
-                bubble.addLine(to: CGPoint(x: 0.34 * s, y: 0.84 * s))
-                context.stroke(bubble, with: ink, style: StrokeStyle(lineWidth: 0.08 * s, lineJoin: .round))
-                var handset = Path()
-                handset.move(to: CGPoint(x: 0.38 * s, y: 0.32 * s))
-                handset.addQuadCurve(to: CGPoint(x: 0.66 * s, y: 0.62 * s), control: CGPoint(x: 0.38 * s, y: 0.6 * s))
-                context.stroke(handset, with: ink, style: StrokeStyle(lineWidth: 0.12 * s, lineCap: .round))
-            default:
-                if let symbol = context.resolveSymbol(id: 0) { context.draw(symbol, in: CGRect(x: 0, y: 0, width: s, height: s)) }
-            }
-        } symbols: {
-            Image(systemName: "globe").resizable().scaledToFit().tag(0)
+        let parts = Self.parts(for: id)
+        ZStack {
+            if parts.isEmpty { Image(systemName: "globe").resizable().scaledToFit() }
+            ForEach(parts.indices, id: \.self) { index in render(parts[index]) }
         }
         .frame(width: size, height: size)
+        .compositingGroup()
         .accessibilityHidden(true)
+    }
+
+    @ViewBuilder private func render(_ part: Part) -> some View {
+        let shape = UnitShape(path: part.path)
+        let style = StrokeStyle(lineWidth: part.width * size, lineCap: .round, lineJoin: .round)
+        switch (part.width > 0, part.cut) {
+        case (false, false): shape.fill()
+        case (true, false): shape.stroke(style: style)
+        case (false, true): shape.fill().blendMode(.destinationOut)
+        case (true, true): shape.stroke(style: style).blendMode(.destinationOut)
+        }
+    }
+
+    /// A path in a 0…1 square; `width` > 0 strokes it, `cut` punches it out of the mark.
+    private struct Part { var path: Path; var width: CGFloat = 0; var cut = false }
+
+    private struct UnitShape: Shape {
+        let path: Path
+        func path(in rect: CGRect) -> Path { path.applying(CGAffineTransform(scaleX: rect.width, y: rect.height)) }
+    }
+
+    private static func lines(_ points: [(CGFloat, CGFloat)]) -> Path {
+        var path = Path(); path.addLines(points.map { CGPoint(x: $0.0, y: $0.1) }); return path
+    }
+    private static func rounded(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, _ r: CGFloat) -> Path {
+        Path(roundedRect: CGRect(x: x, y: y, width: w, height: h), cornerRadius: r, style: .continuous)
+    }
+    private static func circle(_ x: CGFloat, _ y: CGFloat, _ r: CGFloat) -> Path {
+        Path(ellipseIn: CGRect(x: x - r, y: y - r, width: 2 * r, height: 2 * r))
+    }
+
+    private static func parts(for id: String) -> [Part] {
+        switch id {
+        case "gmail":
+            return [Part(path: rounded(0.08, 0.2, 0.84, 0.62, 0.12), width: 0.09),
+                    Part(path: lines([(0.14, 0.28), (0.5, 0.56), (0.86, 0.28)]), width: 0.09)]
+        case "slack":
+            // Rounded hash, like Slack's mark. Avoid rotated-hook arrangements.
+            return [rounded(0.25, 0.06, 0.19, 0.88, 0.095), rounded(0.56, 0.06, 0.19, 0.88, 0.095),
+                    rounded(0.06, 0.25, 0.88, 0.19, 0.095), rounded(0.06, 0.56, 0.88, 0.19, 0.095)].map { Part(path: $0) }
+        case "linkedin":
+            var arch = Path()
+            arch.move(to: CGPoint(x: 0.5, y: 0.58))
+            arch.addQuadCurve(to: CGPoint(x: 0.72, y: 0.58), control: CGPoint(x: 0.6, y: 0.42))
+            arch.addLine(to: CGPoint(x: 0.72, y: 0.76))
+            return [Part(path: rounded(0.06, 0.06, 0.88, 0.88, 0.2)),
+                    Part(path: circle(0.3, 0.29, 0.075), cut: true),
+                    Part(path: lines([(0.3, 0.45), (0.3, 0.76)]), width: 0.13, cut: true),
+                    Part(path: lines([(0.5, 0.76), (0.5, 0.45)]), width: 0.12, cut: true),
+                    Part(path: arch, width: 0.12, cut: true)]
+        case "x":
+            return [Part(path: lines([(0.16, 0.12), (0.84, 0.88)]), width: 0.16),
+                    Part(path: lines([(0.84, 0.12), (0.16, 0.88)]), width: 0.07)]
+        case "instagram":
+            return [Part(path: rounded(0.1, 0.1, 0.8, 0.8, 0.24), width: 0.09),
+                    Part(path: circle(0.5, 0.5, 0.18), width: 0.09),
+                    Part(path: circle(0.71, 0.29, 0.055))]
+        case "facebook":
+            var f = Path()
+            f.move(to: CGPoint(x: 0.56, y: 0.94))
+            f.addLine(to: CGPoint(x: 0.56, y: 0.42))
+            f.addQuadCurve(to: CGPoint(x: 0.72, y: 0.26), control: CGPoint(x: 0.56, y: 0.26))
+            return [Part(path: circle(0.5, 0.5, 0.44)),
+                    Part(path: f, width: 0.13, cut: true),
+                    Part(path: lines([(0.42, 0.53), (0.7, 0.53)]), width: 0.11, cut: true)]
+        case "reddit":
+            return [Part(path: Path(ellipseIn: CGRect(x: 0.1, y: 0.34, width: 0.8, height: 0.56))),
+                    Part(path: circle(0.76, 0.14, 0.08)),
+                    Part(path: lines([(0.5, 0.36), (0.56, 0.12), (0.72, 0.15)]), width: 0.06),
+                    Part(path: circle(0.36, 0.58, 0.07), cut: true),
+                    Part(path: circle(0.64, 0.58, 0.07), cut: true)]
+        case "tiktok":
+            var tail = Path()
+            tail.move(to: CGPoint(x: 0.53, y: 0.12))
+            tail.addQuadCurve(to: CGPoint(x: 0.84, y: 0.36), control: CGPoint(x: 0.6, y: 0.34))
+            return [Part(path: circle(0.36, 0.72, 0.18)),
+                    Part(path: lines([(0.53, 0.72), (0.53, 0.1)]), width: 0.13),
+                    Part(path: tail, width: 0.11)]
+        case "whatsapp":
+            var bubble = Path(ellipseIn: CGRect(x: 0.12, y: 0.08, width: 0.8, height: 0.8))
+            bubble.move(to: CGPoint(x: 0.2, y: 0.7))
+            bubble.addLine(to: CGPoint(x: 0.08, y: 0.94))
+            bubble.addLine(to: CGPoint(x: 0.34, y: 0.84))
+            var handset = Path()
+            handset.move(to: CGPoint(x: 0.38, y: 0.32))
+            handset.addQuadCurve(to: CGPoint(x: 0.66, y: 0.62), control: CGPoint(x: 0.38, y: 0.6))
+            return [Part(path: bubble, width: 0.08), Part(path: handset, width: 0.12)]
+        default:
+            return []
+        }
     }
 }
 

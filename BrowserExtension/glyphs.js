@@ -3,7 +3,7 @@
 const svg = (body, mask = '') => `<svg viewBox="0 0 100 100" aria-hidden="true" fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${mask}${body}</svg>`;
 const glyphs = {
   Gmail: svg('<rect x="8" y="20" width="84" height="62" rx="12" fill="none" stroke-width="9"/><path d="M14 28 50 56 86 28" fill="none" stroke-width="9"/>'),
-  Slack: svg('<rect x="28" y="8" width="15" height="84" rx="7.5" stroke="none"/><rect x="57" y="8" width="15" height="84" rx="7.5" stroke="none"/><rect x="8" y="28" width="84" height="15" rx="7.5" stroke="none"/><rect x="8" y="57" width="84" height="15" rx="7.5" stroke="none"/>'),
+  Slack: svg('<rect x="25" y="6" width="19" height="88" rx="9.5" stroke="none"/><rect x="56" y="6" width="19" height="88" rx="9.5" stroke="none"/><rect x="6" y="25" width="88" height="19" rx="9.5" stroke="none"/><rect x="6" y="56" width="88" height="19" rx="9.5" stroke="none"/>'),
   LinkedIn: svg('<rect x="6" y="6" width="88" height="88" rx="20" stroke="none" mask="url(#o-li)"/>',
     '<mask id="o-li"><rect width="100" height="100" fill="#fff"/><circle cx="30" cy="29" r="7.5" fill="#000" stroke="none"/><path d="M30 45v31M50 76V45M50 58q10-16 22 0v18" fill="none" stroke="#000" stroke-width="12"/></mask>'),
   X: svg('<path d="M16 12 84 88" stroke-width="16" fill="none"/><path d="M84 12 16 88" stroke-width="7" fill="none"/>'),
