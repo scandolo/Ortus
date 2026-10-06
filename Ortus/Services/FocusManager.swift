@@ -21,6 +21,10 @@ final class FocusManager: ObservableObject {
     @Published var manualSelection: BlockSelection = .standard {
         didSet { if let data = try? JSONEncoder().encode(manualSelection) { UserDefaults.standard.set(data, forKey: "manualBlockSelection") } }
     }
+    /// Optional user-built modes. Built-in modes live in `FocusMode.builtIn`.
+    @Published var customModes: [FocusMode] = [] {
+        didSet { if let data = try? JSONEncoder().encode(customModes) { UserDefaults.standard.set(data, forKey: "customFocusModes") } }
+    }
     @Published var scheduleDraft: FocusSchedule? {
         didSet {
             if let scheduleDraft, let data = try? JSONEncoder().encode(scheduleDraft) { UserDefaults.standard.set(data, forKey: "scheduleDraft") }
@@ -77,11 +81,51 @@ final class FocusManager: ObservableObject {
         }
         if let data = UserDefaults.standard.data(forKey: "scheduleDraft") { scheduleDraft = try? JSONDecoder().decode(FocusSchedule.self, from: data) }
         if let data = UserDefaults.standard.data(forKey: "manualDraft") { manualDraft = try? JSONDecoder().decode(BlockSelection.self, from: data) }
+        if let data = UserDefaults.standard.data(forKey: "customFocusModes"), let saved = try? JSONDecoder().decode([FocusMode].self, from: data) { customModes = saved }
+        migrateToModesIfNeeded()
         websites.registerCompanion()
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.refresh() }
         }
+    }
+
+    // MARK: Modes
+
+    var modes: [FocusMode] { FocusMode.builtIn + customModes }
+    func mode(for selection: BlockSelection) -> FocusMode? { FocusMode.matching(selection, in: modes) }
+    var nextCustomModeName: String {
+        var n = customModes.count + 1
+        while customModes.contains(where: { $0.name == "Custom \(n)" }) { n += 1 }
+        return "Custom \(n)"
+    }
+
+    /// Saves a custom mode. Anything that used the mode's previous targets follows the edit.
+    func saveMode(_ mode: FocusMode) {
+        guard !mode.isBuiltIn, !mode.blocked.isEmpty else { return }
+        let previous = customModes.first { $0.id == mode.id }
+        if let index = customModes.firstIndex(where: { $0.id == mode.id }) { customModes[index] = mode } else { customModes.append(mode) }
+        guard let previous, previous.blocked != mode.blocked else { return }
+        if manualSelection == previous.blocked { manualSelection = mode.blocked }
+        for schedule in schedules where schedule.blocked == previous.blocked {
+            var updated = schedule; updated.blocked = mode.blocked; updateSchedule(updated)
+        }
+    }
+    func deleteMode(_ mode: FocusMode) {
+        customModes.removeAll { $0.id == mode.id }
+        if manualSelection == mode.blocked { manualSelection = FocusMode.social.blocked }
+    }
+
+    /// One-time move to modes: new sessions default to Social, and any schedule whose
+    /// targets match no built-in mode keeps them as a named custom mode.
+    private func migrateToModesIfNeeded() {
+        let key = "focusModesMigrated"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+        UserDefaults.standard.set(true, forKey: key)
+        for schedule in schedules where !schedule.blocked.isEmpty && mode(for: schedule.blocked) == nil {
+            customModes.append(FocusMode(name: nextCustomModeName, blocked: schedule.blocked))
+        }
+        manualSelection = FocusMode.social.blocked
     }
 
     func addSchedule(_ schedule: FocusSchedule) {

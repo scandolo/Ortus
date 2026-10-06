@@ -4,8 +4,6 @@ import OrtusCore
 struct FocusView: View {
     @EnvironmentObject var focusManager: FocusManager
     @State private var manualDuration: Double = 60
-    @State private var editingTargets = false
-    @Environment(\.snapshotState) private var snapshotState
 
     var body: some View {
         VStack(spacing: 0) {
@@ -13,7 +11,7 @@ struct FocusView: View {
             VStack(spacing: OrtusTheme.spacingLG) {
                 if !(focusManager.isInFocus ? focusManager.activeSelection : focusManager.manualSelection).websites.isEmpty,
                    focusManager.websites.connectedBrowsers.isEmpty {
-                    BrowserSetupView(service: focusManager.websites)
+                    OrtusGroup { BrowserStatusRow(service: focusManager.websites) }
                 }
                 if focusManager.isInFocus && focusManager.isInGracePeriod {
                     gracePeriodState
@@ -38,7 +36,6 @@ struct FocusView: View {
                 .padding(.bottom, OrtusTheme.spacingSM)
             }
         }
-        .onAppear { if snapshotState == "targets" { editingTargets = true } }
     }
 
     // MARK: - Grace Period
@@ -208,13 +205,13 @@ struct FocusView: View {
                             colors: [OrtusTheme.accentSoft.opacity(0.7), .clear],
                             center: .center,
                             startRadius: 0,
-                            endRadius: 44
+                            endRadius: 36
                         )
                     )
-                    .frame(width: 88, height: 88)
+                    .frame(width: 72, height: 72)
 
                 Image(systemName: "sunrise.fill")
-                    .font(.system(size: 40))
+                    .font(.system(size: 34))
                     .foregroundStyle(OrtusTheme.accent)
                     .symbolRenderingMode(.hierarchical)
             }
@@ -223,8 +220,6 @@ struct FocusView: View {
                 .font(OrtusTheme.Typo.title)
 
             VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
-                OrtusSectionHeader(title: "Duration")
-
                 OrtusDurationSlider(
                     minutes: $manualDuration,
                     range: 15...240,
@@ -234,23 +229,7 @@ struct FocusView: View {
             }
             .ortusCard()
 
-            VStack(alignment: .leading, spacing: 10) {
-                Button {
-                    editingTargets.toggle()
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Blocking").font(OrtusTheme.Typo.bodyMedium)
-                            if !editingTargets {
-                                Text(focusManager.manualSelection.summary).font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
-                            }
-                        }
-                        Spacer()
-                        Image(systemName: editingTargets ? "chevron.up" : "chevron.down")
-                    }
-                }.buttonStyle(.plain)
-                if editingTargets { BlockingTargetsEditor(selection: $focusManager.manualSelection) }
-            }.ortusCard()
+            ModePicker(selection: $focusManager.manualSelection)
 
         }
     }

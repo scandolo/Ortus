@@ -35,6 +35,7 @@ public struct BlockedApplication: Codable, Hashable, Identifiable, Sendable {
     public var id: String { bundleID }
     public init(bundleID: String, name: String) { self.bundleID = bundleID; self.name = name }
     public static let slack = Self(bundleID: "com.tinyspeck.slackmacgap", name: "Slack")
+    public static let whatsApp = Self(bundleID: "net.whatsapp.WhatsApp", name: "WhatsApp")
     public static func isBlockable(_ id: String) -> Bool {
         !id.hasPrefix("com.ortus.") && !["com.apple.finder", "com.apple.systempreferences", "com.apple.loginwindow"].contains(id)
     }
@@ -84,14 +85,14 @@ public struct BlockSelection: Codable, Equatable, Sendable {
         for domain in websites {
             let name = switch domain {
             case "gmail.com", "mail.google.com": websites.contains("gmail.com") && websites.contains("mail.google.com") ? "Gmail" : domain
-            case "linkedin.com": "LinkedIn"
             case "slack.com": blocksSlack ? "Slack" : "Slack website"
-            default: domain
+            default: BlockingPreset.all.first { $0.id != "slack" && $0.id != "gmail" && $0.selection.websites.contains(domain) && fullyContains($0) }?.title ?? domain
             }
             if !names.contains(name) { names.append(name) }
         }
         for app in applications {
-            let name = app.id == BlockedApplication.slack.id && !websites.contains("slack.com") ? "Slack app" : app.name
+            let preset = BlockingPreset.all.first { $0.selection.applications.contains(app) && fullyContains($0) }
+            let name = app.id == BlockedApplication.slack.id && !websites.contains("slack.com") ? "Slack app" : preset?.title ?? app.name
             if !names.contains(name) { names.append(name) }
         }
         return names.isEmpty ? "Nothing selected" : names.joined(separator: " · ")
@@ -104,9 +105,41 @@ public struct BlockingPreset: Identifiable, Sendable {
     public let detail: String
     public let symbol: String
     public let selection: BlockSelection
-    public static let all: [Self] = [
-        .init(id: "gmail", title: "Gmail", detail: "Mail websites · other Google services stay open", symbol: "envelope", selection: .init(websites: ["mail.google.com", "gmail.com"])),
+    public static let all: [Self] = social + messages
+    public static let social: [Self] = [
         .init(id: "linkedin", title: "LinkedIn", detail: "Website and its subdomains", symbol: "person.2", selection: .init(websites: ["linkedin.com"])),
-        .init(id: "slack", title: "Slack", detail: "Desktop app and website", symbol: "bubble.left.and.bubble.right", selection: .init(websites: ["slack.com"], applications: [.slack]))
+        .init(id: "x", title: "X", detail: "x.com and twitter.com", symbol: "xmark", selection: .init(websites: ["x.com", "twitter.com"])),
+        .init(id: "instagram", title: "Instagram", detail: "Website", symbol: "camera", selection: .init(websites: ["instagram.com"])),
+        .init(id: "facebook", title: "Facebook", detail: "Website", symbol: "f.cursive", selection: .init(websites: ["facebook.com"])),
+        .init(id: "reddit", title: "Reddit", detail: "Website", symbol: "bubble.left", selection: .init(websites: ["reddit.com"])),
+        .init(id: "tiktok", title: "TikTok", detail: "Website", symbol: "music.note", selection: .init(websites: ["tiktok.com"]))
     ]
+    public static let messages: [Self] = [
+        .init(id: "gmail", title: "Gmail", detail: "Mail websites · other Google services stay open", symbol: "envelope", selection: .init(websites: ["mail.google.com", "gmail.com"])),
+        .init(id: "slack", title: "Slack", detail: "Desktop app and website", symbol: "bubble.left.and.bubble.right", selection: .init(websites: ["slack.com"], applications: [.slack])),
+        .init(id: "whatsapp", title: "WhatsApp", detail: "Desktop app and website", symbol: "phone.bubble", selection: .init(websites: ["web.whatsapp.com"], applications: [.whatsApp]))
+    ]
+}
+
+/// A named set of things to block. Built-in modes ship with the app; custom modes
+/// are optional and built by the user.
+public struct FocusMode: Codable, Equatable, Identifiable, Sendable {
+    public var id: String
+    public var name: String
+    public var blocked: BlockSelection
+    public init(id: String = UUID().uuidString, name: String, blocked: BlockSelection) {
+        self.id = id; self.name = name; self.blocked = blocked
+    }
+    public var isBuiltIn: Bool { Self.builtIn.contains { $0.id == id } }
+
+    public static let social = Self(id: "social", name: "Social", blocked: .union(BlockingPreset.social.map(\.selection)))
+    public static let messages = Self(id: "messages", name: "Messages", blocked: .union(BlockingPreset.messages.map(\.selection)))
+    public static let everything = Self(id: "everything", name: "Everything", blocked: .union(BlockingPreset.all.map(\.selection)))
+    /// `social` is the default for new sessions.
+    public static let builtIn = [social, messages, everything]
+
+    /// The mode whose targets are exactly `selection`, if any.
+    public static func matching(_ selection: BlockSelection, in modes: [Self]) -> Self? {
+        modes.first { $0.blocked == selection }
+    }
 }

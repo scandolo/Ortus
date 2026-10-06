@@ -1,5 +1,6 @@
 import SwiftUI
 import ServiceManagement
+import OrtusCore
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var focusManager: FocusManager?
@@ -40,12 +41,14 @@ struct OrtusApp: App {
     @StateObject private var claudeCodeService = ClaudeCodeService()
     @StateObject private var slackOAuthService = SlackOAuthService()
     @StateObject private var updateService = UpdateService()
+    @StateObject private var router = PanelRouter()
 
     private var panel: some View { panel() }
 
-    private func panel(tab: Int = 0, height: CGFloat? = nil, state: String? = nil) -> some View {
+    private func panel(tab: Int = 0, height: CGFloat? = nil, state: String? = nil, router: PanelRouter? = nil) -> some View {
         ContentView(initialTab: tab, fixedHeight: height)
             .environment(\.snapshotState, state)
+            .environmentObject(router ?? self.router)
             .environmentObject(focusManager)
             .environmentObject(slackService)
             .environmentObject(claudeCodeService)
@@ -76,7 +79,13 @@ struct OrtusApp: App {
     /// in a regular window that UI scripting and screencapture can reach.
     private func openDebugWindowIfRequested() {
         SnapshotHarness.runIfRequested(focusManager: focusManager) { tab, height, state in
-            AnyView(panel(tab: tab, height: height, state: state))
+            let modal: PanelModal? = switch state {
+            case "browser-setup": .browserSetup
+            case "slack-setup": .slackSetup
+            case "mode-editor": .modeEditor(FocusMode(name: focusManager.nextCustomModeName, blocked: focusManager.manualSelection)) { _ in }
+            default: nil
+            }
+            return AnyView(panel(tab: tab, height: height, state: state, router: PanelRouter(modal: modal)))
         }
         guard ProcessInfo.processInfo.environment["ORTUS_DEBUG_WINDOW"] != nil else { return }
         let window = NSWindow(contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: false)

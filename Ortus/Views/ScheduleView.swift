@@ -56,7 +56,7 @@ struct ScheduleView: View {
 
                         if isAddingNew {
                             ScheduleInlineEditor(
-                                schedule: FocusSchedule(),
+                                schedule: FocusSchedule(blocked: FocusMode.social.blocked),
                                 title: "New schedule",
                                 onSave: { schedule in
                                     focusManager.addSchedule(schedule)
@@ -92,6 +92,7 @@ struct ScheduleView: View {
 // MARK: - Schedule Row
 
 struct ScheduleRow: View {
+    @EnvironmentObject var focusManager: FocusManager
     let schedule: FocusSchedule
     let isLocked: Bool
     let onEdit: () -> Void
@@ -111,7 +112,7 @@ struct ScheduleRow: View {
                         .foregroundStyle(OrtusTheme.textMuted)
                         .monospacedDigit()
 
-                    Text(isLocked ? "Active now · \(schedule.blocked.summary)" : schedule.blocked.summary)
+                    Text((isLocked ? "Active now · " : "") + modeDescription)
                         .font(OrtusTheme.Typo.caption)
                         .foregroundStyle(isLocked ? OrtusTheme.accentInk : OrtusTheme.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -136,6 +137,11 @@ struct ScheduleRow: View {
             .accessibilityLabel("\(schedule.name) enabled")
             .disabled(isLocked)
         }
+    }
+
+    /// "Social" for a known mode, else the targets.
+    private var modeDescription: String {
+        focusManager.mode(for: schedule.blocked)?.name ?? schedule.blocked.summary
     }
 
     private var daysSummary: String {
@@ -205,7 +211,7 @@ struct ScheduleInlineEditor: View {
                 Text("Ends the following day.").font(OrtusTheme.Typo.meta).foregroundStyle(OrtusTheme.textMuted)
             }
 
-            BlockingTargetsEditor(selection: $schedule.blocked)
+            ModePicker(selection: $schedule.blocked)
 
             HStack {
                 Button("Cancel", action: onCancel)

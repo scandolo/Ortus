@@ -2,25 +2,21 @@ import SwiftUI
 import ServiceManagement
 import OrtusCore
 
+/// Every setting is the same kind of row: icon, title, one line of status, one control.
 struct SettingsView: View {
     @EnvironmentObject var focusManager: FocusManager
     @EnvironmentObject var slackOAuthService: SlackOAuthService
     @EnvironmentObject var claudeCodeService: ClaudeCodeService
     @EnvironmentObject var updateService: UpdateService
+    @EnvironmentObject var router: PanelRouter
 
-    @State private var slackClientId: String = ""
-    @State private var slackClientSecret: String = ""
-    @State private var showSlackSetup = false
-    @Environment(\.snapshotState) private var snapshotState
     @State private var launchAtLogin = false
     @State private var versionTapCount = 0
     @State private var showEmergencyConfirm = false
     @State private var showSlackPreview = false
     @State private var taglineIndex = 0
-    @State private var redirectCopied = false
 
     /// Easter egg: tapping "Ortus" cycles through a few sunrise-themed lines.
-    /// Index 0 is the default tagline so first launch shows nothing unusual.
     private let taglines = [
         "Focus mode for deep work",
         "Ortus, n. the rising of the sun",
@@ -32,528 +28,249 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: OrtusTheme.spacingLG) {
-                section("Website blocking") {
-                    BrowserSetupView(service: focusManager.websites)
+                section("Connections") {
+                    BrowserStatusRow(service: focusManager.websites)
+                    OrtusGroupDivider()
+                    slackRow
+                    OrtusGroupDivider()
+                    chatRow
+                    if !claudeCodeService.isConfigured {
+                        OrtusGroupDivider()
+                        OrtusListRow(title: "Claude Code location") {
+                            Image(systemName: "terminal")
+                        } trailing: {
+                            TextField("/opt/homebrew/bin/claude", text: $claudeCodeService.claudeBinaryPath)
+                                .textFieldStyle(.plain).font(OrtusTheme.Typo.body).frame(maxWidth: 170)
+                        }
+                    }
                 }
-                slackSection
-                aiChatSection
-                generalSection
+
+                if slackOAuthService.isConnected { slackStatusSection }
 
                 if focusManager.isInFocus && !focusManager.isInGracePeriod {
-                    emergencySection
+                    section("Emergency") { emergencyRow }
                 }
 
-                aboutSection
+                section("General") {
+                    OrtusListRow(title: "Open at login") {
+                        Image(systemName: "power")
+                    } trailing: {
+                        toggle($launchAtLogin)
+                    }
+                    if !BuildProfile.isPreview, let update = updateRow {
+                        OrtusGroupDivider()
+                        update
+                    }
+                    OrtusGroupDivider()
+                    aboutRow
+                }
             }
             .padding(OrtusTheme.spacingMD)
         }
-        .onAppear { if snapshotState == "slack-setup" { showSlackSetup = true } }
+        .onAppear {
+            claudeCodeService.detectIfNeeded()
+            // Read the real login-item state; the toggle must never guess.
+            launchAtLogin = SMAppService.mainApp.status == .enabled
+        }
+        .onChange(of: launchAtLogin) { _, newValue in setLaunchAtLogin(newValue) }
     }
 
-    /// A titled group of rows. The header is the only chrome — rows carry their
-    /// own surfaces, so sections read as clean stacks separated by whitespace
-    /// (no dividers, per the design guidelines).
-    private func section<Content: View>(
-        _ title: String,
-        description: String? = nil,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
+    private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
-            VStack(alignment: .leading, spacing: 4) {
-                OrtusSectionHeader(title: title)
-                if let description {
-                    Text(description)
-                        .font(OrtusTheme.Typo.caption)
-                        .foregroundStyle(OrtusTheme.textMuted)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .padding(.horizontal, 4)
-            content()
+            OrtusSectionHeader(title: title).padding(.horizontal, 4)
+            OrtusGroup { content() }
         }
     }
 
-    // MARK: - Slack
+    private func toggle(_ isOn: Binding<Bool>) -> some View {
+        Toggle("", isOn: isOn).labelsHidden().toggleStyle(.switch).controlSize(.small).tint(OrtusTheme.accent)
+    }
 
-    private var slackSection: some View {
-        section("Slack") {
+    // MARK: - Connections
+
+    private var slackRow: some View {
+        OrtusListRow(title: "Slack status",
+                     subtitle: slackOAuthService.isConnected ? "Connected to \(slackOAuthService.teamName ?? "Slack")" : "Status and Do Not Disturb while you focus") {
+            BrandGlyph(id: "slack")
+        } trailing: {
             if slackOAuthService.isConnected {
-                connectedRow
-                OrtusToggleRow(
-                    title: "Set status during focus",
-                    isOn: $focusManager.slackStatusEnabled
-                )
-                OrtusToggleRow(
-                    title: "Snooze notifications (Do Not Disturb)",
-                    isOn: $focusManager.slackDndEnabled
-                )
-                if focusManager.slackStatusEnabled {
-                    VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
-                        statusComposer
-                        previewDisclosure
-                    }
-                    .ortusRow()
-                }
+                Button("Disconnect") { slackOAuthService.disconnect() }.buttonStyle(OrtusRowButtonStyle(role: .destructive))
             } else {
-                connectRow
-                if showSlackSetup {
-                    setupForm
-                        .ortusRow()
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                }
+                Button("Connect") { router.modal = .slackSetup }.buttonStyle(OrtusRowButtonStyle())
             }
         }
     }
 
-    private var connectedRow: some View {
-        HStack(spacing: OrtusTheme.spacingSM) {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(OrtusTheme.success)
-                .font(.system(size: 16))
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Connected")
-                    .font(OrtusTheme.Typo.bodyMedium)
-                Text(slackOAuthService.teamName ?? "Slack")
-                    .font(OrtusTheme.Typo.caption)
-                    .foregroundStyle(OrtusTheme.textMuted)
-            }
-            Spacer(minLength: 0)
-            Button("Disconnect") { slackOAuthService.disconnect() }
-                .buttonStyle(OrtusDestructiveButtonStyle())
-        }
-        .ortusRow()
-    }
-
-    private var connectRow: some View {
-        HStack(spacing: OrtusTheme.spacingSM) {
-            Text("Set your status and Do Not Disturb while you focus")
-                .font(OrtusTheme.Typo.body)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
-            Button(showSlackSetup ? "Cancel" : "Connect") {
-                if !showSlackSetup { loadSlackCredentialsIfNeeded() }
-                withAnimation(.easeOut(duration: 0.2)) { showSlackSetup.toggle() }
-            }
-            .buttonStyle(OrtusSecondaryButtonStyle())
-        }
-        .ortusRow()
-    }
-
-    /// Lazy keychain read: only fetch the saved Slack credentials when the user
-    /// actually opens the setup form. Pre-loading on view appearance was firing
-    /// a keychain prompt every time Settings was opened.
-    private func loadSlackCredentialsIfNeeded() {
-        if slackClientId.isEmpty {
-            slackClientId = KeychainService.load(.slackClientId) ?? ""
-        }
-        if slackClientSecret.isEmpty {
-            slackClientSecret = KeychainService.load(.slackClientSecret) ?? ""
-        }
-    }
-
-    /// Slack-style status composer: emoji picker button + status text field on one row.
-    private var statusComposer: some View {
-        VStack(alignment: .leading, spacing: OrtusTheme.spacingXS) {
-            Text("Status")
-                .font(OrtusTheme.Typo.meta)
-                .foregroundStyle(OrtusTheme.textMuted)
-            HStack(spacing: OrtusTheme.spacingSM) {
-                EmojiPickerButton(code: $focusManager.slackStatusEmoji)
-                TextField("Ortus mode", text: $focusManager.slackStatusText)
-                    .textFieldStyle(OrtusTextFieldStyle())
-            }
-        }
-    }
-
-    /// Progressive disclosure: the preview stays hidden by default so the row
-    /// reads compact, but is one click away when the user wants to see it.
-    private var previewDisclosure: some View {
-        VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
-            Button {
-                withAnimation(.easeOut(duration: 0.2)) { showSlackPreview.toggle() }
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: showSlackPreview ? "chevron.down" : "chevron.right")
-                        .font(.system(size: 9, weight: .bold))
-                    Text(showSlackPreview ? "Hide preview" : "Preview in Slack")
-                }
-                .font(OrtusTheme.Typo.caption)
-                .foregroundStyle(OrtusTheme.accentInk)
-            }
-            .buttonStyle(.plain)
-
-            if showSlackPreview {
-                SlackStatusPreview(
-                    statusText: focusManager.slackStatusText,
-                    emojiCode: focusManager.slackStatusEmoji,
-                    userName: "Example user",
-                    dndEnabled: focusManager.slackDndEnabled
-                )
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-        }
-    }
-
-    private var setupForm: some View {
-        VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
-            VStack(alignment: .leading, spacing: 6) {
-                setupStep(1, "Create a Slack app at api.slack.com/apps")
-                setupStep(2, "In OAuth & Permissions → Redirect URLs, add:")
-                redirectURIChip
-                setupStep(3, "Paste the Client ID and Client Secret from Basic Information")
-            }
-
-            Link(destination: URL(string: "https://api.slack.com/apps?new_app=1")!) {
-                HStack(spacing: 4) {
-                    Text("Open Slack app setup")
-                    Image(systemName: "arrow.up.right.square")
-                        .font(.system(size: 10, weight: .bold))
-                }
-                .font(OrtusTheme.Typo.button)
-            }
-            .foregroundStyle(OrtusTheme.accentInk)
-
-            TextField("Client ID", text: $slackClientId)
-                .textFieldStyle(OrtusTextFieldStyle())
-            SecureField("Client Secret", text: $slackClientSecret)
-                .textFieldStyle(OrtusTextFieldStyle())
-
-            HStack {
-                Spacer()
-                Button("Connect Slack") {
-                    persistCredentials()
-                    slackOAuthService.startOAuthFlow()
-                }
-                .buttonStyle(OrtusPrimaryButtonStyle())
-                .disabled(slackClientId.isEmpty || slackClientSecret.isEmpty)
-            }
-
-            if slackOAuthService.isAuthenticating {
-                HStack(spacing: 6) {
-                    ProgressView().scaleEffect(0.7).tint(OrtusTheme.accent)
-                    Text("Waiting for Slack authorization…")
-                        .font(OrtusTheme.Typo.caption)
-                        .foregroundStyle(OrtusTheme.textMuted)
-                }
-            }
-
-            if let error = slackOAuthService.error {
-                Text(error)
-                    .font(OrtusTheme.Typo.caption)
-                    .foregroundStyle(OrtusTheme.danger)
-            }
-        }
-    }
-
-    private func setupStep(_ n: Int, _ text: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text("\(n).")
-                .font(OrtusTheme.Typo.caption)
-                .foregroundStyle(OrtusTheme.accentInk)
-                .monospacedDigit()
-            Text(text)
-                .font(OrtusTheme.Typo.caption)
-                .foregroundStyle(.primary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private var redirectURIChip: some View {
-        HStack(spacing: 6) {
-            Text(SlackOAuthService.callbackURL)
-                .font(.system(size: 11, design: .monospaced))
-                .foregroundStyle(.primary)
-                .textSelection(.enabled)
-                .lineLimit(1)
-                .truncationMode(.middle)
-            Spacer(minLength: 0)
-            Button {
-                let pasteboard = NSPasteboard.general
-                pasteboard.clearContents()
-                pasteboard.setString(SlackOAuthService.callbackURL, forType: .string)
-                redirectCopied = true
-                Task { @MainActor in
-                    try? await Task.sleep(for: .seconds(1.5))
-                    redirectCopied = false
-                }
-            } label: {
-                Image(systemName: redirectCopied ? "checkmark" : "doc.on.doc")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(redirectCopied ? OrtusTheme.success : OrtusTheme.accent)
-            }
-            .buttonStyle(.plain)
-            .help("Copy redirect URL")
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous).fill(OrtusTheme.inputSurface))
-        .overlay(RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous).strokeBorder(OrtusTheme.hairline, lineWidth: 1))
-        .clipShape(RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous))
-    }
-
-    private func persistCredentials() {
-        if !slackClientId.isEmpty {
-            try? KeychainService.save(slackClientId, for: .slackClientId)
-        }
-        if !slackClientSecret.isEmpty {
-            try? KeychainService.save(slackClientSecret, for: .slackClientSecret)
-        }
-    }
-
-    // MARK: - AI Chat
-
-    private var aiChatSection: some View {
-        section("AI chat") {
-            claudeStatusRow
+    private var chatRow: some View {
+        OrtusListRow(title: "Chat", subtitle: claudeCodeService.isConfigured ? "Uses Claude Code" : "Needs Claude Code installed") {
+            Image(systemName: "sparkles")
+        } trailing: {
             if !claudeCodeService.isConfigured {
-                binaryPathRow
+                Button("Check again") { claudeCodeService.redetect() }.buttonStyle(OrtusRowButtonStyle())
             }
         }
-        .onAppear { claudeCodeService.detectIfNeeded() }
     }
 
-    private var claudeStatusRow: some View {
-        HStack(spacing: OrtusTheme.spacingSM) {
-            Image(systemName: claudeCodeService.isConfigured ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
-                .foregroundStyle(claudeCodeService.isConfigured ? OrtusTheme.success : OrtusTheme.warning)
-                .font(.system(size: 16))
-                .symbolRenderingMode(.hierarchical)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(claudeCodeService.isConfigured ? "Claude Code is ready" : "Claude Code not found")
-                    .font(OrtusTheme.Typo.bodyMedium)
-                if !claudeCodeService.isConfigured {
-                    Text("Install it from docs.claude.com/claude-code")
-                        .font(OrtusTheme.Typo.caption)
-                        .foregroundStyle(OrtusTheme.textMuted)
+    private var slackStatusSection: some View {
+        section("Slack status") {
+            OrtusListRow(title: "Set my status") { Image(systemName: "text.bubble") } trailing: { toggle($focusManager.slackStatusEnabled) }
+            if focusManager.slackStatusEnabled {
+                OrtusGroupDivider()
+                HStack(spacing: 12) {
+                    EmojiPickerButton(code: $focusManager.slackStatusEmoji).frame(width: 22)
+                    TextField("Ortus mode", text: $focusManager.slackStatusText).textFieldStyle(.plain).font(OrtusTheme.Typo.body)
+                    Button(showSlackPreview ? "Hide preview" : "Preview") { showSlackPreview.toggle() }.buttonStyle(OrtusRowButtonStyle())
+                }
+                .padding(.horizontal, OrtusTheme.spacingMD).padding(.vertical, 11)
+                if showSlackPreview {
+                    SlackStatusPreview(statusText: focusManager.slackStatusText, emojiCode: focusManager.slackStatusEmoji,
+                                       userName: "Example user", dndEnabled: focusManager.slackDndEnabled)
+                        .padding([.horizontal, .bottom], OrtusTheme.spacingMD)
                 }
             }
-            Spacer(minLength: 0)
-            if !claudeCodeService.isConfigured {
-                Button("Re-check") { claudeCodeService.redetect() }
-                    .buttonStyle(OrtusSecondaryButtonStyle())
-            }
-        }
-        .ortusRow()
-    }
-
-    private var binaryPathRow: some View {
-        VStack(alignment: .leading, spacing: OrtusTheme.spacingXS) {
-            Text("Custom binary path")
-                .font(OrtusTheme.Typo.meta)
-                .foregroundStyle(OrtusTheme.textMuted)
-            TextField("/opt/homebrew/bin/claude", text: $claudeCodeService.claudeBinaryPath)
-                .textFieldStyle(OrtusTextFieldStyle())
-        }
-        .ortusRow()
-    }
-
-    // MARK: - General
-
-    private var generalSection: some View {
-        section("General") {
-            OrtusToggleRow(
-                title: "Launch at login",
-                isOn: $launchAtLogin
-            )
-            .onChange(of: launchAtLogin) { _, newValue in
-                setLaunchAtLogin(newValue)
-            }
-        }
-        // Sync the toggle with macOS's real SMAppService registration each time
-        // Settings appears — without this the toggle reads off on first open even
-        // when the app is registered.
-        .onAppear { launchAtLogin = SMAppService.mainApp.status == .enabled }
-    }
-
-    private func setLaunchAtLogin(_ enabled: Bool) {
-        do {
-            if enabled {
-                try SMAppService.mainApp.register()
-            } else {
-                try SMAppService.mainApp.unregister()
-            }
-        } catch {
-            // Swallow; the re-sync below pulls the actual state from macOS.
-        }
-        let actual = SMAppService.mainApp.status == .enabled
-        if launchAtLogin != actual {
-            launchAtLogin = actual
+            OrtusGroupDivider()
+            OrtusListRow(title: "Do Not Disturb") { Image(systemName: "moon") } trailing: { toggle($focusManager.slackDndEnabled) }
         }
     }
 
     // MARK: - Emergency
 
-    private var emergencySection: some View {
-        section("Emergency") {
-            Group {
-                if focusManager.canUseEmergencyEnd {
-                    if showEmergencyConfirm {
-                        HStack(alignment: .center, spacing: OrtusTheme.spacingMD) {
-                            Text("Makes your selected apps and websites available now. Once per week.")
-                                .font(OrtusTheme.Typo.caption)
-                                .foregroundStyle(OrtusTheme.warning)
-                                .fixedSize(horizontal: false, vertical: true)
-                            Spacer(minLength: 0)
-                            Button("Cancel") { showEmergencyConfirm = false }
-                                .buttonStyle(OrtusGhostButtonStyle())
-                            Button("Confirm end") {
-                                focusManager.emergencyEndFocusSession()
-                                showEmergencyConfirm = false
-                            }
-                            .buttonStyle(OrtusDestructiveButtonStyle())
-                        }
-                    } else {
-                        HStack(alignment: .center, spacing: OrtusTheme.spacingMD) {
-                            Text("Use only for genuine emergencies. Limited to once per week.")
-                                .font(OrtusTheme.Typo.caption)
-                                .foregroundStyle(OrtusTheme.textMuted)
-                                .fixedSize(horizontal: false, vertical: true)
-                            Spacer(minLength: 0)
-                            Button("Emergency end") { showEmergencyConfirm = true }
-                                .buttonStyle(OrtusDestructiveButtonStyle())
-                        }
+    private var emergencyRow: some View {
+        OrtusListRow(title: "End focus early",
+                     subtitle: focusManager.canUseEmergencyEnd
+                        ? (showEmergencyConfirm ? "Unlocks everything now. Once per week." : "For real emergencies, once per week")
+                        : "Available again \(focusManager.nextEmergencyAvailableDate?.formatted(date: .abbreviated, time: .shortened) ?? "next week")") {
+            Image(systemName: "exclamationmark.octagon")
+        } trailing: {
+            if focusManager.canUseEmergencyEnd {
+                if showEmergencyConfirm {
+                    HStack(spacing: 6) {
+                        Button("Cancel") { showEmergencyConfirm = false }.buttonStyle(OrtusRowButtonStyle())
+                        Button("End now") { focusManager.emergencyEndFocusSession(); showEmergencyConfirm = false }
+                            .buttonStyle(OrtusRowButtonStyle(role: .destructive))
                     }
-                } else if let nextDate = focusManager.nextEmergencyAvailableDate {
-                    Text("Emergency end unavailable until \(nextDate.formatted(date: .abbreviated, time: .shortened))")
-                        .font(OrtusTheme.Typo.caption)
-                        .foregroundStyle(OrtusTheme.textMuted)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    Button("End early") { showEmergencyConfirm = true }.buttonStyle(OrtusRowButtonStyle(role: .destructive))
                 }
             }
-            .ortusRow()
         }
     }
 
-    // MARK: - About
+    // MARK: - General
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.1.0-preview"
     }
 
-    private var aboutSection: some View {
-        section("About") {
-            if !BuildProfile.isPreview {
-                updateRow
-            }
-            aboutRow
+    private var aboutRow: some View {
+        OrtusListRow(title: "Ortus \(appVersion)",
+                     subtitle: focusManager.isInFocus ? "You can quit after this session" : taglines[taglineIndex]) {
+            Image(systemName: "sunrise.fill").foregroundStyle(OrtusTheme.accent)
+                .onTapGesture {
+                    taglineIndex = (taglineIndex + 1) % taglines.count
+                    versionTapCount += 1
+                    if versionTapCount >= 7 { focusManager.developerModeEnabled.toggle(); versionTapCount = 0 }
+                }
+        } trailing: {
+            Button("Quit") { NSApplication.shared.terminate(nil) }
+                .buttonStyle(OrtusRowButtonStyle(role: .destructive))
+                .disabled(focusManager.isInFocus)
         }
     }
 
-    @ViewBuilder
-    private var updateRow: some View {
+    private var updateRow: AnyView? {
         switch updateService.state {
         case let .available(version):
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: OrtusTheme.spacingSM) {
-                    Image(systemName: "arrow.down.circle.fill")
-                        .foregroundStyle(OrtusTheme.accentInk)
-                        .font(.system(size: 16))
-                        .symbolRenderingMode(.hierarchical)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Update available")
-                            .font(OrtusTheme.Typo.bodyMedium)
-                        Text("Version \(version)")
-                            .font(OrtusTheme.Typo.caption)
-                            .foregroundStyle(OrtusTheme.textMuted)
-                    }
-                    Spacer(minLength: 0)
-                    Button("Restart & update") {
-                        Task { await updateService.downloadAndInstall(isInFocus: focusManager.isInFocus) }
-                    }
-                    .buttonStyle(OrtusPrimaryButtonStyle())
-                    .disabled(focusManager.isInFocus)
-                }
-                if focusManager.isInFocus {
-                    Text("Finish your focus session to update — Ortus restarts to apply it.")
-                        .font(OrtusTheme.Typo.caption)
-                        .foregroundStyle(OrtusTheme.textMuted)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .ortusRow()
-
+            return AnyView(OrtusListRow(title: "Update available",
+                                        subtitle: focusManager.isInFocus ? "Version \(version) · installs after this session" : "Version \(version)") {
+                Image(systemName: "arrow.down.circle")
+            } trailing: {
+                Button("Restart & update") { Task { await updateService.downloadAndInstall(isInFocus: focusManager.isInFocus) } }
+                    .buttonStyle(OrtusRowButtonStyle()).disabled(focusManager.isInFocus)
+            })
         case .downloading:
-            HStack(spacing: OrtusTheme.spacingSM) {
-                ProgressView().scaleEffect(0.7).tint(OrtusTheme.accent)
-                Text("Downloading update — Ortus will restart…")
-                    .font(OrtusTheme.Typo.caption)
-                    .foregroundStyle(OrtusTheme.textMuted)
-                Spacer(minLength: 0)
-            }
-            .ortusRow()
-
+            return AnyView(OrtusListRow(title: "Updating", subtitle: "Ortus will restart") {
+                ProgressView().controlSize(.small)
+            } trailing: { EmptyView() })
         case let .failed(message):
-            HStack(spacing: OrtusTheme.spacingSM) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(OrtusTheme.danger)
-                    .symbolRenderingMode(.hierarchical)
-                Text(message)
-                    .font(OrtusTheme.Typo.caption)
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 0)
-            }
-            .ortusRow()
-
+            return AnyView(OrtusListRow(title: "Update failed", subtitle: message) {
+                Image(systemName: "exclamationmark.triangle").foregroundStyle(OrtusTheme.danger)
+            } trailing: { EmptyView() })
         case .idle, .checking, .upToDate:
-            EmptyView()
+            return nil
         }
     }
 
-    private var aboutRow: some View {
-        HStack(alignment: .center, spacing: OrtusTheme.spacingMD) {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Button {
-                        withAnimation(.easeOut(duration: 0.25)) {
-                            taglineIndex = (taglineIndex + 1) % taglines.count
-                        }
-                    } label: {
-                        Text("Ortus")
-                            .font(OrtusTheme.Typo.headline)
-                    }
-                    .buttonStyle(.plain)
-
-                    Button {
-                        versionTapCount += 1
-                        if versionTapCount >= 7 {
-                            focusManager.developerModeEnabled.toggle()
-                            versionTapCount = 0
-                        }
-                    } label: {
-                        Text("v\(appVersion)")
-                            .font(OrtusTheme.Typo.meta)
-                            .foregroundStyle(OrtusTheme.textMuted)
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                Text(taglines[taglineIndex])
-                    .font(OrtusTheme.Typo.caption)
-                    .italic(taglineIndex > 0)
-                    .foregroundStyle(OrtusTheme.textMuted)
-
-                if focusManager.developerModeEnabled {
-                    Text("Developer mode active")
-                        .font(OrtusTheme.Typo.meta)
-                        .foregroundStyle(OrtusTheme.warning)
-                }
-
-                if focusManager.isInFocus {
-                    Text("Cannot quit during focus")
-                        .font(OrtusTheme.Typo.meta)
-                        .foregroundStyle(OrtusTheme.textMuted)
-                }
-            }
-
-            Spacer(minLength: 0)
-
-            Button("Quit Ortus") {
-                NSApplication.shared.terminate(nil)
-            }
-            .buttonStyle(OrtusDestructiveButtonStyle())
-            .disabled(focusManager.isInFocus)
+    private func setLaunchAtLogin(_ enabled: Bool) {
+        do {
+            if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
+        } catch {
+            // Swallow; the re-sync below pulls the actual state from macOS.
         }
-        .ortusRow()
+        let actual = SMAppService.mainApp.status == .enabled
+        if launchAtLogin != actual { launchAtLogin = actual }
+    }
+}
+
+// MARK: - Slack setup
+
+struct SlackSetupModal: View {
+    @EnvironmentObject var slackOAuthService: SlackOAuthService
+    @EnvironmentObject var router: PanelRouter
+    @State private var clientID = ""
+    @State private var clientSecret = ""
+    @State private var copied = false
+
+    var body: some View {
+        OrtusModal(title: "Connect Slack", onClose: { router.modal = nil }) {
+            VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
+                Text("Ortus sets your status through a Slack app you own. It takes about two minutes.")
+                    .font(OrtusTheme.Typo.body).foregroundStyle(OrtusTheme.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+                OrtusGroup {
+                    OrtusStepRow(number: 1, title: "Create a Slack app") {
+                        Link("Open Slack", destination: URL(string: "https://api.slack.com/apps?new_app=1")!)
+                            .buttonStyle(OrtusRowButtonStyle())
+                    }
+                    OrtusGroupDivider()
+                    OrtusStepRow(number: 2, title: "Add this redirect URL", detail: "OAuth & Permissions → Redirect URLs\n\(SlackOAuthService.callbackURL)") {
+                        Button(copied ? "Copied" : "Copy") {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(SlackOAuthService.callbackURL, forType: .string)
+                            copied = true
+                        }
+                        .buttonStyle(OrtusRowButtonStyle())
+                    }
+                    OrtusGroupDivider()
+                    OrtusStepRow(number: 3, title: "Paste the Client ID and Secret", detail: "Basic Information → App Credentials") { EmptyView() }
+                }
+                TextField("Client ID", text: $clientID).textFieldStyle(OrtusTextFieldStyle())
+                SecureField("Client Secret", text: $clientSecret).textFieldStyle(OrtusTextFieldStyle())
+                if let error = slackOAuthService.error {
+                    Text(error).font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.danger)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                HStack {
+                    if slackOAuthService.isAuthenticating {
+                        ProgressView().controlSize(.small)
+                        Text("Waiting for Slack…").font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
+                    }
+                    Spacer()
+                    Button("Connect Slack") {
+                        try? KeychainService.save(clientID, for: .slackClientId)
+                        try? KeychainService.save(clientSecret, for: .slackClientSecret)
+                        slackOAuthService.startOAuthFlow()
+                    }
+                    .buttonStyle(OrtusPrimaryButtonStyle())
+                    .disabled(clientID.isEmpty || clientSecret.isEmpty)
+                }
+            }
+        }
+        // Read saved credentials only when the form opens, so Settings never triggers a keychain prompt.
+        .onAppear {
+            clientID = KeychainService.load(.slackClientId) ?? ""
+            clientSecret = KeychainService.load(.slackClientSecret) ?? ""
+        }
+        .onChange(of: slackOAuthService.isConnected) { _, connected in if connected { router.modal = nil } }
     }
 }

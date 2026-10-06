@@ -3,6 +3,8 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var claudeCodeService: ClaudeCodeService
     @EnvironmentObject var updateService: UpdateService
+    @EnvironmentObject var focusManager: FocusManager
+    @EnvironmentObject var router: PanelRouter
     @State private var selectedTab: Int
     private let fixedHeight: CGFloat?
 
@@ -41,11 +43,21 @@ struct ContentView: View {
         }
         .frame(width: size.width, height: size.height)
         .background(VibrantBackground())
+        .overlay { modal }
         // The menu panel's geometry never participates in content animations.
         .transaction { $0.animation = nil }
         .onAppear {
             claudeCodeService.detectIfNeeded()
             Task { await updateService.checkForUpdates() }
+        }
+    }
+
+    @ViewBuilder private var modal: some View {
+        switch router.modal {
+        case .browserSetup: BrowserSetupModal(service: focusManager.websites)
+        case .slackSetup: SlackSetupModal()
+        case let .modeEditor(mode, onSave): ModeEditor(mode: mode, onSave: onSave)
+        case nil: EmptyView()
         }
     }
 

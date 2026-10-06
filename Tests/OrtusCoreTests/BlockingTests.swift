@@ -178,6 +178,15 @@ struct BlockingTests {
         expect(BlockSelection(websites: ["mail.google.com"]).summary == "mail.google.com")
     }
 
+    func builtInModesAreNamedAndRecognised() {
+        expect(FocusMode.matching(FocusMode.social.blocked, in: FocusMode.builtIn)?.id == "social")
+        expect(FocusMode.matching(.standard, in: FocusMode.builtIn) == nil)
+        expect(FocusMode.social.blocked.summary == "Facebook · Instagram · LinkedIn · Reddit · TikTok · X")
+        expect(FocusMode.messages.blocked.summary == "Gmail · Slack · WhatsApp")
+        expect(BlockingPreset.all.allSatisfy { FocusMode.everything.blocked.fullyContains($0) })
+        expect(FocusMode.builtIn.allSatisfy(\.isBuiltIn) && !FocusMode(name: "Mine", blocked: .slackOnly).isBuiltIn)
+    }
+
     func nativeFramingIsLittleEndianAndBounded() {
         let data = Data("{\"hello\":true}".utf8)
         let frame = NativeMessage.frame(data)
@@ -214,6 +223,7 @@ struct CoreChecks {
         try checks.onlyOneAppCanOwnFocusAtATime()
         checks.presetEditingPreservesUnrelatedTargets()
         checks.partialPresetsDescribeActualCoverage()
-        print("PASS: 13 Ortus core checks (validation, migration, stable default identity, schedules, overlap, recovery, browser lease, framing)")
+        checks.builtInModesAreNamedAndRecognised()
+        print("PASS: 14 Ortus core checks (validation, migration, stable default identity, schedules, overlap, recovery, browser lease, framing, modes)")
     }
 }

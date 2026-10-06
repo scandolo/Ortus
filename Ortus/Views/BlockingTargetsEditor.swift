@@ -3,9 +3,118 @@ import AppKit
 import UniformTypeIdentifiers
 import OrtusCore
 
-/// One list of everything a session blocks. Presets (Gmail, LinkedIn, Slack) show
-/// as a single row once added and as quick-add chips until then, so the same
-/// thing never appears twice.
+// MARK: - Mode picker
+
+/// Shows the chosen mode in one row. Choosing another mode, or building one, is a
+/// click away rather than part of the main screen.
+struct ModePicker: View {
+    @EnvironmentObject var focusManager: FocusManager
+    @EnvironmentObject var router: PanelRouter
+    @Binding var selection: BlockSelection
+    @State private var expanded = false
+    @Environment(\.snapshotState) private var snapshotState
+
+    private var current: FocusMode? { focusManager.mode(for: selection) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button { withAnimation(.easeOut(duration: 0.18)) { expanded.toggle() } } label: {
+                HStack(spacing: 12) {
+                    ModeGlyphs(selection: selection)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(current?.name ?? "Custom").font(OrtusTheme.Typo.bodyMedium)
+                        Text(selection.summary).font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted).lineLimit(1)
+                    }
+                    Spacer(minLength: 8)
+                    Text(expanded ? "Done" : "Change").font(OrtusTheme.Typo.button).foregroundStyle(OrtusTheme.accentInk)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Mode: \(current?.name ?? "Custom")")
+
+            if expanded {
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(focusManager.modes) { mode in modeRow(mode) }
+                    Button { edit(FocusMode(name: focusManager.nextCustomModeName, blocked: selection)) } label: {
+                        Label("New custom mode", systemImage: "plus").font(OrtusTheme.Typo.button).foregroundStyle(OrtusTheme.accentInk)
+                            .padding(.vertical, 8)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.top, OrtusTheme.spacingSM)
+            }
+        }
+        .ortusCard()
+        .onAppear { if snapshotState == "modes" { expanded = true } }
+    }
+
+    private func modeRow(_ mode: FocusMode) -> some View {
+        let isCurrent = mode.blocked == selection
+        return HStack(spacing: 10) {
+            Button { selection = mode.blocked; withAnimation(.easeOut(duration: 0.18)) { expanded = false } } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: isCurrent ? "checkmark.circle.fill" : "circle")
+                        .foregroundStyle(isCurrent ? OrtusTheme.accentInk : OrtusTheme.textMuted)
+                    Text(mode.name).font(OrtusTheme.Typo.body)
+                    Spacer(minLength: 4)
+                    ModeGlyphs(selection: mode.blocked).scaleEffect(0.85)
+                }
+                .padding(.vertical, 5)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if !mode.isBuiltIn {
+                Button("Edit") { edit(mode) }.buttonStyle(OrtusGhostButtonStyle())
+            }
+        }
+    }
+
+    private func edit(_ mode: FocusMode) {
+        router.modal = .modeEditor(mode) { saved in selection = saved.blocked }
+    }
+}
+
+// MARK: - Mode builder
+
+struct ModeEditor: View {
+    @EnvironmentObject var focusManager: FocusManager
+    @EnvironmentObject var router: PanelRouter
+    @State var mode: FocusMode
+    let onSave: (FocusMode) -> Void
+
+    private var isExisting: Bool { focusManager.customModes.contains { $0.id == mode.id } }
+
+    var body: some View {
+        OrtusModal(title: isExisting ? "Edit mode" : "New mode", onClose: { router.modal = nil }) {
+            VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
+                TextField("Mode name", text: $mode.name).textFieldStyle(OrtusTextFieldStyle())
+                BlockingTargetsEditor(selection: $mode.blocked)
+                HStack {
+                    if isExisting {
+                        Button { focusManager.deleteMode(mode); router.modal = nil } label: {
+                            Text("Delete").font(OrtusTheme.Typo.button).foregroundStyle(OrtusTheme.danger)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    Spacer()
+                    Button("Save mode") {
+                        focusManager.saveMode(mode)
+                        onSave(mode)
+                        router.modal = nil
+                    }
+                    .buttonStyle(OrtusPrimaryButtonStyle())
+                    .disabled(mode.name.trimmingCharacters(in: .whitespaces).isEmpty || mode.blocked.isEmpty)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Targets
+
+/// Everything a mode blocks, one row each, with adding a website or an app as two
+/// rows of the same list.
 struct BlockingTargetsEditor: View {
     @Binding var selection: BlockSelection
     @State private var website = ""
@@ -21,71 +130,92 @@ struct BlockingTargetsEditor: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
-            ForEach(addedPresets) { preset in
-                targetRow(preset.title, icon: Image(systemName: preset.symbol)) { selection.set(preset, enabled: false) }
-            }
-            ForEach(otherWebsites, id: \.self) { domain in
-                targetRow(domain, icon: Image(systemName: "globe")) { selection.websites.removeAll { $0 == domain } }
-            }
-            ForEach(otherApplications) { app in
-                targetRow(app.name, icon: appIcon(app)) { selection.applications.removeAll { $0.id == app.id } }
-            }
-
-            HStack(spacing: 6) {
-                TextField("Add a website", text: $website)
-                    .textFieldStyle(OrtusTextFieldStyle())
-                    .onSubmit(addWebsite)
-                    .accessibilityLabel("Website domain or URL")
-                Button(action: addWebsite) { Image(systemName: "plus") }
-                    .buttonStyle(OrtusSecondaryButtonStyle())
-                    .disabled(website.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .accessibilityLabel("Add website")
-            }
-
-            HStack(spacing: 6) {
-                ForEach(suggestedPresets) { preset in
-                    Button { selection.set(preset, enabled: true) } label: {
-                        Label(preset.title, systemImage: "plus")
-                            .font(OrtusTheme.Typo.caption)
-                            .padding(.horizontal, 10).padding(.vertical, 6)
-                            .background(Capsule().fill(Color.primary.opacity(0.05)))
-                            .foregroundStyle(.primary)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Add \(preset.title)")
+        VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
+            OrtusGroup {
+                ForEach(addedPresets) { preset in
+                    targetRow(preset.title) { BrandGlyph(id: preset.id) } remove: { selection.set(preset, enabled: false) }
+                    OrtusGroupDivider()
                 }
-                Spacer(minLength: 0)
-                Button("Add app…", action: chooseApplications)
-                    .buttonStyle(OrtusGhostButtonStyle())
+                ForEach(otherWebsites, id: \.self) { domain in
+                    targetRow(domain) { Image(systemName: "globe") } remove: { selection.websites.removeAll { $0 == domain } }
+                    OrtusGroupDivider()
+                }
+                ForEach(otherApplications) { app in
+                    targetRow(app.name) { appIcon(app) } remove: { selection.applications.removeAll { $0.id == app.id } }
+                    OrtusGroupDivider()
+                }
+                HStack(spacing: 12) {
+                    Image(systemName: "plus.circle").font(.system(size: 15)).foregroundStyle(OrtusTheme.accentInk).frame(width: 22)
+                    TextField("Add a website", text: $website)
+                        .textFieldStyle(.plain).font(OrtusTheme.Typo.body)
+                        .onSubmit(addWebsite)
+                        .accessibilityLabel("Website to block")
+                    if !website.trimmingCharacters(in: .whitespaces).isEmpty {
+                        Button("Add", action: addWebsite).buttonStyle(OrtusRowButtonStyle())
+                    }
+                }
+                .padding(.horizontal, OrtusTheme.spacingMD).padding(.vertical, 11)
+                OrtusGroupDivider()
+                Button(action: chooseApplications) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "plus.circle").font(.system(size: 15)).foregroundStyle(OrtusTheme.accentInk).frame(width: 22)
+                        Text("Add an app from Applications…").font(OrtusTheme.Typo.body).foregroundStyle(OrtusTheme.accentInk)
+                        Spacer()
+                    }
+                    .padding(.horizontal, OrtusTheme.spacingMD).padding(.vertical, 11)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
 
-            if !selection.applications.isEmpty {
-                Text("Apps close when focus starts.")
-                    .font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
-            }
             if let inputError {
                 Text(inputError).font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.danger)
                     .fixedSize(horizontal: false, vertical: true)
+            } else if !selection.applications.isEmpty {
+                Text("Apps in this mode close when focus starts.").font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
+            }
+
+            if !suggestedPresets.isEmpty {
+                VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
+                    OrtusSectionHeader(title: "Suggestions")
+                    FlowLayout {
+                        ForEach(suggestedPresets) { preset in
+                            Button { selection.set(preset, enabled: true) } label: {
+                                HStack(spacing: 6) {
+                                    BrandGlyph(id: preset.id, size: 12)
+                                    Text(preset.title).font(OrtusTheme.Typo.caption)
+                                }
+                                .padding(.horizontal, 10).padding(.vertical, 6)
+                                .background(Capsule().fill(Color.primary.opacity(0.05)))
+                                .foregroundStyle(.primary)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Add \(preset.title)")
+                        }
+                    }
+                }
             }
         }
     }
 
-    private func targetRow(_ title: String, icon: Image, remove: @escaping () -> Void) -> some View {
-        HStack(spacing: 10) {
-            icon.resizable().scaledToFit().frame(width: 16, height: 16).foregroundStyle(OrtusTheme.textMuted)
-            Text(title).font(OrtusTheme.Typo.body).lineLimit(1).truncationMode(.middle)
-            Spacer(minLength: 4)
-            Button(action: remove) { Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(OrtusTheme.textMuted) }
-                .buttonStyle(.plain).frame(width: 24, height: 24).contentShape(Rectangle())
-                .accessibilityLabel("Remove \(title)")
+    private func targetRow<Icon: View>(_ title: String, @ViewBuilder icon: () -> Icon, remove: @escaping () -> Void) -> some View {
+        OrtusListRow(title: title) { icon() } trailing: {
+            Button(action: remove) {
+                Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(OrtusTheme.textMuted)
+                    .frame(width: 24, height: 24).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).accessibilityLabel("Remove \(title)")
         }
-        .padding(.vertical, 2)
     }
 
-    private func appIcon(_ app: BlockedApplication) -> Image {
-        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleID) else { return Image(systemName: "macwindow") }
-        return Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+    private func appIcon(_ app: BlockedApplication) -> some View {
+        Group {
+            if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleID) {
+                Image(nsImage: NSWorkspace.shared.icon(forFile: url.path)).resizable().scaledToFit()
+            } else {
+                Image(systemName: "macwindow")
+            }
+        }
     }
 
     private func addWebsite() {
@@ -120,68 +250,64 @@ struct BlockingTargetsEditor: View {
     }
 }
 
-/// Browser connection status with the three setup steps one click away.
-struct BrowserSetupView: View {
-    @ObservedObject var service: WebsiteBlockingService
-    @State private var expanded = false
-    @Environment(\.snapshotState) private var snapshotState
+// MARK: - Browser connection
 
-    private var connected: Bool { !service.connectedBrowsers.isEmpty }
+/// One row: is website blocking working? Setup lives in a modal.
+struct BrowserStatusRow: View {
+    @ObservedObject var service: WebsiteBlockingService
+    @EnvironmentObject var router: PanelRouter
 
     var body: some View {
-        VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
-            HStack(spacing: 10) {
-                Image(systemName: connected ? "checkmark.shield.fill" : "exclamationmark.shield.fill")
-                    .foregroundStyle(connected ? OrtusTheme.success : OrtusTheme.warning)
-                Text(connected ? "Connected to \(service.connectedBrowsers.joined(separator: ", "))" : "Websites aren’t blocked yet")
-                    .font(OrtusTheme.Typo.bodyMedium)
+        let connected = !service.connectedBrowsers.isEmpty
+        OrtusListRow(title: "Website blocking",
+                     subtitle: connected ? "On in \(service.connectedBrowsers.joined(separator: ", "))" : "Not set up yet") {
+            Image(systemName: connected ? "checkmark.shield.fill" : "exclamationmark.shield.fill")
+                .foregroundStyle(connected ? OrtusTheme.success : OrtusTheme.warning)
+        } trailing: {
+            Button(connected ? "Add browser" : "Set up") { router.modal = .browserSetup }
+                .buttonStyle(OrtusRowButtonStyle())
+        }
+    }
+}
+
+/// The three setup steps, shown in a modal.
+struct BrowserSetupModal: View {
+    @ObservedObject var service: WebsiteBlockingService
+    @EnvironmentObject var router: PanelRouter
+
+    var body: some View {
+        OrtusModal(title: "Block websites in your browser", onClose: { router.modal = nil }) {
+            VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
+                Text("A one-time setup for each browser profile. Works with Arc, Chrome, Edge and Brave.")
+                    .font(OrtusTheme.Typo.body).foregroundStyle(OrtusTheme.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 0)
-                Button(expanded ? "Done" : (connected ? "Add browser" : "Connect")) { expanded.toggle() }
-                    .buttonStyle(OrtusGhostButtonStyle())
-            }
-            if expanded {
-                VStack(alignment: .leading, spacing: 12) {
-                    step(1, "Open your browser’s extensions page") { openButton }
-                    step(2, "Turn on Developer mode, then click Load unpacked") { EmptyView() }
-                    step(3, "Choose the “\(service.extensionDirectory?.lastPathComponent ?? "Ortus Browser")” folder") {
-                        Button("Show folder") { service.revealCompanion() }.buttonStyle(OrtusGhostButtonStyle())
+                OrtusGroup {
+                    OrtusStepRow(number: 1, title: "Open the extensions page") {
+                        ForEach(service.availableBrowsers) { browser in
+                            Button(browser.name) { service.openExtensionsPage(browserID: browser.id) }.buttonStyle(OrtusRowButtonStyle())
+                        }
+                    }
+                    OrtusGroupDivider()
+                    OrtusStepRow(number: 2, title: "Turn on Developer mode, then click Load unpacked") { EmptyView() }
+                    OrtusGroupDivider()
+                    OrtusStepRow(number: 3, title: "Choose the “\(service.extensionDirectory?.lastPathComponent ?? "Ortus Browser")” folder") {
+                        Button("Show folder") { service.revealCompanion() }.buttonStyle(OrtusRowButtonStyle())
                     }
                 }
+                if let error = service.setupError ?? service.error ?? service.enforcementError {
+                    Text(error).font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.danger)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                HStack {
+                    if !service.connectedBrowsers.isEmpty {
+                        Label("Connected to \(service.connectedBrowsers.joined(separator: ", "))", systemImage: "checkmark.circle.fill")
+                            .font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.success)
+                    }
+                    Spacer()
+                    Button("Done") { router.modal = nil }.buttonStyle(OrtusPrimaryButtonStyle())
+                }
             }
-            if let error = service.setupError ?? service.error ?? service.enforcementError {
-                Text(error).font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.danger)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .ortusRow()
-        .onAppear { if snapshotState == "browser-setup" { expanded = true } }
-    }
-
-    @ViewBuilder private var openButton: some View {
-        let browsers = service.availableBrowsers
-        if browsers.count == 1, let browser = browsers.first {
-            Button("Open \(browser.name)") { service.openExtensionsPage(browserID: browser.id) }.buttonStyle(OrtusGhostButtonStyle())
-        } else if !browsers.isEmpty {
-            Menu {
-                ForEach(browsers) { browser in Button(browser.name) { service.openExtensionsPage(browserID: browser.id) } }
-            } label: {
-                Text("Open").font(OrtusTheme.Typo.button).foregroundStyle(OrtusTheme.accentInk)
-            }
-            .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
         }
     }
 
-    private func step<Action: View>(_ number: Int, _ text: String, @ViewBuilder action: () -> Action) -> some View {
-        HStack(alignment: .center, spacing: 10) {
-            Text("\(number)")
-                .font(OrtusTheme.Typo.badge).monospacedDigit()
-                .frame(width: 20, height: 20)
-                .background(Circle().fill(OrtusTheme.accentSoft))
-                .foregroundStyle(OrtusTheme.accentInk)
-            Text(text).font(OrtusTheme.Typo.body).fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
-            action()
-        }
-    }
 }
