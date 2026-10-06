@@ -209,7 +209,7 @@ final class ClaudeCodeService: ObservableObject {
             "-p", prompt,
             "--output-format", "stream-json",
             "--verbose",
-            "--model", "opus",
+            "--model", "claude-sonnet-5-5",
             "--effort", "low",
             "--append-system-prompt", Self.systemPrompt,
             "--permission-mode", "default",
