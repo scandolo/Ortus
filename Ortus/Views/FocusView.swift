@@ -29,7 +29,7 @@ struct FocusView: View {
                 Button {
                     focusManager.startFocusSession(name: "Focus", duration: manualDuration * 60)
                 } label: {
-                    Text(genZ ? "lock in fr" : "Lock in").frame(maxWidth: .infinity)
+                    Text(genZ ? "lock in fr" : "Start focus").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(OrtusPrimaryButtonStyle())
                 .disabled(focusManager.manualSelection.isEmpty)
