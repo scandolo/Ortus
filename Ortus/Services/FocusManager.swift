@@ -2,362 +2,260 @@ import AppKit
 import Combine
 import SwiftUI
 import UserNotifications
+import OrtusCore
 
 @MainActor
 final class FocusManager: ObservableObject {
-    @Published var isInFocus = false
-    @Published var schedules: [FocusSchedule] = []
-    @Published var focusStartTime: Date?
-    @Published var focusEndTime: Date?
-    @Published var currentSessionName: String?
-    @Published var isEmergencyEnded = false
-    @Published var originalFocusEndTime: Date?
-    @Published var isInGracePeriod = false
-    @Published var gracePeriodEndTime: Date?
+    static weak var current: FocusManager?
+    @Published private(set) var isInFocus = false
+    @Published private(set) var schedules: [FocusSchedule] = []
+    @Published private(set) var focusStartTime: Date?
+    @Published private(set) var focusEndTime: Date?
+    @Published private(set) var currentSessionName: String?
+    @Published private(set) var isEmergencyEnded = false
+    @Published private(set) var originalFocusEndTime: Date?
+    @Published private(set) var isInGracePeriod = false
+    @Published private(set) var gracePeriodEndTime: Date?
+    @Published private(set) var activeSelection = BlockSelection()
+    @Published private(set) var activeScheduleIDs: Set<UUID> = []
+    @Published var manualSelection: BlockSelection = .standard {
+        didSet { if let data = try? JSONEncoder().encode(manualSelection) { UserDefaults.standard.set(data, forKey: "manualBlockSelection") } }
+    }
+    /// Optional user-built modes. Built-in modes live in `FocusMode.builtIn`.
+    @Published var customModes: [FocusMode] = [] {
+        didSet { if let data = try? JSONEncoder().encode(customModes) { UserDefaults.standard.set(data, forKey: "customFocusModes") } }
+    }
+    @Published var blockingError: String?
+    @Published var completionMessage: String?
+    let websites = WebsiteBlockingService()
+    private lazy var engine = FocusEngineLock(directory: websites.directory)
+    private let apps = ApplicationBlocker()
+    private var timeline = FocusTimeline()
+    private var timer: Timer?
+    private var lastPublish = Date.distantPast
+    private var lastSlackEnd: Date?
+    private var slackStatusApplied = false
 
+    // Keep the old preference key so existing users retain their choice.
     @AppStorage("relaunchSlackOnEnd") var relaunchSlackOnEnd = false
     @AppStorage("showNotifications") var showNotifications = true
     @AppStorage("lastEmergencyEndTimestamp") var lastEmergencyEndTimestamp: Double = 0
     @AppStorage("developerModeEnabled") var developerModeEnabled = false
-
-    /// When an emergency end happens during a *scheduled* focus block, we record the
-    /// block's original end time here so the schedule evaluator won't auto-restart
-    /// focus until it passes. Persisted (not just in-memory) so quitting/reopening
-    /// Ortus — or a crash — can't be used to bypass the emergency end and re-trap you.
-    /// 0 means "no active suppression".
     @AppStorage("emergencyScheduleSuppressUntil") var emergencyScheduleSuppressUntil: Double = 0
-
     @AppStorage("slackStatusEnabled") var slackStatusEnabled = true
     @AppStorage("slackStatusText") var slackStatusText = "Ortus mode"
     @AppStorage("slackStatusEmoji") var slackStatusEmoji = ":no_entry_sign:"
     @AppStorage("slackDndEnabled") var slackDndEnabled = true
+    var slackService: SlackService? { didSet { applySlackStatusForFocus() } }
 
-    /// Injected at app startup so focus transitions can update Slack status / DND.
-    var slackService: SlackService?
-
-    private nonisolated static let slackBundleID = "com.tinyspeck.slackmacgap"
-    private nonisolated static let gracePeriodDuration: TimeInterval = 30
-    private nonisolated static let scheduleEvaluationInterval: TimeInterval = 30
-    private var scheduleTimer: Timer?
-    private var launchObserver: NSObjectProtocol?
-    private var gracePeriodTimer: Timer?
-
-    // MARK: - Emergency End
-
-    // Once per calendar week (resets at the start of the user's locale week,
-    // e.g. Monday 00:00 in en_GB), not a rolling 7-day window.
     var canUseEmergencyEnd: Bool {
         guard lastEmergencyEndTimestamp > 0 else { return true }
-        let lastUsed = Date(timeIntervalSince1970: lastEmergencyEndTimestamp)
-        return !Calendar.current.isDate(lastUsed, equalTo: Date(), toGranularity: .weekOfYear)
+        return !Calendar.current.isDate(Date(timeIntervalSince1970: lastEmergencyEndTimestamp), equalTo: Date(), toGranularity: .weekOfYear)
     }
-
     var nextEmergencyAvailableDate: Date? {
-        guard !canUseEmergencyEnd else { return nil }
-        let calendar = Calendar.current
-        guard let startOfThisWeek = calendar.dateInterval(of: .weekOfYear, for: Date())?.start else { return nil }
-        return calendar.date(byAdding: .weekOfYear, value: 1, to: startOfThisWeek)
+        guard !canUseEmergencyEnd, let start = Calendar.current.dateInterval(of: .weekOfYear, for: Date())?.start else { return nil }
+        return Calendar.current.date(byAdding: .weekOfYear, value: 1, to: start)
     }
 
     init() {
+        Self.current = self
         schedules = ScheduleStore.load()
-        requestNotificationPermission()
-        startScheduleEvaluation()
+        if let data = UserDefaults.standard.data(forKey: "manualBlockSelection"), let selection = try? JSONDecoder().decode(BlockSelection.self, from: data) { manualSelection = selection }
+        if let data = UserDefaults.standard.data(forKey: "activeFocusTimeline"), let saved = try? JSONDecoder().decode(FocusTimeline.self, from: data) { timeline = saved }
+        if emergencyScheduleSuppressUntil > Date().timeIntervalSince1970 {
+            timeline.suppressedUntil = Date(timeIntervalSince1970: emergencyScheduleSuppressUntil)
+        }
+        if let data = UserDefaults.standard.data(forKey: "customFocusModes"), let saved = try? JSONDecoder().decode([FocusMode].self, from: data) { customModes = saved }
+        migrateToModesIfNeeded()
+        websites.registerCompanion()
+        refresh()
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.refresh() }
+        }
     }
-    // No deinit: FocusManager is owned by @StateObject on App; lives until process exits.
 
-    // MARK: - Schedule Management
+    // MARK: Modes
+
+    var modes: [FocusMode] { FocusMode.builtIn + customModes }
+    func mode(for selection: BlockSelection) -> FocusMode? { FocusMode.matching(selection, in: modes) }
+    var nextCustomModeName: String {
+        var n = customModes.count + 1
+        while customModes.contains(where: { $0.name == "Custom \(n)" }) { n += 1 }
+        return "Custom \(n)"
+    }
+
+    /// Saves a custom mode. Anything that used the mode's previous targets follows the edit.
+    func saveMode(_ mode: FocusMode) {
+        guard !mode.isBuiltIn, !mode.blocked.isEmpty else { return }
+        let previous = customModes.first { $0.id == mode.id }
+        if let index = customModes.firstIndex(where: { $0.id == mode.id }) { customModes[index] = mode } else { customModes.append(mode) }
+        guard let previous, previous.blocked != mode.blocked else { return }
+        if manualSelection == previous.blocked { manualSelection = mode.blocked }
+        for schedule in schedules where schedule.blocked == previous.blocked {
+            var updated = schedule; updated.blocked = mode.blocked; updateSchedule(updated)
+        }
+    }
+    func deleteMode(_ mode: FocusMode) {
+        customModes.removeAll { $0.id == mode.id }
+        if manualSelection == mode.blocked { manualSelection = FocusMode.social.blocked }
+    }
+
+    /// One-time move to modes: new sessions default to Social, and any schedule whose
+    /// targets match no built-in mode keeps them as a named custom mode.
+    private func migrateToModesIfNeeded() {
+        let key = "focusModesMigrated"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+        UserDefaults.standard.set(true, forKey: key)
+        for schedule in schedules where !schedule.blocked.isEmpty && mode(for: schedule.blocked) == nil {
+            customModes.append(FocusMode(name: nextCustomModeName, blocked: schedule.blocked))
+        }
+        manualSelection = FocusMode.social.blocked
+    }
 
     func addSchedule(_ schedule: FocusSchedule) {
-        schedules.append(schedule)
-        ScheduleStore.save(schedules)
+        guard schedule.hasValidTimeRange, !schedule.blocked.isEmpty else { return }
+        schedules.append(schedule); ScheduleStore.save(schedules); refresh()
         Analytics.capture("schedule_added", ["days_count": schedule.days.count])
     }
-
     func updateSchedule(_ schedule: FocusSchedule) {
-        if let index = schedules.firstIndex(where: { $0.id == schedule.id }) {
-            schedules[index] = schedule
-            ScheduleStore.save(schedules)
-        }
+        guard !activeScheduleIDs.contains(schedule.id), schedule.hasValidTimeRange, !schedule.blocked.isEmpty,
+              let index = schedules.firstIndex(where: { $0.id == schedule.id }) else { return }
+        schedules[index] = schedule; ScheduleStore.save(schedules); refresh()
     }
-
     func deleteSchedule(_ schedule: FocusSchedule) {
-        schedules.removeAll { $0.id == schedule.id }
-        ScheduleStore.save(schedules)
-        Analytics.capture("schedule_deleted")
+        guard !activeScheduleIDs.contains(schedule.id) else { return }
+        schedules.removeAll { $0.id == schedule.id }; ScheduleStore.save(schedules); refresh()
+    }
+    private func acquireEngine() -> Bool {
+        if engine.isHeld { return true }
+        guard engine.acquire() else {
+            blockingError = "Another Ortus app has an active session. Finish that session before starting one here."
+            return false
+        }
+        blockingError = nil
+        return true
     }
 
-    // MARK: - Focus Session Control
-
-    func startFocusSession(name: String = "Manual Focus", duration: TimeInterval? = nil) {
-        guard !isInFocus else { return }
-        isInFocus = true
-        isEmergencyEnded = false
-        originalFocusEndTime = nil
-        currentSessionName = name
-        focusStartTime = Date()
-
-        if let duration {
-            focusEndTime = Date().addingTimeInterval(duration)
-        }
-
-        killSlack()
-        startMonitoringLaunches()
-        applySlackStatusForFocus()
-
-        Analytics.capture("focus_started", ["scheduled": name != "Manual Focus"])
-
-        // Grace period only for manual sessions — scheduled ones are expected
-        if name == "Manual Focus" {
-            startGracePeriod()
-        }
-
-        if showNotifications {
-            sendNotification(title: "Focus Mode Active", body: "Slack has been blocked. Stay focused!")
-        }
+    func startFocusSession(name: String = "Focus", duration: TimeInterval? = nil) {
+        guard !isInFocus, !manualSelection.isEmpty, acquireEngine() else { return }
+        completionMessage = nil
+        timeline.beginManual(at: Date(), duration: duration ?? 3600, blocked: manualSelection)
+        refresh(forcePublish: true)
+        Analytics.capture("focus_started", ["scheduled": false])
     }
-
     func revertFocusSession() {
-        guard isInFocus, isInGracePeriod else { return }
-        cancelGracePeriod()
-        isInFocus = false
-        focusStartTime = nil
-        focusEndTime = nil
-        currentSessionName = nil
-        stopMonitoringLaunches()
-        clearSlackStatusForFocus()
-
+        guard isInGracePeriod else { return }
+        timeline.revertManual(at: Date())
+        refresh(forcePublish: true)
+        completionMessage = "Focus cancelled. Your apps and websites are available."
         Analytics.capture("focus_reverted")
-
-        if showNotifications {
-            sendNotification(title: "Focus Reverted", body: "Focus session cancelled. You can reopen Slack when ready.")
-        }
     }
-
-    private func startGracePeriod() {
-        isInGracePeriod = true
-        gracePeriodEndTime = Date().addingTimeInterval(Self.gracePeriodDuration)
-        gracePeriodTimer = Timer.scheduledTimer(withTimeInterval: Self.gracePeriodDuration, repeats: false) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.endGracePeriod()
-            }
-        }
-    }
-
-    private func endGracePeriod() {
-        isInGracePeriod = false
-        gracePeriodEndTime = nil
-        gracePeriodTimer?.invalidate()
-        gracePeriodTimer = nil
-    }
-
-    private func cancelGracePeriod() {
-        gracePeriodTimer?.invalidate()
-        gracePeriodTimer = nil
-        isInGracePeriod = false
-        gracePeriodEndTime = nil
-    }
-
     func endFocusSession() {
-        guard isInFocus else { return }
-        cancelGracePeriod()
-        isInFocus = false
-        isEmergencyEnded = false
-        originalFocusEndTime = nil
-        focusStartTime = nil
-        focusEndTime = nil
-        currentSessionName = nil
-        stopMonitoringLaunches()
-        clearSlackStatusForFocus()
-
-        Analytics.capture("focus_ended")
-
-        if relaunchSlackOnEnd {
-            launchSlack()
-        }
-
-        if showNotifications {
-            sendNotification(title: "Focus Mode Ended", body: "Slack is available again.")
-        }
+        timeline.endEarly(at: Date())
+        refresh(forcePublish: true)
     }
-
-    /// Extends the current focus session by the given duration. No-op if not in focus or
-    /// if the session has no scheduled end time. Re-applies Slack status / DND with the new
-    /// expiration so teammates stay informed.
-    func extendFocus(by seconds: TimeInterval) {
-        guard isInFocus, seconds > 0, let currentEnd = focusEndTime else { return }
-        focusEndTime = currentEnd.addingTimeInterval(seconds)
-        applySlackStatusForFocus()
-        Analytics.capture("focus_extended", ["seconds_added": Int(seconds)])
-    }
-
     func emergencyEndFocusSession() {
-        guard isInFocus else { return }
-        cancelGracePeriod()
-
+        guard isInFocus, canUseEmergencyEnd else { return }
         lastEmergencyEndTimestamp = Date().timeIntervalSince1970
-        // `isEmergencyEnded` + `originalFocusEndTime` now serve ONE purpose: stop a
-        // *scheduled* focus block from auto-restarting within ~30s (see
-        // evaluateSchedules). They no longer keep Slack blocked. The deadline is also
-        // persisted so a restart can't bypass the suppression and re-trap you.
-        isEmergencyEnded = true
-        originalFocusEndTime = focusEndTime
-        emergencyScheduleSuppressUntil = focusEndTime?.timeIntervalSince1970 ?? 0
-        isInFocus = false
-        focusStartTime = nil
-        focusEndTime = nil
-        currentSessionName = nil
-
-        // The whole point of an emergency end: actually let the user back into Slack.
-        // Stop the relaunch-kill monitor and bring Slack back now. The once-per-week
-        // rate limit is the only friction — once you've spent it, it must work.
-        stopMonitoringLaunches()
-        clearSlackStatusForFocus()
-        launchSlack()
-
+        originalFocusEndTime = timeline.end
+        timeline.endEarly(at: Date())
+        apps.finish(relaunch: true)
+        refresh(forcePublish: true)
+        completionMessage = "Focus ended early. Your apps and websites are available."
         Analytics.capture("focus_emergency_ended")
-
-        if showNotifications {
-            sendNotification(title: "Focus Ended", body: "Slack is available again.")
-        }
+    }
+    func extendFocus(by seconds: TimeInterval) {
+        timeline.extend(by: seconds)
+        refresh(forcePublish: true)
     }
 
-    // MARK: - Schedule Evaluation
-
-    private func startScheduleEvaluation() {
-        evaluateSchedules()
-        scheduleTimer = Timer.scheduledTimer(withTimeInterval: Self.scheduleEvaluationInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.evaluateSchedules()
-            }
-        }
-    }
-
-    private func evaluateSchedules() {
+    private func refresh(forcePublish: Bool = false) {
         let now = Date()
-
-        // Has the emergency-end suppression window elapsed? Lift it (persisted +
-        // in-memory) so normal schedule evaluation resumes from here on.
-        let suppressingScheduleRestart = emergencyScheduleSuppressUntil > now.timeIntervalSince1970
-        if !suppressingScheduleRestart && emergencyScheduleSuppressUntil > 0 {
-            emergencyScheduleSuppressUntil = 0
+        timeline.reconcile(at: now, schedules: schedules)
+        if !timeline.sessions.isEmpty && !acquireEngine() {
+            // A schedule waiting for another controller has not started. Re-evaluate
+            // its current saved choices each tick instead of keeping a stale draft.
+            timeline.sessions.removeAll { $0.scheduleID != nil }
+        } else if timeline.sessions.isEmpty && blockingError != nil && acquireEngine() {
+            engine.release()
         }
-        if isEmergencyEnded, let originalEnd = originalFocusEndTime, now >= originalEnd {
-            isEmergencyEnded = false
-            originalFocusEndTime = nil
+        let effective = engine.isHeld ? timeline : FocusTimeline()
+        if timeline.sessions.isEmpty, engine.isHeld {
+            websites.publish(sessions: [], now: now)
+            engine.release()
         }
-
-        let anyScheduleActive = schedules.contains { $0.isActiveNow(date: now) }
-
-        // Don't auto-(re)start a scheduled block while an emergency-end suppression
-        // is still in effect — otherwise the schedule would re-trap you seconds after
-        // you bailed (and a restart would do the same).
-        if anyScheduleActive && !isInFocus && !suppressingScheduleRestart {
-            let activeSchedule = schedules.first { $0.isActiveNow(date: now) }
-            focusEndTime = activeSchedule?.nextEndTime(from: now)
-            startFocusSession(name: activeSchedule?.name ?? "Scheduled Focus")
-        } else if !anyScheduleActive && isInFocus && currentSessionName != "Manual Focus" {
-            endFocusSession()
+        let selection = effective.selection
+        let wasActive = isInFocus
+        let previousEnd = focusEndTime
+        let changed = activeSelection != selection || focusEndTime != effective.end || isInFocus != !effective.sessions.isEmpty
+        if activeSelection != selection { activeSelection = selection }
+        if isInFocus != !effective.sessions.isEmpty { isInFocus = !effective.sessions.isEmpty }
+        let start = effective.sessions.map(\.start).min()
+        if focusStartTime != start { focusStartTime = start }
+        if focusEndTime != effective.end { focusEndTime = effective.end }
+        let name = effective.sessions.map(\.name).joined(separator: " + ")
+        if currentSessionName != name { currentSessionName = name }
+        let ids = Set(effective.sessions.compactMap(\.scheduleID))
+        if activeScheduleIDs != ids { activeScheduleIDs = ids }
+        let grace = effective.sessions.compactMap(\.graceEnd).filter { $0 > now }.max()
+        if gracePeriodEndTime != grace { gracePeriodEndTime = grace }
+        // A scheduled session cannot be cancelled by a manual session's grace period.
+        let inGrace = gracePeriodEndTime != nil && activeScheduleIDs.isEmpty
+        if isInGracePeriod != inGrace { isInGracePeriod = inGrace }
+        emergencyScheduleSuppressUntil = timeline.suppressedUntil?.timeIntervalSince1970 ?? 0
+        isEmergencyEnded = timeline.suppressedUntil.map { $0 > now } ?? false
+        apps.update(selection.applications)
+        if wasActive && !isInFocus {
+            apps.finish(relaunch: relaunchSlackOnEnd)
+            clearSlackStatusForFocus()
+            completionMessage = "Focus complete. Your apps and websites are available again."
+            sendNotification(title: "Focus complete", body: "Your apps and websites are available again.")
+        } else if !wasActive && isInFocus {
+            sendNotification(title: "Focus active", body: selection.summary)
         }
-
-        // Check manual session timeout
-        if isInFocus, let endTime = focusEndTime, currentSessionName == "Manual Focus", Date() >= endTime {
-            endFocusSession()
+        if selection.blocksSlack {
+            if !slackStatusApplied || previousEnd != focusEndTime { applySlackStatusForFocus() }
+        } else { clearSlackStatusForFocus() }
+        if changed || forcePublish || now.timeIntervalSince(lastPublish) >= 5 {
+            if engine.isHeld { websites.publish(sessions: effective.sessions, now: now) }
+            websites.publishPresence(now: now)
+            if let data = try? JSONEncoder().encode(timeline) { UserDefaults.standard.set(data, forKey: "activeFocusTimeline") }
+            lastPublish = now
+        } else {
+            websites.refreshConnections(now: now)
         }
     }
-
-    // MARK: - Slack Status / DND
 
     private func applySlackStatusForFocus() {
-        guard let slackService, slackService.isConnected, slackStatusEnabled else { return }
-        let statusText = slackStatusText
-        let statusEmoji = slackStatusEmoji
-        let expiration = focusEndTime
-        let dnd = slackDndEnabled
-        let dndMinutes: Int? = focusEndTime.map { max(1, Int(($0.timeIntervalSinceNow / 60).rounded(.up))) }
+        guard activeSelection.blocksSlack, let slackService, slackService.isConnected else { return }
+        guard !slackStatusApplied || lastSlackEnd != focusEndTime else { return }
+        slackStatusApplied = true; lastSlackEnd = focusEndTime
+        let status = slackStatusEnabled; let text = slackStatusText; let emoji = slackStatusEmoji
+        let end = focusEndTime; let dnd = slackDndEnabled
+        let minutes = end.map { max(1, Int(ceil($0.timeIntervalSinceNow / 60))) }
         Task {
-            try? await slackService.setStatus(text: statusText, emoji: statusEmoji, expiration: expiration)
-            if dnd, let minutes = dndMinutes {
-                try? await slackService.setSnooze(minutes: minutes)
-            }
+            if status { try? await slackService.setStatus(text: text, emoji: emoji, expiration: end) }
+            if dnd, let minutes { try? await slackService.setSnooze(minutes: minutes) }
         }
     }
-
     private func clearSlackStatusForFocus() {
-        guard let slackService, slackService.isConnected else { return }
-        let wasDnd = slackDndEnabled
+        guard slackStatusApplied, let slackService else { return }
+        slackStatusApplied = false; lastSlackEnd = nil
+        let dnd = slackDndEnabled
         Task {
             try? await slackService.clearStatus()
-            if wasDnd {
-                try? await slackService.endSnooze()
-            }
+            if dnd { try? await slackService.endSnooze() }
         }
     }
-
-    // MARK: - Slack Process Management
-
-    private func killSlack() {
-        let slackApps = NSWorkspace.shared.runningApplications.filter {
-            $0.bundleIdentifier == Self.slackBundleID
-        }
-        for app in slackApps {
-            if !app.terminate() {
-                app.forceTerminate()
-            }
-        }
-    }
-
-    private func launchSlack() {
-        if let slackURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: Self.slackBundleID) {
-            NSWorkspace.shared.openApplication(at: slackURL, configuration: .init())
-        }
-    }
-
-    private func startMonitoringLaunches() {
-        stopMonitoringLaunches()
-        launchObserver = NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didLaunchApplicationNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-                  app.bundleIdentifier == Self.slackBundleID else { return }
-            Task { @MainActor [weak self] in
-                guard let self, self.isInFocus else { return }
-                try? await Task.sleep(for: .milliseconds(500))
-                if !app.terminate() {
-                    app.forceTerminate()
-                }
-                if self.showNotifications {
-                    self.sendNotification(title: "Slack Blocked", body: "Focus mode is active. Slack cannot be opened.")
-                }
-            }
-        }
-    }
-
-    private func stopMonitoringLaunches() {
-        if let obs = launchObserver {
-            NSWorkspace.shared.notificationCenter.removeObserver(obs)
-            launchObserver = nil
-        }
-    }
-
-    // MARK: - Notifications
-
-    private func requestNotificationPermission() {
-        guard Bundle.main.bundleIdentifier != nil else { return }
-        Task {
-            _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
-        }
-    }
-
     private func sendNotification(title: String, body: String) {
-        guard Bundle.main.bundleIdentifier != nil else { return }
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = body
-        content.sound = .default
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-        UNUserNotificationCenter.current().add(request)
+        guard showNotifications, Bundle.main.bundleIdentifier != nil else { return }
+        Task {
+            // Never interrupt a scheduled session with an unexpected permission prompt.
+            let settings = await UNUserNotificationCenter.current().notificationSettings()
+            guard settings.authorizationStatus == .authorized else { return }
+            let content = UNMutableNotificationContent()
+            content.title = title; content.body = body; content.sound = .default
+            try? await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
+        }
     }
 }

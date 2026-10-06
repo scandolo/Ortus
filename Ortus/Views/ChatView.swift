@@ -3,6 +3,7 @@ import SwiftUI
 struct ChatView: View {
     @EnvironmentObject var claudeCodeService: ClaudeCodeService
     @State private var inputText = ""
+    @AppStorage("genZMode") private var genZ = false
     @FocusState private var isInputFocused: Bool
     @State private var isBarHovering = false
 
@@ -10,22 +11,45 @@ struct ChatView: View {
         VStack(spacing: 0) {
             if !claudeCodeService.isConfigured {
                 OrtusEmptyState(
-                    icon: "terminal",
-                    title: "Claude Code not found",
-                    message: "Install Claude Code (docs.claude.com/claude-code), or set its binary path in Settings, to enable AI chat."
+                    icon: "sparkles",
+                    title: "Chat needs Claude Code",
+                    message: "Install Claude Code from docs.claude.com/claude-code, then check again in Settings."
                 )
             } else if claudeCodeService.messages.isEmpty {
-                OrtusEmptyState(
-                    icon: "sparkles",
-                    title: "Ask about Slack",
-                    message: "Catch up on channels, search messages, or send replies without unblocking Slack"
-                )
+                emptyState
             } else {
                 messageList
             }
 
             inputBar
         }
+    }
+
+    // MARK: - Empty state
+
+    private let suggestions = ["Catch me up on Slack", "Anything urgent in my email?", "What’s on my calendar today?"]
+
+    private var emptyState: some View {
+        VStack(spacing: OrtusTheme.spacingMD) {
+            Spacer()
+            Image(systemName: "sparkles").font(.system(size: 40, weight: .light)).foregroundStyle(OrtusTheme.accent)
+            Text(genZ ? "stay locked in, still in the loop" : "Stay in focus, still get answers").font(OrtusTheme.Typo.title).multilineTextAlignment(.center)
+            VStack(spacing: OrtusTheme.spacingSM) {
+                ForEach(suggestions, id: \.self) { suggestion in
+                    Button { inputText = suggestion; isInputFocused = true } label: {
+                        Text(suggestion).font(OrtusTheme.Typo.body)
+                            .padding(.horizontal, 14).padding(.vertical, 8)
+                            .background(Capsule().fill(OrtusTheme.cardSurface))
+                            .overlay(Capsule().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
+                    }
+                    .buttonStyle(OrtusPressableStyle(cornerRadius: 20))
+                }
+            }
+            .padding(.top, OrtusTheme.spacingXS)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .padding(OrtusTheme.spacingMD)
     }
 
     // MARK: - Message List
@@ -76,16 +100,17 @@ struct ChatView: View {
                 } label: {
                     Image(systemName: "trash")
                         .font(.callout)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(OrtusTheme.textMuted)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(OrtusPressableStyle(inset: 6, cornerRadius: 14))
                 .help("Clear conversation")
                 .disabled(claudeCodeService.isProcessing)
             }
 
-            TextField("What's happening in Slack?", text: $inputText)
+            TextField("", text: $inputText, prompt: Text(genZ ? "spill…" : "What do you need?").foregroundStyle(OrtusTheme.textMuted))
                 .textFieldStyle(.plain)
                 .font(OrtusTheme.Typo.body)
+                .padding(.vertical, 6)
                 .focused($isInputFocused)
                 .onSubmit { sendMessage() }
                 .disabled(!claudeCodeService.isConfigured || claudeCodeService.isProcessing)
@@ -100,7 +125,14 @@ struct ChatView: View {
         .padding(.trailing, 6)
         .padding(.vertical, 6)
         .background(inputBarBackground)
-        .onHover { isBarHovering = $0 }
+        // The whole capsule is the field: clicks on its padding focus the text box.
+        .contentShape(Capsule())
+        .onTapGesture { isInputFocused = true }
+        .onHover { hovering in
+            isBarHovering = hovering
+            // The whole capsule behaves like the text field, cursor included.
+            if hovering { NSCursor.iBeam.push() } else { NSCursor.pop() }
+        }
         .padding(.horizontal, OrtusTheme.spacingMD)
         .padding(.bottom, OrtusTheme.spacingSM)
         .animation(.easeOut(duration: 0.18), value: isInputFocused)
@@ -111,19 +143,15 @@ struct ChatView: View {
         Capsule()
             .fill(OrtusTheme.cardSurface)
             .overlay(
-                Capsule()
-                    .fill(isBarHovering && !isInputFocused ? Color.primary.opacity(0.04) : .clear)
-            )
-            .overlay(
                 Capsule().strokeBorder(
-                    isInputFocused ? OrtusTheme.accent : OrtusTheme.hairline,
+                    isInputFocused ? OrtusTheme.accent : isBarHovering ? OrtusTheme.accent.opacity(0.45) : OrtusTheme.hairline,
                     lineWidth: isInputFocused ? 1.5 : 1
                 )
             )
             .shadow(
-                color: isInputFocused ? OrtusTheme.accent.opacity(0.30) : .black.opacity(0.12),
-                radius: isInputFocused ? 8 : 14,
-                y: isInputFocused ? 2 : 4
+                color: isInputFocused ? OrtusTheme.accent.opacity(0.30) : .black.opacity(isBarHovering ? 0.16 : 0.12),
+                radius: isInputFocused ? 8 : isBarHovering ? 16 : 14,
+                y: isInputFocused ? 2 : isBarHovering ? 5 : 4
             )
     }
 
@@ -154,12 +182,12 @@ private struct ChatSendButton: View {
         Button(action: action) {
             Image(systemName: "arrow.up")
                 .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(OrtusTheme.onAccent)
                 .frame(width: 28, height: 28)
                 .background(
                     Circle().fill(
                         canSend
-                            ? (isHovering ? OrtusTheme.accentHover : OrtusTheme.accent)
+                            ? (isHovering ? OrtusTheme.accentInkHover : OrtusTheme.accentInk)
                             : Color.secondary.opacity(0.22)
                     )
                 )
@@ -176,7 +204,7 @@ private struct ChatSendButton: View {
                 )
                 .scaleEffect(canSend && isHovering ? 1.08 : 1.0)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(OrtusPressableStyle(highlight: false))
         .disabled(!canSend)
         .help("Send message")
         .animation(.easeOut(duration: 0.18), value: isHovering)
@@ -206,7 +234,7 @@ private struct ChatStopButton: View {
                 )
                 .scaleEffect(isHovering ? 1.08 : 1.0)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(OrtusPressableStyle(highlight: false))
         .help("Stop")
         .animation(.easeOut(duration: 0.18), value: isHovering)
         .onHover { isHovering = $0 }
@@ -230,7 +258,7 @@ private struct ThinkingPill: View {
                 }
                 Text("Thinking…")
                     .font(OrtusTheme.Typo.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(OrtusTheme.textMuted)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -266,11 +294,11 @@ private struct MessageRow: View {
                 Text(renderMarkdown(message.content))
                     .font(OrtusTheme.Typo.body)
                     .textSelection(.enabled)
-                    .foregroundStyle(message.role == .user ? .white : .primary)
+                    .foregroundStyle(message.role == .user ? OrtusTheme.onAccent : .primary)
 
                 Text(message.timestamp, style: .time)
                     .font(OrtusTheme.Typo.meta)
-                    .foregroundStyle(message.role == .user ? Color.white.opacity(0.7) : .secondary)
+                    .foregroundStyle(message.role == .user ? OrtusTheme.onAccent.opacity(0.8) : OrtusTheme.textMuted)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
@@ -292,7 +320,7 @@ private struct MessageRow: View {
 
     private var userBubbleBackground: some View {
         RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous)
-            .fill(OrtusTheme.accent)
+            .fill(OrtusTheme.accentInk)
             .overlay(
                 RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous)
                     .strokeBorder(OrtusTheme.innerHighlightStrong, lineWidth: 1)
@@ -315,7 +343,7 @@ private struct MessageRow: View {
                 .foregroundStyle(OrtusTheme.accent)
             Text(message.content)
                 .font(OrtusTheme.Typo.meta)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(OrtusTheme.textMuted)
                 .lineLimit(2)
                 .truncationMode(.tail)
             Spacer(minLength: 0)

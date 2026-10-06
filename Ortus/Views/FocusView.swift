@@ -1,31 +1,42 @@
 import SwiftUI
+import OrtusCore
 
 struct FocusView: View {
     @EnvironmentObject var focusManager: FocusManager
+    @AppStorage("genZMode") private var genZ = false
     @State private var manualDuration: Double = 60
-    @State private var isPulsing = false
 
     var body: some View {
-        VStack(spacing: OrtusTheme.spacingLG) {
-            if focusManager.isInFocus && focusManager.isInGracePeriod {
-                gracePeriodState
-            } else if focusManager.isInFocus {
-                activeFocusState
-            } else {
-                idleState
-            }
-
-            if !focusManager.isInFocus && !focusManager.isEmergencyEnded && !focusManager.schedules.isEmpty {
-                let activeSchedules = focusManager.schedules.filter(\.isEnabled)
-                if !activeSchedules.isEmpty {
-                    Text("\(activeSchedules.count) schedule\(activeSchedules.count == 1 ? "" : "s") active")
-                        .font(OrtusTheme.Typo.meta)
-                        .foregroundStyle(OrtusTheme.textMuted)
+        VStack(spacing: 0) {
+        ScrollView {
+            VStack(spacing: OrtusTheme.spacingLG) {
+                if !(focusManager.isInFocus ? focusManager.activeSelection : focusManager.manualSelection).websites.isEmpty,
+                   focusManager.websites.connectedBrowsers.isEmpty {
+                    OrtusGroup { BrowserStatusRow(service: focusManager.websites) }
+                }
+                if focusManager.isInFocus && focusManager.isInGracePeriod {
+                    gracePeriodState
+                } else if focusManager.isInFocus {
+                    activeFocusState
+                } else {
+                    idleState
                 }
             }
+            .padding(OrtusTheme.spacingMD)
         }
-        .padding(OrtusTheme.spacingMD)
-        .frame(maxHeight: .infinity, alignment: .center)
+            // The primary action stays pinned and visible, like "Add schedule".
+            if !focusManager.isInFocus {
+                Button {
+                    focusManager.startFocusSession(name: "Focus", duration: manualDuration * 60)
+                } label: {
+                    Text(genZ ? "lock in fr" : "Start focus").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(OrtusPrimaryButtonStyle())
+                .disabled(focusManager.manualSelection.isEmpty)
+                .padding(.horizontal, OrtusTheme.spacingMD)
+                .padding(.bottom, OrtusTheme.spacingSM)
+            }
+        }
     }
 
     // MARK: - Grace Period
@@ -54,16 +65,16 @@ struct FocusView: View {
                 }
             }
 
-            Text("Focus starting")
+            Text(genZ ? "locking in…" : "Focus starting")
                 .font(OrtusTheme.Typo.title)
 
-            Text("Forgot something? You can still go back.")
+            Text(genZ ? "forgot smth? you can still dip" : "Forgot something? You can still go back.")
                 .font(OrtusTheme.Typo.body)
                 .foregroundStyle(OrtusTheme.textMuted)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, OrtusTheme.spacingLG)
 
-            Button("Never mind") {
+            Button(genZ ? "nvm" : "Never mind") {
                 focusManager.revertFocusSession()
             }
             .buttonStyle(OrtusSecondaryButtonStyle())
@@ -84,16 +95,11 @@ struct FocusView: View {
             }
 
             VStack(spacing: OrtusTheme.spacingXS) {
-                Text("DEEP FOCUS")
-                    .font(OrtusTheme.Typo.section)
-                    .tracking(1.4)
-                    .foregroundStyle(OrtusTheme.textMuted)
-
-                if let name = focusManager.currentSessionName {
-                    Text(name)
-                        .font(OrtusTheme.Typo.bodyMedium)
-                        .foregroundStyle(.secondary)
-                }
+                Text(focusManager.currentSessionName ?? "Focus")
+                    .font(OrtusTheme.Typo.headline)
+                Text(focusManager.activeSelection.summary)
+                    .font(OrtusTheme.Typo.body).foregroundStyle(OrtusTheme.textMuted)
+                    .multilineTextAlignment(.center)
             }
 
             Button {
@@ -115,29 +121,24 @@ struct FocusView: View {
                 .buttonStyle(OrtusGhostButtonStyle())
             }
         }
-        .onAppear {
-            withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) {
-                isPulsing = true
-            }
-        }
     }
 
     private func timerHero(remaining: TimeInterval, progress: Double) -> some View {
         ZStack {
-            // Outer breathing aura
+            // Static glow: never start a repeating layout transaction as the menu panel opens.
             Circle()
                 .fill(
                     RadialGradient(
                         colors: [
-                            OrtusTheme.accentSoft.opacity(isPulsing ? 0.55 : 0.20),
+                            OrtusTheme.accentSoft.opacity(0.32),
                             .clear
                         ],
                         center: .center,
                         startRadius: 0,
-                        endRadius: 130
+                        endRadius: 110
                     )
                 )
-                .frame(width: 260, height: 260)
+                .frame(width: 220, height: 220)
                 .blur(radius: 10)
 
             // Glass disc — strong contrast against canvas
@@ -174,13 +175,17 @@ struct FocusView: View {
                     .tracking(-2)
                     .foregroundStyle(.primary)
                     .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .frame(width: 164)
             } else {
                 Text("Ending")
                     .font(OrtusTheme.Typo.hero)
                     .tracking(-2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(OrtusTheme.textMuted)
             }
         }
+        .frame(width: 220, height: 220)
     }
 
     private func totalSessionDuration(endingAt end: Date) -> TimeInterval {
@@ -193,7 +198,7 @@ struct FocusView: View {
     // MARK: - Idle
 
     private var idleState: some View {
-        VStack(spacing: OrtusTheme.spacingLG) {
+        VStack(spacing: OrtusTheme.spacingMD) {
             ZStack {
                 Circle()
                     .fill(
@@ -201,40 +206,33 @@ struct FocusView: View {
                             colors: [OrtusTheme.accentSoft.opacity(0.7), .clear],
                             center: .center,
                             startRadius: 0,
-                            endRadius: 70
+                            endRadius: 36
                         )
                     )
-                    .frame(width: 140, height: 140)
+                    .frame(width: 72, height: 72)
 
                 Image(systemName: "sunrise.fill")
-                    .font(.system(size: 58))
+                    .font(.system(size: 34))
                     .foregroundStyle(OrtusTheme.accent)
                     .symbolRenderingMode(.hierarchical)
             }
 
-            Text("Ready when you are")
+            Text(genZ ? "ready to lock in?" : "Ready when you are")
                 .font(OrtusTheme.Typo.title)
 
+            // How long and what to block: one decision, one card.
             VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
-                OrtusSectionHeader(title: "Duration")
-
                 OrtusDurationSlider(
                     minutes: $manualDuration,
                     range: 15...240,
                     ticks: [15, 30, 60, 90, 120, 180, 240],
                     step: 15
                 )
+                Rectangle().fill(OrtusTheme.hairline).frame(height: 1)
+                ModePicker(selection: $focusManager.manualSelection, boxed: false)
             }
             .ortusCard()
-            .padding(.horizontal, OrtusTheme.spacingLG)
 
-            Button("Begin focus") {
-                focusManager.startFocusSession(
-                    name: "Manual Focus",
-                    duration: manualDuration * 60
-                )
-            }
-            .buttonStyle(OrtusPrimaryButtonStyle())
         }
     }
 

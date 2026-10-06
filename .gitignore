@@ -1,6 +1,9 @@
 .build/
 .swiftpm/
 Ortus.app/
+Ortus Preview.app/
+Ortus Preview Browser/
+Ortus Browser/
 *.xcodeproj/xcuserdata/
 *.xcworkspace/xcuserdata/
 DerivedData/

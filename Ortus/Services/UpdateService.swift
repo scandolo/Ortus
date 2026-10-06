@@ -43,6 +43,7 @@ final class UpdateService: ObservableObject {
     /// Network hiccups stay silent (back to `.idle`) so a flaky connection never
     /// nags the user — we just try again on the next launch.
     func checkForUpdates() async {
+        guard Bundle.main.object(forInfoDictionaryKey: "OrtusPreviewBuild") as? Bool != true else { return }
         if case .downloading = state { return }
         if case .checking = state { return }
         state = .checking
@@ -74,6 +75,7 @@ final class UpdateService: ObservableObject {
     /// the bundle once we quit. Must not run during a focus session — quitting is
     /// trapped then, and the helper would wait forever for us to exit.
     func downloadAndInstall(isInFocus: Bool) async {
+        guard Bundle.main.object(forInfoDictionaryKey: "OrtusPreviewBuild") as? Bool != true else { return }
         guard case .available = state else { return }
         guard !isInFocus else {
             state = .failed("Finish your focus session before updating.")

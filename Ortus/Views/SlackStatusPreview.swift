@@ -44,7 +44,7 @@ struct SlackStatusPreview: View {
             Text("Slack preview")
                 .font(.system(size: 9, weight: .semibold))
                 .tracking(0.6)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(OrtusTheme.textMuted)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 3)
                 .background(

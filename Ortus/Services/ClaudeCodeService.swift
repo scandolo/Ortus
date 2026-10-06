@@ -8,11 +8,16 @@ import SwiftUI
 @MainActor
 final class ClaudeCodeService: ObservableObject {
     @Published var messages: [ChatMessage] = []
+    @Published var draftText = ""
     @Published var isProcessing = false
     @Published var error: String?
+    @Published private(set) var errorDetails: String?
+    @Published private(set) var failedPrompt: String?
 
     @AppStorage("claudeBinaryPath") var claudeBinaryPath = ""
 
+    @Published private(set) var canUndoClear = false
+    private var clearedConversation: (messages: [ChatMessage], sessionID: String, started: Bool)?
     private var sessionID = UUID().uuidString
     private var hasStartedSession = false
     private var currentProcess: Process?
@@ -127,30 +132,35 @@ final class ClaudeCodeService: ObservableObject {
 
     // MARK: - Public API
 
-    func sendMessage(_ text: String) {
+    func retryLastMessage() {
+        guard let prompt = failedPrompt, !isProcessing else { return }
+        sendMessage(prompt, isRetry: true)
+    }
+
+    func sendMessage(_ text: String, isRetry: Bool = false) {
         guard !isProcessing else { return }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         guard let binary = resolvedBinaryPath else {
-            messages.append(ChatMessage(
-                role: .assistant,
-                content: "Claude Code isn't installed at a known location. Install it (https://docs.claude.com/claude-code) or set its path in Settings.",
-                kind: .error
-            ))
+            failedPrompt = trimmed
+            recordFailure("Claude Code could not be found. Open assistant setup to connect your installation.")
             return
         }
 
-        messages.append(ChatMessage(role: .user, content: trimmed))
+        clearedConversation = nil; canUndoClear = false
+        if !isRetry { messages.append(ChatMessage(role: .user, content: trimmed)) }
         isProcessing = true
         error = nil
+        errorDetails = nil
+        failedPrompt = nil
 
         let session = sessionID
         let isFirstTurn = !hasStartedSession
-        hasStartedSession = true
         Analytics.capture("chat_message_sent", ["is_first_message": isFirstTurn])
 
         currentTask = Task { @MainActor in
             await runClaude(binary: binary, prompt: trimmed, sessionID: session, isFirstTurn: isFirstTurn)
+            if self.error != nil { self.failedPrompt = trimmed }
             self.isProcessing = false
             self.currentProcess = nil
             self.currentTask = nil
@@ -163,12 +173,23 @@ final class ClaudeCodeService: ObservableObject {
     }
 
     func clearConversation() {
+        guard !isProcessing else { return }
+        clearedConversation = (messages, sessionID, hasStartedSession)
+        canUndoClear = !messages.isEmpty
         stop()
         Analytics.capture("chat_cleared", ["message_count": messages.count])
         messages.removeAll()
         sessionID = UUID().uuidString
         hasStartedSession = false
         error = nil
+        errorDetails = nil
+        failedPrompt = nil
+    }
+
+    func undoClear() {
+        guard !isProcessing, messages.isEmpty, let previous = clearedConversation else { return }
+        messages = previous.messages; sessionID = previous.sessionID; hasStartedSession = previous.started
+        clearedConversation = nil; canUndoClear = false
     }
 
     // MARK: - Subprocess
@@ -188,10 +209,10 @@ final class ClaudeCodeService: ObservableObject {
             "-p", prompt,
             "--output-format", "stream-json",
             "--verbose",
-            "--model", "opus",
+            "--model", "claude-sonnet-5-5",
             "--effort", "low",
             "--append-system-prompt", Self.systemPrompt,
-            "--permission-mode", "bypassPermissions",
+            "--permission-mode", "default",
         ]
         if isFirstTurn {
             args.append(contentsOf: ["--session-id", sessionID])
@@ -205,13 +226,12 @@ final class ClaudeCodeService: ObservableObject {
         do {
             try process.run()
         } catch {
-            messages.append(ChatMessage(
-                role: .assistant,
-                content: "Failed to launch claude: \(error.localizedDescription)",
-                kind: .error
-            ))
+            recordFailure("Claude Code could not start. Check its location in assistant setup, then retry.", details: error.localizedDescription)
             return
         }
+
+        // Drain stderr concurrently so verbose errors cannot fill the pipe and stall Claude.
+        let stderrReader = Task.detached { stderr.fileHandleForReading.readDataToEndOfFile() }
 
         // Stream stdout line by line. Each line is a JSON event.
         do {
@@ -226,14 +246,20 @@ final class ClaudeCodeService: ObservableObject {
         // Drain whatever's left and wait for the process to finish.
         process.waitUntilExit()
 
-        if process.terminationStatus != 0 && !Task.isCancelled {
-            let stderrData = stderr.fileHandleForReading.readDataToEndOfFile()
+        let stderrData = await stderrReader.value
+        if process.terminationStatus != 0 && !Task.isCancelled && error == nil {
             let stderrText = String(data: stderrData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             let message = stderrText.isEmpty
                 ? "claude exited with status \(process.terminationStatus)."
                 : stderrText
-            messages.append(ChatMessage(role: .assistant, content: message, kind: .error))
+            recordFailure("Claude Code could not finish this request. Check your connection and Claude sign-in, then retry.", details: message)
         }
+    }
+
+    private func recordFailure(_ message: String, details: String? = nil) {
+        error = message
+        errorDetails = details
+        messages.append(ChatMessage(role: .assistant, content: message, kind: .error))
     }
 
     // MARK: - Stream parsing
@@ -245,6 +271,8 @@ final class ClaudeCodeService: ObservableObject {
               let type = obj["type"] as? String else { return }
 
         switch type {
+        case "system":
+            if obj["subtype"] as? String == "init" { hasStartedSession = true }
         case "assistant":
             guard let message = obj["message"] as? [String: Any],
                   let content = message["content"] as? [[String: Any]] else { return }
@@ -252,7 +280,7 @@ final class ClaudeCodeService: ObservableObject {
         case "result":
             if let isError = obj["is_error"] as? Bool, isError,
                let result = obj["result"] as? String, !result.isEmpty {
-                messages.append(ChatMessage(role: .assistant, content: result, kind: .error))
+                recordFailure("Claude Code could not finish this request. Check assistant setup or retry.", details: result)
             }
         default:
             break
@@ -318,18 +346,18 @@ final class ClaudeCodeService: ObservableObject {
     // MARK: - System prompt
 
     private static let systemPrompt = """
-    You are the AI assistant inside Ortus, a macOS focus app. The user is currently in Ortus mode \
-    (a deep-focus session) and Slack is blocked on their machine. They're using this chat to retrieve \
-    information from Slack or perform Slack actions without unblocking Slack.
+    You are the assistant inside Ortus, a macOS focus app. The user is in a focus session and the apps \
+    and websites that distract them (for example Slack, email, social media) are blocked. They use this \
+    chat to find information or get small tasks done without opening those apps.
 
     Guidelines:
-    - Use the Slack MCP (tools starting with `mcp__claude_ai_Slack__`) for all Slack operations.
-    - Do not use other MCPs or tools unless the user explicitly asks for them.
+    - Use whatever connected tools fit the request: Slack, email, calendar, documents, the web.
     - Be concise. Default to short answers. Skip preamble. Don't say "I'll help you with that," just do it.
-    - When summarizing messages, give the gist + sender + channel. Don't dump raw transcripts.
+    - When summarizing messages, give the gist, the sender and where it came from. Don't dump raw transcripts.
     - Resolve user IDs to display names before showing them.
-    - Before any mutating Slack action (send message, schedule message, edit canvas), confirm the target \
-      channel/user and the content with the user first.
+    - Before anything that changes something (sending a message or email, editing a document, accepting \
+      an invite), confirm the target and the content with the user first.
+    - Don't pull the user back into distraction: no feeds, no unrelated highlights. Answer what they asked.
     - Format for quick scanning. Short lists when helpful. No emoji unless the user uses them first.
     """
 }

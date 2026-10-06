@@ -40,6 +40,43 @@ in Slack without opening it, so you stay heads-down.
 > Willpower runs out. A locked session doesn't. Ortus holds the line so you can
 > stay in the work.
 
+## Website and app blocking (preview)
+
+This branch adds blocking for websites and Mac apps on top of Slack. It is not in
+the public release yet; build it locally:
+
+```bash
+./build.sh preview
+python3 scripts/install-preview.py
+open "/Applications/Ortus Preview.app"
+```
+
+**Modes.** A session blocks a mode: **Socials** (the default), **Messages** or
+**Everything**. Custom modes are optional: choose **Change → New custom mode** to pick
+websites and apps. Websites include their subdomains; Gmail blocks only mail, so
+other Google services stay available. Selected apps close when focus starts.
+
+**Browser.** Website blocking uses a small companion extension for Chrome, Arc, Edge
+or Brave. In Ortus, open **Settings → Website blocking → Set up** and follow the
+three steps (load the `/Applications/Ortus Preview Browser` folder as an unpacked
+extension). Repeat for each browser profile; Safari and Firefox are not covered.
+Reload the extension once after installing a new build.
+
+**How it fits together.** `Sources/OrtusCore` holds the shared model (targets,
+schedules, sessions, browser policy). The app publishes a short-lived policy;
+`OrtusBrowserBridge` (a Native Messaging host) passes it to the extension, which
+redirects blocked sites to a local page and clears its rules within 20 seconds if
+Ortus stops updating them. No browsing data is sent to Ortus.
+
+**Checks**
+
+```bash
+swift run OrtusCoreChecks                       # core model
+node --test BrowserExtension/tests/*.test.js    # extension logic
+bash scripts/test-app-blocking.sh               # app blocking with a fixture app
+python3 scripts/test-browser.py                 # end to end in headless Chromium (needs Playwright)
+```
+
 ## Install
 
 ### One-line install (recommended)
@@ -99,28 +136,41 @@ a `MenuBarExtra` with `.window` style (a popover panel) and no dock icon
 
 ```
 Ortus/
-├── Package.swift              # SPM config, macOS 14+, single executable target
-├── build.sh                   # Build script: kills instances, builds, bundles Ortus.app
+├── Package.swift              # SPM config, macOS 14+: app, OrtusCore, bridge, core checks
+├── build.sh                   # Builds and bundles Ortus.app (debug, release, preview)
 ├── landing/                   # The marketing site (ortus.up.railway.app), served by Caddy
+├── BrowserExtension/          # Chromium companion: blocking rules, blocked page, popup
+├── Sources/
+│   ├── OrtusCore/             # Shared model: targets, modes, schedules, sessions, browser policy
+│   └── OrtusBrowserBridge/    # Native Messaging host between the app and the extension
+├── Tests/OrtusCoreTests/      # Core checks (run with Command Line Tools only)
+├── scripts/                   # Preview installer and app/browser integration tests
 └── Ortus/
     ├── OrtusApp.swift         # @main entry, MenuBarExtra scene, quit-blocking AppDelegate
-    ├── Models/                # ChatMessage, FocusSchedule + ScheduleStore, Slack API types
+    ├── Models/                # ChatMessage, emoji catalog, Slack API types
     ├── Services/
-    │   ├── FocusManager.swift # Core logic: focus state, Slack kill/monitor, schedules, emergency end
-    │   ├── ClaudeService.swift# Claude API client with an agentic tool-use loop
+    │   ├── FocusManager.swift # Sessions, modes, schedules, emergency end
+    │   ├── ApplicationBlocker.swift    # Closes and watches blocked Mac apps
+    │   ├── WebsiteBlockingService.swift# Publishes the browser policy, browser setup
+    │   ├── ClaudeCodeService.swift     # Chat via the local Claude Code CLI
     │   ├── SlackService.swift # Slack Web API client
     │   ├── SlackOAuthService.swift # OAuth flow via a loopback HTTP server
     │   ├── KeychainService.swift   # macOS Keychain wrapper for secrets
+    │   ├── UpdateService.swift     # Release updates
     │   └── Analytics.swift    # Thin PostHog wrapper (anonymous usage events)
     ├── Views/
-    │   ├── OrtusTheme.swift   # Design system: sunrise-amber accent, glass materials, tokens
-    │   ├── ContentView.swift  # Tab container (Focus, Schedule, Chat, Settings)
-    │   ├── FocusView.swift    # Timer, start button, grace period (no end button)
+    │   ├── OrtusTheme.swift   # Design tokens and button styles (shared with extension/landing)
+    │   ├── OrtusComponents.swift   # Rows, groups, modals, pressable style, flow layout
+    │   ├── BrandGlyph.swift   # Monochrome site marks and the floating mode cluster
+    │   ├── ContentView.swift  # Tab container (Focus, Schedule, Chat, Settings) and modals
+    │   ├── FocusView.swift    # Timer, duration and mode card, grace period
+    │   ├── OrtusDurationSlider.swift   # The sunrise duration slider
+    │   ├── BlockingTargetsEditor.swift # Mode picker, mode builder, browser setup
     │   ├── ScheduleView.swift # Recurring schedules with inline editing
-    │   ├── ChatView.swift     # AI chat with Claude
-    │   └── SettingsView.swift # API keys, Slack OAuth, preferences, emergency end
-    └── Tools/
-        └── SlackTools.swift   # Tool definitions for Claude's tool-use
+    │   ├── ChatView.swift     # Chat with Claude Code
+    │   └── SettingsView.swift # Connections, Slack status, general, Slack setup
+    └── Debug/
+        └── SnapshotHarness.swift   # Debug-only offscreen renders of every panel state
 ```
 
 ### Key design decisions

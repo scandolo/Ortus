@@ -1,0 +1,82 @@
+/* Mirrors OrtusTheme (Ortus/Views/OrtusTheme.swift): warm cream canvas with a sunrise
+   glow, white cards, SF type, capsule buttons. Bright amber is decorative only; text
+   and filled buttons use the deeper accent-ink so they stay readable. */
+:root {
+  color-scheme: light dark;
+  --canvas: #f5efe8; --card: #fff; --ink: #1f1c18; --muted: #66615c;
+  --accent: #e07327; --accent-ink: #ae4e16; --accent-ink-hover: #96420f; --on-accent: #fff;
+  --hairline: rgb(0 0 0 / .08); --glow: rgb(224 115 39 / .18); --shadow: rgb(0 0 0 / .12);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #1a1a1c; --card: #292929; --ink: #f2eee8; --muted: #b8b3a8;
+    --accent: #fa9f47; --accent-ink: #fa9f47; --accent-ink-hover: #ffb76a; --on-accent: #281b10;
+    --hairline: rgb(255 255 255 / .08); --glow: rgb(250 159 71 / .24); --shadow: rgb(0 0 0 / .4);
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; color: var(--ink);
+  font: 13px/1.45 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  background: linear-gradient(to bottom, var(--glow), color-mix(in srgb, var(--glow) 30%, transparent) 25%, transparent 50%) no-repeat, var(--canvas);
+  min-height: 100vh;
+}
+h1 { font-size: 22px; line-height: 1.25; font-weight: 700; margin: 0 0 6px; }
+p { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
+p:empty { display: none; }
+[hidden] { display: none !important; }
+
+.mark { display: block; fill: none; stroke: var(--accent); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.mark .disc { fill: var(--accent); stroke: none; opacity: .75; }
+
+button {
+  font: 600 14px/1 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  border: 0; border-radius: 999px; padding: 12px 24px; cursor: pointer;
+  color: var(--on-accent); background: var(--accent-ink);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+button { transition: background-color .15s ease-out, transform .12s ease-out, box-shadow .15s ease-out; }
+button:hover { background: var(--accent-ink-hover); box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 38%, transparent); }
+button:active { transform: scale(.96); box-shadow: 0 1px 4px color-mix(in srgb, var(--accent) 30%, transparent); }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+/* Blocked page */
+.blocked { display: grid; place-items: center; padding: 32px 20px;
+  background: radial-gradient(ellipse 60% 55% at 50% 38%, var(--glow), transparent 70%), var(--canvas); }
+.blocked main { max-width: 600px; text-align: center; }
+.emblem { width: 140px; height: 140px; margin: 0 auto 16px; display: grid; place-items: center; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%); }
+.emblem .mark { width: 68px; height: 68px; overflow: visible; }
+.emblem { cursor: pointer; user-select: none; transition: transform .18s ease-out; }
+.emblem:hover { transform: scale(1.05); }
+.emblem:active { transform: scale(.96); }
+/* Click the mark: the sun rises, the arrow lifts, the rays and glow brighten. */
+.emblem.rise { animation: glow 1.3s ease-out; }
+.emblem.rise .disc { animation: sunrise 1.3s cubic-bezier(.2,.8,.2,1); transform-box: view-box; transform-origin: 24px 35px; }
+.emblem.rise .ray { animation: rays 1.3s cubic-bezier(.2,.8,.2,1); transform-box: view-box; transform-origin: 24px 35px; }
+.emblem.rise .arrow { animation: lift 1.3s cubic-bezier(.2,.8,.2,1); }
+@keyframes sunrise { 0% { transform: none; } 30% { transform: translateY(-6px) scale(1.18); opacity: 1; } 65% { transform: translateY(-2px) scale(1.04); } 100% { transform: none; } }
+@keyframes rays { 0% { transform: none; opacity: 1; } 30% { transform: scale(1.3); opacity: .55; } 65% { transform: scale(1.06); opacity: 1; } 100% { transform: none; } }
+@keyframes lift { 0% { transform: none; } 25% { transform: translateY(-7px); } 55% { transform: translateY(1px); } 100% { transform: none; } }
+@keyframes glow { 0% { filter: none; } 30% { filter: drop-shadow(0 0 22px color-mix(in srgb, var(--accent) 65%, transparent)); } 100% { filter: none; } }
+.blocked h1 { font-size: clamp(28px, 4.4vw, 44px); letter-spacing: -.6px; margin-bottom: 10px; }
+.blocked p { font-size: 17px; }
+.blocked button { margin-top: 28px; font-size: 15px; padding: 14px 28px; }
+
+/* Popup */
+.popup { width: 300px; min-height: 0; }
+.popup main { padding: 20px; }
+.brand { display: flex; align-items: center; gap: 6px; font-weight: 600; margin-bottom: 16px; }
+.brand .mark { width: 20px; height: 20px; stroke-width: 3; }
+.sites { list-style: none; margin: 16px 0 0; padding: 4px 14px; background: var(--card); border: 1px solid var(--hairline);
+  border-radius: 12px; box-shadow: 0 2px 6px var(--shadow); }
+.sites li { display: flex; align-items: center; gap: 10px; padding: 9px 0; font-weight: 500; }
+.sites .glyph { width: 16px; height: 16px; flex: none; color: var(--ink); }
+.sites .glyph svg { display: block; width: 16px; height: 16px; }
+.sites .glyph:empty { background: no-repeat center/14px url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%2366615c" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>'); }
+.sites .name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.sites li + li { border-top: 1px solid var(--hairline); }
+.sites time { color: var(--muted); font-weight: 400; white-space: nowrap; }
+.popup button { width: 100%; margin-top: 16px; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
