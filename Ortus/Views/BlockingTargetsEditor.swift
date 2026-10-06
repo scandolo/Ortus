@@ -11,6 +11,8 @@ struct ModePicker: View {
     @EnvironmentObject var focusManager: FocusManager
     @EnvironmentObject var router: PanelRouter
     @Binding var selection: BlockSelection
+    /// False when the picker sits inside another card.
+    var boxed = true
     @State private var expanded = false
     @Environment(\.snapshotState) private var snapshotState
 
@@ -22,7 +24,8 @@ struct ModePicker: View {
                 HStack(spacing: 12) {
                     ModeGlyphs(selection: selection)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(current?.name ?? "Custom").font(OrtusTheme.Typo.bodyMedium)
+                        (Text("Block mode  ").foregroundColor(OrtusTheme.textMuted) + Text(current?.name ?? "Custom"))
+                            .font(OrtusTheme.Typo.bodyMedium)
                         Text(selection.summary).font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted).lineLimit(1)
                     }
                     Spacer(minLength: 8)
@@ -45,7 +48,7 @@ struct ModePicker: View {
                 .padding(.top, OrtusTheme.spacingSM)
             }
         }
-        .ortusCard()
+        .modifier(BoxedCard(boxed: boxed))
         .onAppear { if snapshotState == "modes" { expanded = true } }
     }
 
@@ -72,6 +75,13 @@ struct ModePicker: View {
 
     private func edit(_ mode: FocusMode) {
         router.modal = .modeEditor(mode) { saved in selection = saved.blocked }
+    }
+}
+
+private struct BoxedCard: ViewModifier {
+    let boxed: Bool
+    func body(content: Content) -> some View {
+        if boxed { content.ortusCard() } else { content }
     }
 }
 

@@ -3,6 +3,7 @@ import SwiftUI
 struct ChatView: View {
     @EnvironmentObject var claudeCodeService: ClaudeCodeService
     @State private var inputText = ""
+    @AppStorage("genZMode") private var genZ = false
     @FocusState private var isInputFocused: Bool
     @State private var isBarHovering = false
 
@@ -32,8 +33,8 @@ struct ChatView: View {
         VStack(spacing: OrtusTheme.spacingMD) {
             Spacer()
             Image(systemName: "sparkles").font(.system(size: 40, weight: .light)).foregroundStyle(OrtusTheme.accent)
-            Text("Stay in focus, still get answers").font(OrtusTheme.Typo.title).multilineTextAlignment(.center)
-            Text("Look something up, catch up on messages or get a task done, without opening the apps you’ve set aside.")
+            Text(genZ ? "stay locked in, still in the loop" : "Stay in focus, still get answers").font(OrtusTheme.Typo.title).multilineTextAlignment(.center)
+            Text(genZ ? "ask me whatever so you don’t doomscroll your inbox. no cap." : "Look something up, catch up on messages or get a task done, without opening the apps you’ve set aside.")
                 .font(OrtusTheme.Typo.body).foregroundStyle(OrtusTheme.textMuted)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, OrtusTheme.spacingLG)
@@ -110,9 +111,10 @@ struct ChatView: View {
                 .disabled(claudeCodeService.isProcessing)
             }
 
-            TextField("Ask anything…", text: $inputText)
+            TextField("", text: $inputText, prompt: Text(genZ ? "spill…" : "What do you need?").foregroundStyle(OrtusTheme.textMuted))
                 .textFieldStyle(.plain)
                 .font(OrtusTheme.Typo.body)
+                .padding(.vertical, 6)
                 .focused($isInputFocused)
                 .onSubmit { sendMessage() }
                 .disabled(!claudeCodeService.isConfigured || claudeCodeService.isProcessing)
@@ -127,6 +129,9 @@ struct ChatView: View {
         .padding(.trailing, 6)
         .padding(.vertical, 6)
         .background(inputBarBackground)
+        // The whole capsule is the field: clicks on its padding focus the text box.
+        .contentShape(Capsule())
+        .onTapGesture { isInputFocused = true }
         .onHover { isBarHovering = $0 }
         .padding(.horizontal, OrtusTheme.spacingMD)
         .padding(.bottom, OrtusTheme.spacingSM)

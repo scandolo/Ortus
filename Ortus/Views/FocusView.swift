@@ -3,6 +3,7 @@ import OrtusCore
 
 struct FocusView: View {
     @EnvironmentObject var focusManager: FocusManager
+    @AppStorage("genZMode") private var genZ = false
     @State private var manualDuration: Double = 60
 
     var body: some View {
@@ -28,7 +29,7 @@ struct FocusView: View {
                 Button {
                     focusManager.startFocusSession(name: "Focus", duration: manualDuration * 60)
                 } label: {
-                    Text("Begin \(Int(manualDuration)) min focus").frame(maxWidth: .infinity)
+                    Text(genZ ? "lock in fr" : "Lock in").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(OrtusPrimaryButtonStyle())
                 .disabled(focusManager.manualSelection.isEmpty)
@@ -64,16 +65,16 @@ struct FocusView: View {
                 }
             }
 
-            Text("Focus starting")
+            Text(genZ ? "locking in…" : "Focus starting")
                 .font(OrtusTheme.Typo.title)
 
-            Text("Forgot something? You can still go back.")
+            Text(genZ ? "forgot smth? you can still dip" : "Forgot something? You can still go back.")
                 .font(OrtusTheme.Typo.body)
                 .foregroundStyle(OrtusTheme.textMuted)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, OrtusTheme.spacingLG)
 
-            Button("Never mind") {
+            Button(genZ ? "nvm" : "Never mind") {
                 focusManager.revertFocusSession()
             }
             .buttonStyle(OrtusSecondaryButtonStyle())
@@ -216,9 +217,10 @@ struct FocusView: View {
                     .symbolRenderingMode(.hierarchical)
             }
 
-            Text("Ready when you are")
+            Text(genZ ? "ready to lock in?" : "Ready when you are")
                 .font(OrtusTheme.Typo.title)
 
+            // How long and what to block: one decision, one card.
             VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
                 OrtusDurationSlider(
                     minutes: $manualDuration,
@@ -226,10 +228,10 @@ struct FocusView: View {
                     ticks: [15, 30, 60, 90, 120, 180, 240],
                     step: 15
                 )
+                Rectangle().fill(OrtusTheme.hairline).frame(height: 1)
+                ModePicker(selection: $focusManager.manualSelection, boxed: false)
             }
             .ortusCard()
-
-            ModePicker(selection: $focusManager.manualSelection)
 
         }
     }

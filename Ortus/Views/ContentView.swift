@@ -44,8 +44,6 @@ struct ContentView: View {
         .frame(width: size.width, height: size.height)
         .background(VibrantBackground())
         .overlay { modal }
-        // The menu panel's geometry never participates in content animations.
-        .transaction { $0.animation = nil }
         .onAppear {
             claudeCodeService.detectIfNeeded()
             Task { await updateService.checkForUpdates() }

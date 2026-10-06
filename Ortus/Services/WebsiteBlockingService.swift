@@ -34,7 +34,8 @@ final class WebsiteBlockingService: ObservableObject {
     func publish(sessions: [FocusSession], now: Date = Date()) {
         do {
             try BrowserPaths.prepare(directory)
-            try BrowserPaths.write(BrowserPolicy(sessions: sessions, now: now, appearance: BuildProfile.appearance, appName: BuildProfile.name), to: directory.appendingPathComponent("policy.json"))
+            try BrowserPaths.write(BrowserPolicy(sessions: sessions, now: now, appearance: BuildProfile.appearance, appName: BuildProfile.name,
+                                                    tone: UserDefaults.standard.bool(forKey: "genZMode") ? "genz" : nil), to: directory.appendingPathComponent("policy.json"))
             error = nil
         } catch { self.error = "Website rules could not be saved: \(error.localizedDescription)" }
         refreshConnections(now: now)

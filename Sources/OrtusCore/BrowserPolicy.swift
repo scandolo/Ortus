@@ -14,8 +14,10 @@ public struct BrowserPolicy: Codable, Equatable, Sendable {
     public var appearance: String?
     public var appName: String?
     public var browserName: String?
-    public init(sessions: [FocusSession], now: Date, appearance: String? = nil, appName: String? = nil) {
-        self.appearance = appearance; self.appName = appName
+    /// Copy style for the blocked page: nil for standard, "genz" for the easter egg.
+    public var tone: String?
+    public init(sessions: [FocusSession], now: Date, appearance: String? = nil, appName: String? = nil, tone: String? = nil) {
+        self.appearance = appearance; self.appName = appName; self.tone = tone
         generatedAt = now.timeIntervalSince1970
         heartbeatExpiresAt = generatedAt + 20
         var expirations: [String: Double] = [:]

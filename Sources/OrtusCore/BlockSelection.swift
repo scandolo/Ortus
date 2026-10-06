@@ -132,7 +132,7 @@ public struct FocusMode: Codable, Equatable, Identifiable, Sendable {
     }
     public var isBuiltIn: Bool { Self.builtIn.contains { $0.id == id } }
 
-    public static let social = Self(id: "social", name: "Social", blocked: .union(BlockingPreset.social.map(\.selection)))
+    public static let social = Self(id: "social", name: "Socials", blocked: .union(BlockingPreset.social.map(\.selection)))
     public static let messages = Self(id: "messages", name: "Messages", blocked: .union(BlockingPreset.messages.map(\.selection)))
     public static let everything = Self(id: "everything", name: "Everything", blocked: .union(BlockingPreset.all.map(\.selection)))
     /// `social` is the default for new sessions.
