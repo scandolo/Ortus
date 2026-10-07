@@ -53,6 +53,9 @@ struct ModalScrollingChecks {
                 let frame = scroll.convert(scroll.bounds, to: hosting)
                 precondition(hosting.bounds.contains(frame), "Modal scroll area must stay inside the panel after adding/removing targets")
                 let overflow = document.bounds.height - scroll.documentVisibleRect.height
+                if count == 1 && overflow <= 0 {
+                    precondition(frame.maxY < hosting.bounds.maxY - OrtusTheme.spacingMD - 1, "Short modals must stay compact instead of filling the panel")
+                }
                 if count >= 6 {
                     precondition(overflow > 0, "Long target lists must overflow the scroll viewport")
                     scrollWheel(scroll, delta: -10_000)

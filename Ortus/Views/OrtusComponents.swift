@@ -22,6 +22,7 @@ struct OrtusModal<Content: View>: View {
     let title: String
     let onClose: () -> Void
     @ViewBuilder var content: Content
+    @State private var contentHeight: CGFloat?
 
     var body: some View {
         ZStack {
@@ -42,7 +43,9 @@ struct OrtusModal<Content: View>: View {
                     content
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding([.horizontal, .bottom], OrtusTheme.spacingMD)
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
                 }
+                .frame(maxHeight: contentHeight)
             }
             .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).fill(OrtusTheme.cardSurface))
             .overlay(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).strokeBorder(OrtusTheme.hairline, lineWidth: 1))
