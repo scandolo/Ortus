@@ -4,7 +4,7 @@ import OrtusCore
 struct FocusView: View {
     @EnvironmentObject var focusManager: FocusManager
     @AppStorage("genZMode") private var genZ = false
-    @State private var manualDuration: Double = 60
+    @State private var manualDuration: Double = 90
 
     var body: some View {
         VStack(spacing: 0) {
