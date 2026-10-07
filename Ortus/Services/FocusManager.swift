@@ -150,6 +150,11 @@ final class FocusManager: ObservableObject {
         completionMessage = "Focus cancelled. Your apps and websites are available."
         Analytics.capture("focus_reverted")
     }
+    func skipGracePeriod() {
+        guard isInGracePeriod else { return }
+        timeline.skipGracePeriod()
+        refresh(forcePublish: true)
+    }
     func endFocusSession() {
         timeline.endEarly(at: Date())
         refresh(forcePublish: true)

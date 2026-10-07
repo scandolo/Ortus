@@ -39,6 +39,11 @@ public struct FocusTimeline: Codable, Equatable, Sendable {
     public mutating func revertManual(at now: Date) {
         sessions.removeAll { $0.scheduleID == nil && ($0.graceEnd.map { now < $0 } ?? false) }
     }
+    public mutating func skipGracePeriod() {
+        for index in sessions.indices where sessions[index].scheduleID == nil {
+            sessions[index].graceEnd = nil
+        }
+    }
     public mutating func endEarly(at now: Date) {
         suppressedUntil = end
         sessions.removeAll()

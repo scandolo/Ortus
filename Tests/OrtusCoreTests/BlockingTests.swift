@@ -95,6 +95,24 @@ struct BlockingTests {
         expect(timeline.sessions.count == 1)
     }
 
+    func skippingGraceLocksManualSessionWithoutChangingFocus() throws {
+        let now = date("2026-10-05T10:00:00Z")
+        let scheduled = FocusSession(scheduleID: UUID(), name: "Scheduled", start: now,
+                                     end: now.addingTimeInterval(7200), blocked: .init(websites: ["linkedin.com"]))
+        var timeline = FocusTimeline(sessions: [scheduled])
+        timeline.beginManual(at: now, duration: 3600, blocked: .slackOnly)
+        var expected = timeline.sessions[1]
+        expect(expected.graceEnd == now.addingTimeInterval(30))
+        expected.graceEnd = nil
+        timeline.skipGracePeriod()
+        expect(timeline.sessions == [scheduled, expected])
+        timeline.revertManual(at: now.addingTimeInterval(5))
+        expect(timeline.sessions == [scheduled, expected])
+        timeline = try JSONDecoder().decode(FocusTimeline.self, from: JSONEncoder().encode(timeline))
+        timeline.revertManual(at: now.addingTimeInterval(10))
+        expect(timeline.sessions == [scheduled, expected])
+    }
+
     func restartAndEmergencySuppressionPreserveFocusState() throws {
         let now = date("2026-10-05T10:00:00Z")
         let schedule = FocusSchedule(days: [.monday])
@@ -216,6 +234,7 @@ struct CoreChecks {
         try checks.recoversDefaultScheduleIdentityFromEarlyPreview()
         try checks.overlappingSchedulesExpireIndependently()
         checks.manualSessionCombinesWithScheduleAndGraceOnlyCancelsManual()
+        try checks.skippingGraceLocksManualSessionWithoutChangingFocus()
         try checks.restartAndEmergencySuppressionPreserveFocusState()
         checks.browserRulesUseLongestMatchingSessionAndCrashLease()
         checks.selectionDeduplicatesAndKeepsEscapeToolsAvailable()
@@ -224,6 +243,6 @@ struct CoreChecks {
         checks.presetEditingPreservesUnrelatedTargets()
         checks.partialPresetsDescribeActualCoverage()
         checks.builtInModesAreNamedAndRecognised()
-        print("PASS: 14 Ortus core checks (validation, migration, stable default identity, schedules, overlap, recovery, browser lease, framing, modes)")
+        print("PASS: 15 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, framing, modes)")
     }
 }
