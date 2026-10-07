@@ -26,7 +26,7 @@ const glyphs = {
   Telegram: svg('<circle cx="50" cy="50" r="44" stroke="none" mask="url(#o-tg)"/><path d="M41 53 69 33" fill="none" stroke-width="4"/>',
     '<mask id="o-tg"><rect width="100" height="100" fill="#fff"/><path d="M20 46 80 22 68 78 50 60 40 70V53Z" fill="#000" stroke="none"/></mask>'),
 };
-// Website aliases match BrandGlyph.websiteID in the app; no policy data enters SVG markup.
+// Additional website aliases match the app; no policy data enters SVG markup.
 const websiteNames = { 'youtube.com':'YouTube', 'youtu.be':'YouTube', 'twitch.tv':'Twitch', 'netflix.com':'Netflix',
   'spotify.com':'Spotify', 'discord.com':'Discord', 'discord.gg':'Discord', 'telegram.org':'Telegram', 't.me':'Telegram' };
 export function glyph(name) {
