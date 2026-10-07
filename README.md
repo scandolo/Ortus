@@ -74,6 +74,7 @@ Ortus stops updating them. No browsing data is sent to Ortus.
 swift run OrtusCoreChecks                       # core model
 node --test BrowserExtension/tests/*.test.js    # extension logic
 bash scripts/test-app-blocking.sh               # app blocking with a fixture app
+bash scripts/test-modal-scrolling.sh            # compact and scrollable panel modals
 python3 scripts/test-browser.py                 # end to end in headless Chromium (needs Playwright)
 ```
 

@@ -196,7 +196,7 @@ struct ScheduleInlineEditor: View {
             }
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: OrtusTheme.spacingSM) {
-                ForEach(Weekday.allCases) { day in
+                ForEach([Weekday.monday, .tuesday, .wednesday, .thursday, .friday, .saturday, .sunday]) { day in
                     DayToggleButton(day: day, isSelected: schedule.days.contains(day)) {
                         if schedule.days.contains(day) {
                             schedule.days.remove(day)
