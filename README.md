@@ -40,10 +40,10 @@ in Slack without opening it, so you stay heads-down.
 > Willpower runs out. A locked session doesn't. Ortus holds the line so you can
 > stay in the work.
 
-## Website and app blocking (preview)
+## Website and app blocking
 
-This branch adds blocking for websites and Mac apps on top of Slack. It is not in
-the public release yet; build it locally:
+Since 1.1.0, Ortus blocks websites and Mac apps on top of Slack. To try unreleased
+changes, build a preview that installs next to the release:
 
 ```bash
 ./build.sh preview
@@ -58,8 +58,9 @@ other Google services stay available. Selected apps close when focus starts.
 
 **Browser.** Website blocking uses a small companion extension for Chrome, Arc, Edge
 or Brave. In Ortus, open **Settings → Website blocking → Set up** and follow the
-three steps (load the `/Applications/Ortus Preview Browser` folder as an unpacked
-extension). Repeat for each browser profile; Safari and Firefox are not covered.
+three steps (load the `/Applications/Ortus Browser` folder, or `Ortus Preview Browser`
+for a preview build, as an unpacked extension). Repeat for each browser profile;
+Safari and Firefox are not covered.
 Reload the extension once after installing a new build.
 
 **How it fits together.** `Sources/OrtusCore` holds the shared model (targets,
