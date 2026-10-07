@@ -74,10 +74,18 @@ struct FocusView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, OrtusTheme.spacingLG)
 
-            Button(genZ ? "nvm" : "Never mind") {
-                focusManager.revertFocusSession()
+            HStack(spacing: OrtusTheme.spacingMD) {
+                Button(genZ ? "nvm" : "Never mind") {
+                    focusManager.revertFocusSession()
+                }
+                .buttonStyle(OrtusPrimaryButtonStyle())
+
+                Button("Skip and focus") {
+                    focusManager.skipGracePeriod()
+                }
+                .buttonStyle(OrtusSecondaryButtonStyle())
+                .help("End the cancellation window and lock in this session now")
             }
-            .buttonStyle(OrtusSecondaryButtonStyle())
         }
     }
 
