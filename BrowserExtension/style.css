@@ -68,7 +68,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .popup main { padding: 20px; }
 .brand { display: flex; align-items: center; gap: 6px; font-weight: 600; margin-bottom: 16px; }
 .brand .mark { width: 20px; height: 20px; stroke-width: 3; }
-.sites { list-style: none; margin: 16px 0 0; padding: 4px 14px; background: var(--card); border: 1px solid var(--hairline);
+.popup h2 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 16px 0 8px; }
+.sites { list-style: none; margin: 0; padding: 4px 14px; background: var(--card); border: 1px solid var(--hairline);
   border-radius: 12px; box-shadow: 0 2px 6px var(--shadow); }
 .sites li { display: flex; align-items: center; gap: 10px; padding: 9px 0; font-weight: 500; }
 .sites .glyph { width: 16px; height: 16px; flex: none; color: var(--ink); }

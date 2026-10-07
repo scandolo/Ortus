@@ -2,6 +2,7 @@ import { effectiveRules, siteGroups, connectionMessage } from './core.js';
 import { glyph } from './glyphs.js';
 const title = document.querySelector('#title');
 const status = document.querySelector('#status');
+const blockedSites = document.querySelector('#blocked-sites');
 const list = document.querySelector('#sites');
 const reconnect = document.querySelector('#reconnect');
 const setText = (node, text) => { if (node.textContent !== text) node.textContent = text; };
@@ -30,7 +31,7 @@ async function render() {
     }));
     list.dataset.signature = signature;
   }
-  list.hidden = !groups.length;
+  blockedSites.hidden = !groups.length;
   reconnect.hidden = connected;
 }
 reconnect.addEventListener('click', () => { chrome.runtime.sendMessage({ type:'reconnect' }); setText(status, 'Checking the connection…'); });
