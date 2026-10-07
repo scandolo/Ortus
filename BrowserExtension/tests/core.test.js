@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { effectiveRules, matchingRule, networkRules, originalURL, validDomain, siteGroups, connectionMessage } from '../core.js';
+import { glyph } from '../glyphs.js';
 
 const policy = { schemaVersion: 1, generatedAt: 100, heartbeatExpiresAt: 120, rules: [{ domain: 'linkedin.com', expiresAt: 150 }] };
 test('rules expire on either the session deadline or the app heartbeat', () => {
@@ -47,4 +48,19 @@ test('transport errors become actionable recovery instructions', () => {
   assert.ok(message.includes('Website blocking'));
   assert.ok(!message.includes('native messaging'));
   assert.ok(connectionMessage('Access forbidden').includes('profile'));
+});
+
+test('custom website glyphs recognize services, subdomains and aliases without lookalike matches', () => {
+  for (const [name, domain] of [['YouTube','youtube.com'], ['Twitch','twitch.tv'], ['Netflix','netflix.com'],
+    ['Spotify','spotify.com'], ['Discord','discord.com'], ['Telegram','telegram.org']]) {
+    assert.ok(glyph(name).startsWith('<svg'));
+    assert.equal(glyph('www.' + domain), glyph(name));
+    assert.equal(glyph(domain.toUpperCase() + '.'), glyph(name));
+    assert.equal(glyph('not' + domain), '');
+    assert.equal(glyph(domain + '.example.com'), '');
+  }
+  assert.equal(glyph('youtu.be'), glyph('YouTube'));
+  assert.equal(glyph('discord.gg'), glyph('Discord'));
+  assert.equal(glyph('t.me'), glyph('Telegram'));
+  for (const unknown of ['example.com', 'constructor', '__proto__', null]) assert.equal(glyph(unknown), '');
 });
