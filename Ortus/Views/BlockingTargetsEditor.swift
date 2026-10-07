@@ -57,14 +57,17 @@ struct ModePicker: View {
 
     private func modeRow(_ mode: FocusMode) -> some View {
         let isCurrent = mode.blocked == selection
+        let select = {
+            selection = mode.blocked
+            withAnimation(.easeOut(duration: 0.18)) { expanded = false }
+        }
         return HStack(spacing: 10) {
-            Button { selection = mode.blocked; withAnimation(.easeOut(duration: 0.18)) { expanded = false } } label: {
+            Button(action: select) {
                 HStack(spacing: 10) {
                     Image(systemName: isCurrent ? "checkmark.circle.fill" : "circle")
                         .foregroundStyle(isCurrent ? OrtusTheme.accentInk : OrtusTheme.textMuted)
                     Text(mode.name).font(OrtusTheme.Typo.body)
                     Spacer(minLength: 4)
-                    ModeGlyphs(selection: mode.blocked).scaleEffect(0.85)
                 }
                 .padding(.vertical, 5)
                 .contentShape(Rectangle())
@@ -73,6 +76,8 @@ struct ModePicker: View {
             if !mode.isBuiltIn {
                 Button("Edit") { edit(mode) }.buttonStyle(OrtusGhostButtonStyle())
             }
+            Button(action: select) { ModeGlyphs(selection: mode.blocked).scaleEffect(0.85) }
+                .buttonStyle(OrtusPressableStyle(inset: 4)).accessibilityHidden(true).focusable(false)
         }
     }
 
@@ -150,7 +155,7 @@ struct BlockingTargetsEditor: View {
                     OrtusGroupDivider()
                 }
                 ForEach(otherWebsites, id: \.self) { domain in
-                    targetRow(domain) { Image(systemName: "globe") } remove: { selection.websites.removeAll { $0 == domain } }
+                    targetRow(domain) { BrandGlyph(id: BrandGlyph.websiteID(for: domain) ?? "") } remove: { selection.websites.removeAll { $0 == domain } }
                     OrtusGroupDivider()
                 }
                 ForEach(otherApplications) { app in
@@ -223,7 +228,9 @@ struct BlockingTargetsEditor: View {
 
     private func appIcon(_ app: BlockedApplication) -> some View {
         Group {
-            if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleID) {
+            if let id = BrandGlyph.applicationID(for: app) {
+                BrandGlyph(id: id)
+            } else if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleID) {
                 Image(nsImage: NSWorkspace.shared.icon(forFile: url.path)).resizable().scaledToFit()
             } else {
                 Image(systemName: "macwindow")

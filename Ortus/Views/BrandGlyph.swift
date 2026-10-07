@@ -43,11 +43,37 @@ struct BrandGlyph: View {
     private static func lines(_ points: [(CGFloat, CGFloat)]) -> Path {
         var path = Path(); path.addLines(points.map { CGPoint(x: $0.0, y: $0.1) }); return path
     }
+    private static func polygon(_ points: [(CGFloat, CGFloat)]) -> Path {
+        var path = lines(points); path.closeSubpath(); return path
+    }
     private static func rounded(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, _ r: CGFloat) -> Path {
         Path(roundedRect: CGRect(x: x, y: y, width: w, height: h), cornerRadius: r, style: .continuous)
     }
     private static func circle(_ x: CGFloat, _ y: CGFloat, _ r: CGFloat) -> Path {
         Path(ellipseIn: CGRect(x: x - r, y: y - r, width: 2 * r, height: 2 * r))
+    }
+
+    private static let websiteIDs = [
+        "youtube.com": "youtube", "youtu.be": "youtube", "twitch.tv": "twitch",
+        "netflix.com": "netflix", "spotify.com": "spotify", "discord.com": "discord",
+        "discord.gg": "discord", "telegram.org": "telegram", "t.me": "telegram",
+    ]
+
+    static func websiteID(for domain: String) -> String? {
+        if let preset = BlockingPreset.all.first(where: { preset in
+            preset.selection.websites.contains { WebsiteDomain.matches(host: domain, domain: $0) }
+        }) { return preset.id }
+        return websiteIDs.first { WebsiteDomain.matches(host: domain, domain: $0.key) }?.value
+    }
+
+    static func applicationID(for app: BlockedApplication) -> String? {
+        if let preset = BlockingPreset.all.first(where: { $0.selection.applications.contains { $0.id == app.id } }) { return preset.id }
+        switch app.bundleID {
+        case "com.spotify.client": return "spotify"
+        case "com.hnc.Discord": return "discord"
+        case "ru.keepcoder.Telegram", "com.tdesktop.Telegram": return "telegram"
+        default: return nil
+        }
     }
 
     private static func parts(for id: String) -> [Part] {
@@ -106,6 +132,37 @@ struct BrandGlyph: View {
             handset.move(to: CGPoint(x: 0.38, y: 0.32))
             handset.addQuadCurve(to: CGPoint(x: 0.66, y: 0.62), control: CGPoint(x: 0.38, y: 0.6))
             return [Part(path: bubble, width: 0.08), Part(path: handset, width: 0.12)]
+        case "youtube":
+            return [Part(path: rounded(0.06, 0.2, 0.88, 0.6, 0.18)),
+                    Part(path: polygon([(0.42, 0.34), (0.7, 0.5), (0.42, 0.66)]), cut: true)]
+        case "twitch":
+            return [Part(path: polygon([(0.14, 0.06), (0.94, 0.06), (0.94, 0.64), (0.7, 0.88), (0.5, 0.88), (0.34, 1), (0.34, 0.88), (0.14, 0.88)])),
+                    Part(path: polygon([(0.26, 0.18), (0.82, 0.18), (0.82, 0.56), (0.65, 0.73), (0.48, 0.73), (0.36, 0.84), (0.36, 0.73), (0.26, 0.73)]), cut: true),
+                    Part(path: rounded(0.42, 0.3, 0.095, 0.25, 0)), Part(path: rounded(0.64, 0.3, 0.095, 0.25, 0))]
+        case "netflix":
+            return [Part(path: rounded(0.18, 0.06, 0.18, 0.88, 0)), Part(path: rounded(0.64, 0.06, 0.18, 0.88, 0)),
+                    Part(path: polygon([(0.18, 0.06), (0.39, 0.06), (0.82, 0.94), (0.61, 0.94)]))]
+        case "spotify":
+            var top = Path(); top.move(to: CGPoint(x: 0.25, y: 0.36)); top.addQuadCurve(to: CGPoint(x: 0.78, y: 0.39), control: CGPoint(x: 0.52, y: 0.23))
+            var middle = Path(); middle.move(to: CGPoint(x: 0.28, y: 0.51)); middle.addQuadCurve(to: CGPoint(x: 0.74, y: 0.54), control: CGPoint(x: 0.5, y: 0.4))
+            var bottom = Path(); bottom.move(to: CGPoint(x: 0.31, y: 0.65)); bottom.addQuadCurve(to: CGPoint(x: 0.69, y: 0.68), control: CGPoint(x: 0.5, y: 0.56))
+            return [Part(path: circle(0.5, 0.5, 0.44)), Part(path: top, width: 0.08, cut: true),
+                    Part(path: middle, width: 0.07, cut: true), Part(path: bottom, width: 0.06, cut: true)]
+        case "discord":
+            var controller = Path()
+            controller.move(to: CGPoint(x: 0.29, y: 0.19))
+            for point in [CGPoint(x: 0.41, y: 0.16), CGPoint(x: 0.44, y: 0.22), CGPoint(x: 0.56, y: 0.22), CGPoint(x: 0.59, y: 0.16), CGPoint(x: 0.71, y: 0.19)] { controller.addLine(to: point) }
+            controller.addCurve(to: CGPoint(x: 0.9, y: 0.75), control1: CGPoint(x: 0.82, y: 0.37), control2: CGPoint(x: 0.9, y: 0.59))
+            controller.addQuadCurve(to: CGPoint(x: 0.72, y: 0.84), control: CGPoint(x: 0.84, y: 0.81))
+            for point in [CGPoint(x: 0.68, y: 0.77), CGPoint(x: 0.32, y: 0.77), CGPoint(x: 0.28, y: 0.84)] { controller.addLine(to: point) }
+            controller.addQuadCurve(to: CGPoint(x: 0.1, y: 0.75), control: CGPoint(x: 0.16, y: 0.81))
+            controller.addCurve(to: CGPoint(x: 0.29, y: 0.19), control1: CGPoint(x: 0.1, y: 0.59), control2: CGPoint(x: 0.18, y: 0.37))
+            controller.closeSubpath()
+            return [Part(path: controller), Part(path: circle(0.36, 0.52, 0.07), cut: true), Part(path: circle(0.64, 0.52, 0.07), cut: true)]
+        case "telegram":
+            return [Part(path: circle(0.5, 0.5, 0.44)),
+                    Part(path: polygon([(0.2, 0.46), (0.8, 0.22), (0.68, 0.78), (0.5, 0.6), (0.4, 0.7), (0.4, 0.53)]), cut: true),
+                    Part(path: lines([(0.41, 0.53), (0.69, 0.33)]), width: 0.04)]
         default:
             return []
         }
@@ -119,8 +176,16 @@ struct ModeGlyphs: View {
     let selection: BlockSelection
     var cluster = false
 
+    static func identifiers(for selection: BlockSelection) -> [String] {
+        let presets = BlockingPreset.all.filter { selection.fullyContains($0) }.map(\.id)
+        let websites = selection.websites.compactMap { BrandGlyph.websiteID(for: $0) }
+        let applications = selection.applications.compactMap { BrandGlyph.applicationID(for: $0) }
+        var seen = Set<String>()
+        return Array((presets + websites + applications).filter { seen.insert($0).inserted }.prefix(3))
+    }
+
     var body: some View {
-        let ids = Array(BlockingPreset.all.filter { selection.fullyContains($0) }.map(\.id).prefix(3))
+        let ids = Self.identifiers(for: selection)
         Group {
             if ids.isEmpty {
                 Image(systemName: "square.dashed").font(.system(size: 13)).frame(width: 22, height: 22)
