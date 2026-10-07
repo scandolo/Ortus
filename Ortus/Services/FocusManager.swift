@@ -1,7 +1,7 @@
 import AppKit
 import Combine
 import SwiftUI
-import UserNotifications
+@preconcurrency import UserNotifications
 import OrtusCore
 
 @MainActor
