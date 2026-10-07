@@ -78,7 +78,7 @@ struct FocusView: View {
                 Button(genZ ? "nvm" : "Never mind") {
                     focusManager.revertFocusSession()
                 }
-                .buttonStyle(OrtusSecondaryButtonStyle())
+                .buttonStyle(OrtusPrimaryButtonStyle())
 
                 Button("Skip and focus") {
                     focusManager.skipGracePeriod()
