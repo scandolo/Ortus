@@ -43,7 +43,6 @@ struct OrtusModal<Content: View>: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding([.horizontal, .bottom], OrtusTheme.spacingMD)
                 }
-                .fixedSize(horizontal: false, vertical: true)
             }
             .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).fill(OrtusTheme.cardSurface))
             .overlay(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).strokeBorder(OrtusTheme.hairline, lineWidth: 1))
