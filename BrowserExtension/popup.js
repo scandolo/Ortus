@@ -3,6 +3,7 @@ import { glyph } from './glyphs.js';
 const title = document.querySelector('#title');
 const status = document.querySelector('#status');
 const blockedSites = document.querySelector('#blocked-sites');
+const sitesHeading = document.querySelector('#sites-heading');
 const list = document.querySelector('#sites');
 const reconnect = document.querySelector('#reconnect');
 const setText = (node, text) => { if (node.textContent !== text) node.textContent = text; };
@@ -21,16 +22,20 @@ async function render() {
   const signature = JSON.stringify(groups);
   if (list.dataset.signature !== signature) {
     list.replaceChildren(...groups.map(group => {
+      // A strip of muted marks reads as status, not as a list of buttons. Names live in the
+      // tooltip and in hidden text for screen readers.
       const row = document.createElement('li');
       const mark = document.createElement('span'); mark.className = 'glyph'; mark.innerHTML = glyph(group.name);
-      const name = document.createElement('span'); name.className = 'name'; name.textContent = group.name;
-      row.append(mark, name);
       // Only sites ending at a different time need their own time.
-      if (group.expiresAt !== end) { const time = document.createElement('time'); time.textContent = clock(group.expiresAt); row.append(time); }
+      const label = group.expiresAt === end ? group.name : `${group.name}, until ${clock(group.expiresAt)}`;
+      const name = document.createElement('span'); name.className = 'visually-hidden'; name.textContent = label;
+      row.title = label;
+      row.append(mark, name);
       return row;
     }));
     list.dataset.signature = signature;
   }
+  setText(sitesHeading, `${groups.length} ${groups.length === 1 ? 'site' : 'sites'} set aside`);
   blockedSites.hidden = !groups.length;
   reconnect.hidden = connected;
 }

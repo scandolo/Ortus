@@ -8,6 +8,7 @@ import OrtusCore
 enum PanelModal {
     case browserSetup
     case slackSetup
+    case chatIntro
     case modeEditor(FocusMode, onSave: (FocusMode) -> Void)
 }
 
@@ -47,9 +48,11 @@ struct OrtusModal<Content: View>: View {
                 }
                 .frame(maxHeight: contentHeight)
             }
-            .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).fill(OrtusTheme.cardSurface))
+            // Shadow on the surface only: on the whole stack it also falls from every child,
+            // greying the card around inner groups and text.
+            .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).fill(OrtusTheme.cardSurface)
+                .shadow(color: .black.opacity(0.22), radius: 24, y: 8))
             .overlay(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).strokeBorder(OrtusTheme.hairline, lineWidth: 1))
-            .shadow(color: .black.opacity(0.22), radius: 24, y: 8)
             .padding(OrtusTheme.spacingMD)
         }
     }

@@ -16,8 +16,6 @@ struct SettingsView: View {
     @State private var showSlackPreview = false
     @State private var taglineIndex = 0
     @AppStorage("genZMode") private var genZ = false
-    /// Easter egg: five taps on the sunrise in About reveal Gen Z mode.
-    @AppStorage("genZUnlocked") private var genZUnlocked = false
 
     /// Easter egg: tapping "Ortus" cycles through a few sunrise-themed lines.
     private let taglines = [
@@ -60,13 +58,11 @@ struct SettingsView: View {
                     } trailing: {
                         toggle($launchAtLogin)
                     }
-                    if genZUnlocked {
-                        OrtusGroupDivider()
-                        OrtusListRow(title: "Gen Z mode", subtitle: genZ ? "it’s giving focus" : "Rewrites Ortus in Gen Z") {
-                            Image(systemName: "sparkles")
-                        } trailing: {
-                            toggle($genZ)
-                        }
+                    OrtusGroupDivider()
+                    OrtusListRow(title: "Gen Z mode", subtitle: genZ ? "it’s giving focus" : "Rewrites Ortus in Gen Z") {
+                        Image(systemName: "sparkles")
+                    } trailing: {
+                        toggle($genZ)
                     }
                     if !BuildProfile.isPreview, let update = updateRow {
                         OrtusGroupDivider()
@@ -181,7 +177,6 @@ struct SettingsView: View {
                 .onTapGesture {
                     taglineIndex = (taglineIndex + 1) % taglines.count
                     versionTapCount += 1
-                    if versionTapCount == 5 { withAnimation { genZUnlocked = true } }
                     if versionTapCount >= 7 { focusManager.developerModeEnabled.toggle(); versionTapCount = 0 }
                 }
         } trailing: {

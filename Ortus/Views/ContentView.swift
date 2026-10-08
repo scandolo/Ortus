@@ -54,6 +54,7 @@ struct ContentView: View {
         switch router.modal {
         case .browserSetup: BrowserSetupModal(service: focusManager.websites)
         case .slackSetup: SlackSetupModal()
+        case .chatIntro: ChatIntroModal()
         case let .modeEditor(mode, onSave): ModeEditor(mode: mode, onSave: onSave)
         case nil: EmptyView()
         }

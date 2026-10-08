@@ -2,6 +2,9 @@ import SwiftUI
 
 struct ChatView: View {
     @EnvironmentObject var claudeCodeService: ClaudeCodeService
+    @EnvironmentObject var router: PanelRouter
+    @Environment(\.snapshotState) private var snapshotState
+    @AppStorage("didSeeChatIntro") private var didSeeChatIntro = false
     @State private var inputText = ""
     @AppStorage("genZMode") private var genZ = false
     @FocusState private var isInputFocused: Bool
@@ -22,6 +25,22 @@ struct ChatView: View {
             }
 
             inputBar
+        }
+        .onAppear {
+            if snapshotState == "chat-permission" {
+                claudeCodeService.messages = [
+                    ChatMessage(role: .user, content: "Did Haroun reply to my email from yesterday?"),
+                    ChatMessage(role: .assistant, content: "Gmail · search_threads: from:haroun newer_than:3d", kind: .toolUse(toolName: "mcp__claude_ai_Gmail__search_threads")),
+                    ChatMessage(role: .assistant, content: "I need your OK to search Gmail. Allow it below and I'll check."),
+                    ChatMessage(role: .assistant, content: "Gmail · search_threads", kind: .permissionRequest(toolName: "mcp__claude_ai_Gmail__search_threads")),
+                ]
+            }
+        }
+        // Chat works with no setup, so the first visit explains what it is instead.
+        .onChange(of: claudeCodeService.isConfigured, initial: true) {
+            if claudeCodeService.isConfigured, !didSeeChatIntro, snapshotState == nil, router.modal == nil {
+                router.modal = .chatIntro
+            }
         }
     }
 
@@ -124,6 +143,7 @@ struct ChatView: View {
         .padding(.leading, OrtusTheme.spacingMD)
         .padding(.trailing, 6)
         .padding(.vertical, 6)
+        .frame(minHeight: OrtusTheme.controlHeight)
         .background(inputBarBackground)
         // The whole capsule is the field: clicks on its padding focus the text box.
         .contentShape(Capsule())
@@ -273,6 +293,7 @@ private struct ThinkingPill: View {
 // MARK: - Message Row
 
 private struct MessageRow: View {
+    @EnvironmentObject var claudeCodeService: ClaudeCodeService
     let message: ChatMessage
 
     var body: some View {
@@ -283,6 +304,8 @@ private struct MessageRow: View {
             toolChip
         case .error:
             errorBubble
+        case .permissionRequest(let toolName):
+            permissionRow(toolName: toolName)
         }
     }
 
@@ -356,6 +379,29 @@ private struct MessageRow: View {
         .padding(.leading, 6)
     }
 
+    @ViewBuilder
+    private func permissionRow(toolName: String) -> some View {
+        if claudeCodeService.allowedTools.contains(toolName) {
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(OrtusTheme.accent)
+                Text("Allowed \(message.content)")
+                    .font(OrtusTheme.Typo.meta)
+                    .foregroundStyle(OrtusTheme.textMuted)
+            }
+            .padding(.leading, 16)
+        } else {
+            Button { claudeCodeService.allowTool(toolName) } label: {
+                Label("Allow \(message.content)", systemImage: "checkmark.shield")
+            }
+            .buttonStyle(OrtusSecondaryButtonStyle())
+            .disabled(claudeCodeService.isProcessing)
+            .help("Let Chat use this tool from now on, then retry")
+            .padding(.leading, 6)
+        }
+    }
+
     private var errorBubble: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
@@ -382,5 +428,45 @@ private struct MessageRow: View {
 
     private func renderMarkdown(_ text: String) -> AttributedString {
         (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
+    }
+}
+
+// MARK: - First-run intro
+
+/// Shown the first time Chat opens: what it is, what it uses, and that it asks before acting.
+struct ChatIntroModal: View {
+    @EnvironmentObject var router: PanelRouter
+    @AppStorage("didSeeChatIntro") private var didSeeChatIntro = false
+
+    var body: some View {
+        OrtusModal(title: "Chat while you focus", onClose: close) {
+            VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
+                Text("Ask about the apps Ortus blocks, without opening them.")
+                    .font(OrtusTheme.Typo.body).foregroundStyle(OrtusTheme.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+                OrtusGroup {
+                    OrtusListRow(title: "Runs on Claude Code", subtitle: "Already on this Mac, so there is nothing to set up.") {
+                        Image(systemName: "terminal")
+                    } trailing: { EmptyView() }
+                    OrtusGroupDivider()
+                    OrtusListRow(title: "Uses your connectors", subtitle: "Slack, Gmail, Calendar: whatever you connected to Claude.") {
+                        Image(systemName: "point.3.connected.trianglepath.dotted")
+                    } trailing: { EmptyView() }
+                    OrtusGroupDivider()
+                    OrtusListRow(title: "Asks before acting", subtitle: "It checks with you before it sends or changes anything.") {
+                        Image(systemName: "checkmark.shield")
+                    } trailing: { EmptyView() }
+                }
+                HStack {
+                    Spacer()
+                    Button("Get started", action: close).buttonStyle(OrtusPrimaryButtonStyle())
+                }
+            }
+        }
+    }
+
+    private func close() {
+        didSeeChatIntro = true
+        router.modal = nil
     }
 }

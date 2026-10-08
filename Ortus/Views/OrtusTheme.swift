@@ -161,6 +161,10 @@ enum OrtusTheme {
     static let spacingLG: CGFloat = 22
     static let spacingXL: CGFloat = 32
 
+    /// Height of the primary CTA (17pt line + 2×12 padding). Secondary buttons and the
+    /// chat bar match it so the pinned bottom actions line up across tabs.
+    static let controlHeight: CGFloat = 41
+
     // MARK: Corner Radii (continuous everywhere)
 
     static let radiusSM: CGFloat = 8
@@ -299,6 +303,7 @@ struct OrtusSecondaryButtonStyle: ButtonStyle {
             .foregroundStyle(.primary)
             .padding(.horizontal, 20)
             .padding(.vertical, 10)
+            .frame(minHeight: OrtusTheme.controlHeight)
             .background(Capsule().fill(OrtusTheme.cardSurface))
             .background(Capsule().fill(active ? Color.primary.opacity(0.06) : .clear))
             .overlay(
