@@ -8,6 +8,7 @@ import OrtusCore
 enum PanelModal {
     case browserSetup
     case slackSetup
+    case chatIntro
     case modeEditor(FocusMode, onSave: (FocusMode) -> Void)
 }
 

@@ -2,6 +2,9 @@ import SwiftUI
 
 struct ChatView: View {
     @EnvironmentObject var claudeCodeService: ClaudeCodeService
+    @EnvironmentObject var router: PanelRouter
+    @Environment(\.snapshotState) private var snapshotState
+    @AppStorage("didSeeChatIntro") private var didSeeChatIntro = false
     @State private var inputText = ""
     @AppStorage("genZMode") private var genZ = false
     @FocusState private var isInputFocused: Bool
@@ -22,6 +25,12 @@ struct ChatView: View {
             }
 
             inputBar
+        }
+        // Chat works with no setup, so the first visit explains what it is instead.
+        .onChange(of: claudeCodeService.isConfigured, initial: true) {
+            if claudeCodeService.isConfigured, !didSeeChatIntro, snapshotState == nil, router.modal == nil {
+                router.modal = .chatIntro
+            }
         }
     }
 
@@ -383,5 +392,45 @@ private struct MessageRow: View {
 
     private func renderMarkdown(_ text: String) -> AttributedString {
         (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
+    }
+}
+
+// MARK: - First-run intro
+
+/// Shown the first time Chat opens: what it is, what it uses, and that it asks before acting.
+struct ChatIntroModal: View {
+    @EnvironmentObject var router: PanelRouter
+    @AppStorage("didSeeChatIntro") private var didSeeChatIntro = false
+
+    var body: some View {
+        OrtusModal(title: "Chat while you focus", onClose: close) {
+            VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
+                Text("Ask about the apps Ortus blocks, without opening them.")
+                    .font(OrtusTheme.Typo.body).foregroundStyle(OrtusTheme.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+                OrtusGroup {
+                    OrtusListRow(title: "Runs on Claude Code", subtitle: "Already on this Mac, so there is nothing to set up.") {
+                        Image(systemName: "terminal")
+                    } trailing: { EmptyView() }
+                    OrtusGroupDivider()
+                    OrtusListRow(title: "Uses your connectors", subtitle: "Slack, Gmail, Calendar: whatever you connected to Claude.") {
+                        Image(systemName: "point.3.connected.trianglepath.dotted")
+                    } trailing: { EmptyView() }
+                    OrtusGroupDivider()
+                    OrtusListRow(title: "Asks before acting", subtitle: "It checks with you before it sends or changes anything.") {
+                        Image(systemName: "checkmark.shield")
+                    } trailing: { EmptyView() }
+                }
+                HStack {
+                    Spacer()
+                    Button("Get started", action: close).buttonStyle(OrtusPrimaryButtonStyle())
+                }
+            }
+        }
+    }
+
+    private func close() {
+        didSeeChatIntro = true
+        router.modal = nil
     }
 }
