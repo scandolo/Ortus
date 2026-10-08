@@ -69,15 +69,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .brand { display: flex; align-items: center; gap: 6px; font-weight: 600; margin-bottom: 16px; }
 .brand .mark { width: 20px; height: 20px; stroke-width: 3; }
 .popup h2 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 16px 0 8px; }
-.sites { list-style: none; margin: 0; padding: 4px 14px; background: var(--card); border: 1px solid var(--hairline);
-  border-radius: 12px; box-shadow: 0 2px 6px var(--shadow); }
-.sites li { display: flex; align-items: center; gap: 10px; padding: 9px 0; font-weight: 500; }
-.sites .glyph { width: 16px; height: 16px; flex: none; color: var(--ink); }
+.sites { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.sites li { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; cursor: default;
+  background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--muted); }
+.sites .glyph { width: 16px; height: 16px; }
 .sites .glyph svg { display: block; width: 16px; height: 16px; }
 .sites .glyph:empty { background: no-repeat center/14px url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%2366615c" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>'); }
-.sites .name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.sites li + li { border-top: 1px solid var(--hairline); }
-.sites time { color: var(--muted); font-weight: 400; white-space: nowrap; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .popup button { width: 100%; margin-top: 16px; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
