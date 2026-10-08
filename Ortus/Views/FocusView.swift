@@ -29,13 +29,23 @@ struct FocusView: View {
                 Button {
                     focusManager.startFocusSession(name: "Focus", duration: manualDuration * 60)
                 } label: {
-                    Text(genZ ? "lock in fr" : "Start focus").frame(maxWidth: .infinity)
+                    Text(startLabel).frame(maxWidth: .infinity)
                 }
                 .buttonStyle(OrtusPrimaryButtonStyle())
                 .disabled(focusManager.manualSelection.isEmpty)
                 .padding(.horizontal, OrtusTheme.spacingMD)
                 .padding(.bottom, OrtusTheme.spacingSM)
             }
+        }
+    }
+
+    /// The start button gets bolder as the session gets longer.
+    private var startLabel: String {
+        switch manualDuration {
+        case 180...: genZ ? "start winter arc" : "Enter monk mode"
+        case 90...: genZ ? "lock in fr fr" : "Go all in"
+        case 60...: genZ ? "lock in fr" : "Go deep"
+        default: genZ ? "lock in" : "Start focus"
         }
     }
 
