@@ -117,9 +117,12 @@ final class WebsiteBlockingService: ObservableObject {
             setupError = "Choose an installed supported browser: Arc, Chrome, Edge or Brave. Safari and Firefox are not supported."
             return
         }
-        NSWorkspace.shared.open([target], withApplicationAt: browser, configuration: .init()) { _, error in
+        let name = choice.name
+        // NSWorkspace calls this on a background queue. Without @Sendable, the Xcode 16 SDK
+        // makes the closure MainActor-isolated and Swift 6 traps on entry (v1.1.0 crash).
+        NSWorkspace.shared.open([target], withApplicationAt: browser, configuration: .init()) { @Sendable _, error in
             if error != nil {
-                Task { @MainActor in self.setupError = "Paste \(target.absoluteString) in \(choice.name), then choose Load unpacked." }
+                Task { @MainActor in self.setupError = "Paste \(target.absoluteString) in \(name), then choose Load unpacked." }
             }
         }
     }
