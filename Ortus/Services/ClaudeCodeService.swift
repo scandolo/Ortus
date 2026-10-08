@@ -16,6 +16,40 @@ final class ClaudeCodeService: ObservableObject {
 
     @AppStorage("claudeBinaryPath") var claudeBinaryPath = ""
 
+    /// Tools the user allowed from an inline "Allow" button, on top of `defaultAllowedTools`.
+    @Published private(set) var allowedTools: [String] = UserDefaults.standard.stringArray(forKey: ClaudeCodeService.allowedToolsKey) ?? []
+    private static let allowedToolsKey = "chatAllowedTools"
+
+    /// Basic reads that run without asking. `-p` mode can't show a permission prompt,
+    /// so any other tool is refused and comes back as an "Allow" button in the chat.
+    private static let defaultAllowedTools = [
+        "mcp__claude_ai_Gmail__search_threads",
+        "mcp__claude_ai_Gmail__get_thread",
+        "mcp__claude_ai_Gmail__get_message",
+        "mcp__claude_ai_Gmail__list_labels",
+        "mcp__claude_ai_Gmail__list_drafts",
+        "mcp__claude_ai_Gmail__get_draft",
+        "mcp__claude_ai_Google_Calendar__list_calendars",
+        "mcp__claude_ai_Google_Calendar__list_events",
+        "mcp__claude_ai_Google_Calendar__search_events",
+        "mcp__claude_ai_Google_Calendar__get_event",
+        "mcp__claude_ai_Google_Calendar__suggest_time",
+        "mcp__claude_ai_Google_Drive__search_files",
+        "mcp__claude_ai_Google_Drive__list_recent_files",
+        "mcp__claude_ai_Google_Drive__get_file_metadata",
+        "mcp__claude_ai_Google_Drive__read_file_content",
+        "mcp__claude_ai_Slack__slack_search_public",
+        "mcp__claude_ai_Slack__slack_search_public_and_private",
+        "mcp__claude_ai_Slack__slack_search_channels",
+        "mcp__claude_ai_Slack__slack_search_users",
+        "mcp__claude_ai_Slack__slack_read_channel",
+        "mcp__claude_ai_Slack__slack_read_thread",
+        "mcp__claude_ai_Slack__slack_read_user_profile",
+        "mcp__claude_ai_Notion__notion-search",
+        "mcp__claude_ai_Notion__notion-fetch",
+        "WebSearch",
+    ]
+
     @Published private(set) var canUndoClear = false
     private var clearedConversation: (messages: [ChatMessage], sessionID: String, started: Bool)?
     private var sessionID = UUID().uuidString
@@ -167,6 +201,17 @@ final class ClaudeCodeService: ObservableObject {
         }
     }
 
+    /// Remembers the tool and asks Claude to pick up where the refusal stopped it.
+    func allowTool(_ name: String) {
+        guard !isProcessing else { return }
+        if !allowedTools.contains(name) {
+            allowedTools.append(name)
+            UserDefaults.standard.set(allowedTools, forKey: Self.allowedToolsKey)
+        }
+        Analytics.capture("chat_tool_allowed", ["tool": name])
+        sendMessage("I allowed \(name). Try again.", isRetry: true)
+    }
+
     func stop() {
         currentProcess?.terminate()
         currentTask?.cancel()
@@ -213,6 +258,7 @@ final class ClaudeCodeService: ObservableObject {
             "--effort", "low",
             "--append-system-prompt", Self.systemPrompt,
             "--permission-mode", "default",
+            "--allowedTools", (Self.defaultAllowedTools + allowedTools).joined(separator: ","),
         ]
         if isFirstTurn {
             args.append(contentsOf: ["--session-id", sessionID])
@@ -282,6 +328,12 @@ final class ClaudeCodeService: ObservableObject {
                let result = obj["result"] as? String, !result.isEmpty {
                 recordFailure("Claude Code could not finish this request. Check assistant setup or retry.", details: result)
             }
+            // One "Allow" button per refused tool, even if Claude tried it several times.
+            let denied = (obj["permission_denials"] as? [[String: Any]] ?? []).compactMap { $0["tool_name"] as? String }
+            var seen = Set<String>()
+            for name in denied where seen.insert(name).inserted && !allowedTools.contains(name) {
+                messages.append(ChatMessage(role: .assistant, content: Self.displayName(for: name), kind: .permissionRequest(toolName: name)))
+            }
         default:
             break
         }
@@ -318,7 +370,20 @@ final class ClaudeCodeService: ObservableObject {
     }
 
     private func summarizeTool(name: String, input: [String: Any]?) -> String {
-        // Make tool names human-readable: mcp__claude_ai_Slack__slack_search_public → "Slack · slack_search_public"
+        let display = Self.displayName(for: name)
+        if let input, !input.isEmpty {
+            for key in ["query", "channel", "channel_id", "user", "user_id", "text", "name"] {
+                if let value = input[key] as? String, !value.isEmpty {
+                    let trimmed = value.count > 60 ? String(value.prefix(60)) + "…" : value
+                    return "\(display): \(trimmed)"
+                }
+            }
+        }
+        return display
+    }
+
+    /// Make tool names human-readable: mcp__claude_ai_Slack__slack_search_public → "Slack · slack_search_public"
+    private static func displayName(for name: String) -> String {
         var display = name
         if let prefixRange = display.range(of: "mcp__") {
             display = String(display[prefixRange.upperBound...])
@@ -329,15 +394,6 @@ final class ClaudeCodeService: ObservableObject {
                     .replacingOccurrences(of: "_", with: " ")
                 let tool = String(display[serverRange.upperBound...])
                 display = "\(server) · \(tool)"
-            }
-        }
-
-        if let input, !input.isEmpty {
-            for key in ["query", "channel", "channel_id", "user", "user_id", "text", "name"] {
-                if let value = input[key] as? String, !value.isEmpty {
-                    let trimmed = value.count > 60 ? String(value.prefix(60)) + "…" : value
-                    return "\(display): \(trimmed)"
-                }
             }
         }
         return display
@@ -358,6 +414,8 @@ final class ClaudeCodeService: ObservableObject {
     - Before anything that changes something (sending a message or email, editing a document, accepting \
       an invite), confirm the target and the content with the user first.
     - Don't pull the user back into distraction: no feeds, no unrelated highlights. Answer what they asked.
+    - If a tool is refused because the user hasn't allowed it yet, say so in one short line: they can \
+      allow it with the button under your reply. Don't send them to connector settings.
     - Format for quick scanning. Short lists when helpful. No emoji unless the user uses them first.
     """
 }

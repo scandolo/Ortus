@@ -10,6 +10,8 @@ enum ChatMessageKind: Equatable {
     case text
     case toolUse(toolName: String)
     case error
+    /// Claude was refused this tool; the row offers to allow it.
+    case permissionRequest(toolName: String)
 }
 
 struct ChatMessage: Identifiable, Equatable {

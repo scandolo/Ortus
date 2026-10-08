@@ -26,6 +26,16 @@ struct ChatView: View {
 
             inputBar
         }
+        .onAppear {
+            if snapshotState == "chat-permission" {
+                claudeCodeService.messages = [
+                    ChatMessage(role: .user, content: "Did Haroun reply to my email from yesterday?"),
+                    ChatMessage(role: .assistant, content: "Gmail · search_threads: from:haroun newer_than:3d", kind: .toolUse(toolName: "mcp__claude_ai_Gmail__search_threads")),
+                    ChatMessage(role: .assistant, content: "I need your OK to search Gmail. Allow it below and I'll check."),
+                    ChatMessage(role: .assistant, content: "Gmail · search_threads", kind: .permissionRequest(toolName: "mcp__claude_ai_Gmail__search_threads")),
+                ]
+            }
+        }
         // Chat works with no setup, so the first visit explains what it is instead.
         .onChange(of: claudeCodeService.isConfigured, initial: true) {
             if claudeCodeService.isConfigured, !didSeeChatIntro, snapshotState == nil, router.modal == nil {
@@ -283,6 +293,7 @@ private struct ThinkingPill: View {
 // MARK: - Message Row
 
 private struct MessageRow: View {
+    @EnvironmentObject var claudeCodeService: ClaudeCodeService
     let message: ChatMessage
 
     var body: some View {
@@ -293,6 +304,8 @@ private struct MessageRow: View {
             toolChip
         case .error:
             errorBubble
+        case .permissionRequest(let toolName):
+            permissionRow(toolName: toolName)
         }
     }
 
@@ -364,6 +377,29 @@ private struct MessageRow: View {
         .overlay(Capsule().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
         .clipShape(Capsule())
         .padding(.leading, 6)
+    }
+
+    @ViewBuilder
+    private func permissionRow(toolName: String) -> some View {
+        if claudeCodeService.allowedTools.contains(toolName) {
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(OrtusTheme.accent)
+                Text("Allowed \(message.content)")
+                    .font(OrtusTheme.Typo.meta)
+                    .foregroundStyle(OrtusTheme.textMuted)
+            }
+            .padding(.leading, 16)
+        } else {
+            Button { claudeCodeService.allowTool(toolName) } label: {
+                Label("Allow \(message.content)", systemImage: "checkmark.shield")
+            }
+            .buttonStyle(OrtusSecondaryButtonStyle())
+            .disabled(claudeCodeService.isProcessing)
+            .help("Let Chat use this tool from now on, then retry")
+            .padding(.leading, 6)
+        }
     }
 
     private var errorBubble: some View {
