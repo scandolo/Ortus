@@ -124,6 +124,7 @@ struct ChatView: View {
         .padding(.leading, OrtusTheme.spacingMD)
         .padding(.trailing, 6)
         .padding(.vertical, 6)
+        .frame(minHeight: OrtusTheme.controlHeight)
         .background(inputBarBackground)
         // The whole capsule is the field: clicks on its padding focus the text box.
         .contentShape(Capsule())
