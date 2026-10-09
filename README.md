@@ -111,8 +111,10 @@ Requires macOS 14+ and the Swift 6 toolchain (Xcode).
 
 ### AI chat (optional)
 
-To enable the AI Slack assistant, add a Claude API key and connect Slack via OAuth
-in **Settings**. Credentials are stored in the macOS Keychain.
+Chat uses your locally installed Claude Code and its existing sign-in and
+connectors. Ortus detects it automatically. Open **Settings → Chat → Configure…**
+to change its location or check again; leave the location empty to use automatic
+detection.
 
 ## How it works
 
@@ -125,9 +127,9 @@ in **Settings**. Credentials are stored in the macOS Keychain.
 
 ## Privacy
 
-Your Slack token and Claude API key are stored in the macOS Keychain and are only
-ever sent to Slack and Anthropic respectively. Ortus sends anonymous, aggregate
-usage events (via PostHog) to help improve the app. There are no accounts.
+Your Slack token is stored in the macOS Keychain and is only sent to Slack. Chat
+uses Claude Code's existing authentication. Ortus sends anonymous, aggregate
+usage events (via PostHog) to help improve the app. There are no Ortus accounts.
 
 ## Development
 
