@@ -140,6 +140,7 @@ a `MenuBarExtra` with `.window` style (a popover panel) and no dock icon
 ```
 Ortus/
 ├── Package.swift              # SPM config, macOS 14+: app, OrtusCore, bridge, core checks
+├── AGENTS.md                  # Release process and checks for coding agents (CLAUDE.md links here)
 ├── build.sh                   # Builds and bundles Ortus.app (debug, release, preview)
 ├── landing/                   # The marketing site (ortus.up.railway.app), served by Caddy
 ├── BrowserExtension/          # Chromium companion: blocking rules, blocked page, popup

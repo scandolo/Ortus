@@ -1,18 +1,33 @@
 name: Release
 
-# Ships a release on every push to main, gated by the version in Info.plist:
-# if no release exists yet for the current CFBundleShortVersionString, build and
-# publish it. So the flow is: bump the version → merge to main → release is
-# published automatically → existing users auto-update (UpdateService).
+# main = release. Every push to main that changes the app publishes a new
+# release, and existing users see it in Settings (UpdateService).
 #
-# Commits that don't bump the version don't republish, so a docs/readme commit
-# won't push an identical update to every user. To force a release on a given
-# commit, bump CFBundleShortVersionString in Ortus/Info.plist.
+# Versioning is automatic: the next version is the latest release with its patch
+# number bumped (1.1.0 → 1.1.1). For a minor or major release, set a higher
+# CFBundleShortVersionString in Ortus/Info.plist; it wins whenever it's ahead
+# of the latest release. The build number is the commit count, so it only grows.
+# The version is written into the CI checkout only; nothing is committed back.
+#
+# Pushes that only touch the landing page, docs or scripts don't release.
+# Run the workflow by hand to force a release.
 
 on:
   push:
     branches: [main]
+    paths:
+      - "Ortus/**"
+      - "Sources/**"
+      - "BrowserExtension/**"
+      - "Package.swift"
+      - "Package.resolved"
+      - "build.sh"
   workflow_dispatch:
+
+# Back-to-back merges queue up, so each one sees the release before it.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -24,6 +39,8 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history for the commit-count build number
 
       - name: Select Xcode 16 (Swift 6 toolchain)
         run: |
@@ -33,31 +50,31 @@ jobs:
           if [ -n "$XCODE" ]; then sudo xcode-select -s "$XCODE"; fi
           swift --version
 
-      - name: Read version from Info.plist
+      - name: Pick the next version
         id: ver
-        run: |
-          V=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Ortus/Info.plist)
-          echo "version=$V" >> "$GITHUB_OUTPUT"
-          echo "Version: $V"
-
-      - name: Check whether this version is already released
-        id: check
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view "v${{ steps.ver.outputs.version }}" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "Release v${{ steps.ver.outputs.version }} already exists — skipping."
+          PLIST=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Ortus/Info.plist)
+          LATEST=$(gh release view --json tagName --jq .tagName 2>/dev/null | sed 's/^v//' || true)
+          if [ -z "$LATEST" ]; then
+            V=$PLIST
+          elif [ "$(printf '%s\n%s\n' "$LATEST" "$PLIST" | sort -V | tail -1)" = "$PLIST" ] && [ "$PLIST" != "$LATEST" ]; then
+            V=$PLIST  # manual minor/major bump in Info.plist
           else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
+            IFS=. read -r MAJOR MINOR PATCH <<< "$LATEST"
+            V="$MAJOR.$MINOR.$((PATCH + 1))"
           fi
+          BUILD=$(git rev-list --count HEAD)
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $V" Ortus/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" Ortus/Info.plist
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Latest release: ${LATEST:-none} · Info.plist: $PLIST → releasing $V (build $BUILD)"
 
       - name: Build release (ad-hoc signed)
-        if: steps.check.outputs.exists == 'false'
         run: ORTUS_SIGNING_IDENTITY=- ./build.sh release
 
       - name: Publish GitHub release
-        if: steps.check.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
