@@ -190,11 +190,20 @@ struct SettingsView: View {
         switch updateService.state {
         case let .available(version):
             return AnyView(OrtusListRow(title: "Update available",
-                                        subtitle: focusManager.isInFocus ? "Version \(version) · installs after this session" : "Version \(version)") {
+                                        subtitle: !updateService.installsAfterFocus ? "Version \(version)"
+                                            : focusManager.isInFocus ? "Version \(version) · installs an hour after this session"
+                                            : "Version \(version) · installs within the hour") {
                 Image(systemName: "arrow.down.circle")
             } trailing: {
-                Button("Restart & update") { Task { await updateService.downloadAndInstall(isInFocus: focusManager.isInFocus) } }
-                    .buttonStyle(OrtusRowButtonStyle()).disabled(focusManager.isInFocus)
+                if focusManager.isInFocus && updateService.installsAfterFocus {
+                    EmptyView()
+                } else if focusManager.isInFocus {
+                    Button("Update after session") { updateService.installAfterFocus(focusManager) }
+                        .buttonStyle(OrtusRowButtonStyle())
+                } else {
+                    Button("Restart & update") { Task { await updateService.downloadAndInstall(isInFocus: false) } }
+                        .buttonStyle(OrtusRowButtonStyle())
+                }
             })
         case .downloading:
             return AnyView(OrtusListRow(title: "Updating", subtitle: "Ortus will restart") {
