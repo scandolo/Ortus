@@ -51,6 +51,9 @@ enum SnapshotHarness {
             await render("chat-permission", tab: 2, state: "chat-permission")
             await render("settings", tab: 3)
             await render("settings-dark", tab: 3, dark: true)
+            await render("chat-setup", tab: 3, state: "chat-setup")
+            await render("chat-setup-dark", tab: 3, state: "chat-setup", dark: true)
+            await render("chat-setup-small", tab: 3, height: 320, state: "chat-setup")
             await render("slack-setup", tab: 3, height: 760, state: "slack-setup")
             if !focusManager.isInFocus, ProcessInfo.processInfo.environment["ORTUS_SNAPSHOT_SESSION"] != nil {
                 focusManager.startFocusSession(name: "Focus", duration: 3600)

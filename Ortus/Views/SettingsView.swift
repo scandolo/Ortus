@@ -35,15 +35,6 @@ struct SettingsView: View {
                     slackRow
                     OrtusGroupDivider()
                     chatRow
-                    if !claudeCodeService.isConfigured {
-                        OrtusGroupDivider()
-                        OrtusListRow(title: "Claude Code location") {
-                            Image(systemName: "terminal")
-                        } trailing: {
-                            TextField("/opt/homebrew/bin/claude", text: $claudeCodeService.claudeBinaryPath)
-                                .textFieldStyle(.plain).font(OrtusTheme.Typo.body).frame(maxWidth: 170)
-                        }
-                    }
                 }
 
                 if slackOAuthService.isConnected { slackStatusSection }
@@ -109,12 +100,10 @@ struct SettingsView: View {
     }
 
     private var chatRow: some View {
-        OrtusListRow(title: "Chat", subtitle: claudeCodeService.isConfigured ? "Uses Claude Code" : "Needs Claude Code installed") {
+        OrtusListRow(title: "Chat", subtitle: claudeCodeService.isConfigured ? "Claude Code detected" : "Claude Code not found") {
             Image(systemName: "sparkles")
         } trailing: {
-            if !claudeCodeService.isConfigured {
-                Button("Check again") { claudeCodeService.redetect() }.buttonStyle(OrtusRowButtonStyle())
-            }
+            Button("Configure…") { router.modal = .chatSetup }.buttonStyle(OrtusRowButtonStyle())
         }
     }
 
@@ -217,6 +206,77 @@ struct SettingsView: View {
         }
         let actual = SMAppService.mainApp.status == .enabled
         if launchAtLogin != actual { launchAtLogin = actual }
+    }
+}
+
+// MARK: - Chat setup
+
+struct ChatSetupModal: View {
+    @EnvironmentObject var claudeCodeService: ClaudeCodeService
+    @EnvironmentObject var router: PanelRouter
+    @State private var binaryPath = ""
+    @State private var initialBinaryPath = ""
+    @State private var pathError: String?
+
+    var body: some View {
+        OrtusModal(title: "Chat setup", onClose: { router.modal = nil }) {
+            VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
+                Text(claudeCodeService.isConfigured ? "Claude Code detected on this Mac" : "Claude Code not found")
+                    .font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
+                VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
+                    Text("Claude Code location").font(OrtusTheme.Typo.bodyMedium)
+                    TextField(claudeCodeService.resolvedBinaryPath ?? "/opt/homebrew/bin/claude", text: $binaryPath)
+                        .textFieldStyle(OrtusTextFieldStyle())
+                        .accessibilityLabel("Claude Code location")
+                    Text("Leave empty to detect automatically.")
+                        .font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
+                }
+                if let pathError {
+                    Text(pathError).font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.danger)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if !claudeCodeService.isConfigured {
+                    Link("Install Claude Code", destination: URL(string: "https://docs.claude.com/claude-code")!)
+                        .font(OrtusTheme.Typo.body)
+                        .foregroundStyle(OrtusTheme.accentInk)
+                }
+                HStack {
+                    Button("Check again") { applyPath() }.buttonStyle(OrtusRowButtonStyle())
+                    Spacer()
+                    Button("Done") {
+                        if applyPath() { router.modal = nil }
+                    }
+                    .buttonStyle(OrtusPrimaryButtonStyle())
+                    .keyboardShortcut(.defaultAction)
+                }
+            }
+        }
+        .onAppear {
+            initialBinaryPath = claudeCodeService.claudeBinaryPath.isEmpty
+                ? claudeCodeService.resolvedBinaryPath ?? ""
+                : claudeCodeService.claudeBinaryPath
+            binaryPath = initialBinaryPath
+        }
+        .onChange(of: binaryPath) { _, _ in pathError = nil }
+    }
+
+    @discardableResult
+    private func applyPath() -> Bool {
+        let path = (binaryPath.trimmingCharacters(in: .whitespacesAndNewlines) as NSString).expandingTildeInPath
+        var isDirectory: ObjCBool = false
+        guard path.isEmpty || (path.hasPrefix("/")
+            && FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory)
+            && !isDirectory.boolValue && FileManager.default.isExecutableFile(atPath: path)) else {
+            pathError = "No executable found at this location. Check the path or clear it to detect automatically."
+            return false
+        }
+        if path != initialBinaryPath {
+            claudeCodeService.claudeBinaryPath = path
+            initialBinaryPath = path
+        }
+        binaryPath = path
+        claudeCodeService.redetect()
+        return true
     }
 }
 
