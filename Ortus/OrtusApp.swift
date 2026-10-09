@@ -82,6 +82,7 @@ struct OrtusApp: App {
             let modal: PanelModal? = switch state {
             case "browser-setup": .browserSetup
             case "slack-setup": .slackSetup
+            case "chat-setup": .chatSetup
             case "chat-intro": .chatIntro
             case "mode-editor": .modeEditor(FocusMode(name: focusManager.nextCustomModeName, blocked: focusManager.manualSelection)) { _ in }
             default: nil
