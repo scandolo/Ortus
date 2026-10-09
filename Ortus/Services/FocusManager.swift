@@ -126,6 +126,9 @@ final class FocusManager: ObservableObject {
         guard !activeScheduleIDs.contains(schedule.id) else { return }
         schedules.removeAll { $0.id == schedule.id }; ScheduleStore.save(schedules); refresh()
     }
+    func activeScheduleEndTime(for scheduleID: UUID) -> Date? {
+        timeline.sessions.first { $0.scheduleID == scheduleID }?.end
+    }
     private func acquireEngine() -> Bool {
         if engine.isHeld { return true }
         guard engine.acquire() else {

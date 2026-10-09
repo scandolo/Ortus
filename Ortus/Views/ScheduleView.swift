@@ -112,10 +112,16 @@ struct ScheduleRow: View {
                         .foregroundStyle(OrtusTheme.textMuted)
                         .monospacedDigit()
 
-                    Text((isLocked ? "Active now · " : "") + modeDescription)
-                        .font(OrtusTheme.Typo.caption)
-                        .foregroundStyle(isLocked ? OrtusTheme.accentInk : OrtusTheme.textMuted)
-                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: OrtusTheme.spacingXS) {
+                        if isLocked {
+                            Image(systemName: "lock.fill")
+                                .font(OrtusTheme.Typo.meta)
+                        }
+                        Text(isLocked ? "Active until \(activeEndTimeString) · \(modeDescription)" : modeDescription)
+                    }
+                    .font(OrtusTheme.Typo.caption)
+                    .foregroundStyle(OrtusTheme.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
@@ -133,10 +139,16 @@ struct ScheduleRow: View {
             .labelsHidden()
             .toggleStyle(.switch)
             .controlSize(.small)
-            .tint(OrtusTheme.accent)
+            .tint(isLocked ? OrtusTheme.textMuted : OrtusTheme.accent)
             .accessibilityLabel("\(schedule.name) enabled")
             .disabled(isLocked)
         }
+    }
+
+    private var activeEndTimeString: String {
+        guard let end = focusManager.activeScheduleEndTime(for: schedule.id) else { return schedule.endTimeString }
+        let time = Calendar.current.dateComponents([.hour, .minute], from: end)
+        return String(format: "%d:%02d", time.hour ?? schedule.endHour, time.minute ?? schedule.endMinute)
     }
 
     /// "Social" for a known mode, else the targets.
