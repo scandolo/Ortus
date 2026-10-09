@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import Combine
 
 /// Lightweight in-app updater. Mirrors the `install.sh` flow: ask the GitHub
 /// releases API for the latest version, and if it's newer than the running
@@ -23,6 +24,12 @@ final class UpdateService: ObservableObject {
     }
 
     @Published private(set) var state: UpdateState = .idle
+    /// The user asked to update during a focus session; it installs once focus is over.
+    @Published private(set) var installsAfterFocus = false
+    private var focusEndWatch: AnyCancellable?
+    /// How long to stay out of focus before a scheduled update restarts Ortus, so a
+    /// user who starts another session right away isn't interrupted.
+    static let delayAfterFocus: TimeInterval = 60 * 60
 
     static let repo = "scandolo/Ortus"
     private static let apiURL = "https://api.github.com/repos/\(repo)/releases/latest"
@@ -81,6 +88,8 @@ final class UpdateService: ObservableObject {
             state = .failed("Finish your focus session before updating.")
             return
         }
+        installsAfterFocus = false
+        focusEndWatch = nil
         state = .downloading
         Analytics.capture("update_install_started", ["to": availableVersion ?? "unknown"])
         let zip = Self.zipURL
@@ -93,6 +102,30 @@ final class UpdateService: ObservableObject {
         } catch {
             state = .failed(error.localizedDescription)
         }
+    }
+
+    /// Quitting is blocked during focus, so update once Ortus has been out of focus
+    /// for `delayAfterFocus`. Starting another session in that window restarts the wait.
+    func installAfterFocus(_ focusManager: FocusManager) {
+        guard case .available = state, !installsAfterFocus else { return }
+        installsAfterFocus = true
+        Analytics.capture("update_scheduled_after_focus", ["to": availableVersion ?? "unknown"])
+        focusEndWatch = focusManager.$isInFocus
+            .removeDuplicates()
+            .map { inFocus -> AnyPublisher<Void, Never> in
+                inFocus ? Empty().eraseToAnyPublisher()
+                    : Just(()).delay(for: .seconds(Self.delayAfterFocus), scheduler: RunLoop.main).eraseToAnyPublisher()
+            }
+            .switchToLatest()
+            .first()
+            .sink { [weak self] in
+                Task { @MainActor in
+                    guard let self else { return }
+                    self.installsAfterFocus = false
+                    self.focusEndWatch = nil
+                    await self.downloadAndInstall(isInFocus: focusManager.isInFocus)
+                }
+            }
     }
 
     // MARK: - Helpers
