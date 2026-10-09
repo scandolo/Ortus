@@ -112,12 +112,10 @@ struct FocusView: View {
                 }
             }
 
-            VStack(spacing: OrtusTheme.spacingXS) {
+            VStack(spacing: OrtusTheme.spacingSM) {
                 Text(focusManager.currentSessionName ?? "Focus")
                     .font(OrtusTheme.Typo.headline)
-                Text(focusManager.activeSelection.summary)
-                    .font(OrtusTheme.Typo.body).foregroundStyle(OrtusTheme.textMuted)
-                    .multilineTextAlignment(.center)
+                BlockedTags(selection: focusManager.activeSelection)
             }
 
             Button {
@@ -264,5 +262,58 @@ struct FocusView: View {
             return String(format: "%d:%02d:%02d", h, m, s)
         }
         return String(format: "%d:%02d", m, s)
+    }
+}
+
+// MARK: - Blocked tags
+
+/// What a focus session is blocking: brand mark plus name. Deliberately not
+/// button-shaped (flat, recessed, square-ish corners) so it never reads as an action.
+private struct BlockedTags: View {
+    let selection: BlockSelection
+
+    private struct Item: Identifiable { let id: String; let glyph: String; let name: String; let isApp: Bool }
+
+    /// One tag per preset the selection touches (Gmail, Slack), then one per other website or app.
+    private var items: [Item] {
+        var items: [Item] = []
+        var websites = selection.websites
+        var apps = selection.applications
+        for preset in BlockingPreset.all where selection.contains(preset) {
+            let name = preset.id == "slack" && !selection.fullyContains(preset)
+                ? (selection.blocksSlack ? "Slack app" : "Slack website") : preset.title
+            items.append(Item(id: preset.id, glyph: preset.id, name: name, isApp: false))
+            websites.removeAll { preset.selection.websites.contains($0) }
+            apps.removeAll { app in preset.selection.applications.contains { $0.id == app.id } }
+        }
+        items += websites.map { Item(id: $0, glyph: BrandGlyph.websiteID(for: $0) ?? "", name: $0, isApp: false) }
+        items += apps.map { Item(id: $0.id, glyph: BrandGlyph.applicationID(for: $0) ?? "", name: $0.name, isApp: true) }
+        return items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    var body: some View {
+        let items = items
+        FlowLayout(spacing: 6, centered: true) {
+            ForEach(items) { item in
+                HStack(spacing: 5) {
+                    glyph(item).opacity(0.75)
+                    Text(item.name).font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusSM / 2, style: .continuous).fill(Color.primary.opacity(0.05)))
+            }
+        }
+        .frame(maxWidth: 320)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Blocked: " + items.map(\.name).joined(separator: ", "))
+    }
+
+    @ViewBuilder private func glyph(_ item: Item) -> some View {
+        if item.glyph.isEmpty && item.isApp {
+            Image(systemName: "app").resizable().scaledToFit().frame(width: 12, height: 12).foregroundStyle(OrtusTheme.ink)
+        } else {
+            BrandGlyph(id: item.glyph, size: 12)
+        }
     }
 }
