@@ -42,6 +42,7 @@ struct OrtusApp: App {
     @StateObject private var slackOAuthService = SlackOAuthService()
     @StateObject private var updateService = UpdateService()
     @StateObject private var router = PanelRouter()
+    @StateObject private var menuBarClock = MenuBarClock()
 
     private var panel: some View { panel() }
 
@@ -66,12 +67,36 @@ struct OrtusApp: App {
         MenuBarExtra {
             panel
         } label: {
-            Image(systemName: focusManager.isInFocus ? "sunrise.fill" : "sunrise")
+            menuBarIcon
                 #if DEBUG
                 .onAppear(perform: openDebugWindowIfRequested)
                 #endif
         }
         .menuBarExtraStyle(.window)
+    }
+
+    /// During focus, the icon plus a countdown, like the system Clock timer.
+    @ViewBuilder private var menuBarIcon: some View {
+        if focusManager.isInFocus, let end = focusManager.focusEndTime {
+            Image(nsImage: Self.countdownImage(FocusView.formatDuration(max(0, end.timeIntervalSince(menuBarClock.now)))))
+        } else {
+            Image(systemName: focusManager.isInFocus ? "sunrise.fill" : "sunrise")
+        }
+    }
+
+    /// The menu bar drops font modifiers from a label's Text, so proportional digits
+    /// would nudge every item to its left each second. Render it as one template image
+    /// instead (the label shows only its first Image) to keep monospaced digits.
+    private static func countdownImage(_ time: String) -> NSImage {
+        let renderer = ImageRenderer(content: HStack(spacing: 4) {
+            Image(systemName: "sunrise.fill")
+            Text(time).monospacedDigit()
+        }.font(.system(size: NSFont.menuBarFont(ofSize: 0).pointSize)))
+        renderer.scale = NSScreen.main?.backingScaleFactor ?? 2
+        let image = renderer.nsImage ?? NSImage()
+        image.isTemplate = true
+        image.accessibilityDescription = "Ortus, \(time) left"
+        return image
     }
 
     #if DEBUG
@@ -97,4 +122,17 @@ struct OrtusApp: App {
         window.makeKeyAndOrderFront(nil)
     }
     #endif
+}
+
+/// Ticks once a second to redraw the menu bar countdown. TimelineView and
+/// Text(timerInterval:) don't update inside a MenuBarExtra label (they blank it).
+@MainActor final class MenuBarClock: ObservableObject {
+    @Published private(set) var now = Date()
+    private var timer: Timer?
+
+    init() {
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.now = Date() }
+        }
+    }
 }

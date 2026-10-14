@@ -186,7 +186,7 @@ struct FocusView: View {
 
             // Hero timer
             if remaining > 0 {
-                Text(formatDuration(remaining))
+                Text(Self.formatDuration(remaining))
                     .font(OrtusTheme.Typo.hero)
                     .tracking(-2)
                     .foregroundStyle(.primary)
@@ -254,7 +254,7 @@ struct FocusView: View {
 
     // MARK: - Helpers
 
-    private func formatDuration(_ seconds: TimeInterval) -> String {
+    static func formatDuration(_ seconds: TimeInterval) -> String {
         let h = Int(seconds) / 3600
         let m = (Int(seconds) % 3600) / 60
         let s = Int(seconds) % 60
