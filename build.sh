@@ -36,7 +36,8 @@ done
 if [[ "$IS_PREVIEW" == true ]]; then
     /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" "$APP/Contents/Info.plist"
     /usr/libexec/PlistBuddy -c "Set :CFBundleName ${APP_NAME%.app}" "$APP/Contents/Info.plist"
-    /usr/libexec/PlistBuddy -c 'Set :CFBundleShortVersionString 1.1.0-preview' "$APP/Contents/Info.plist"
+    # Settings shows this, so a preview says which commit it was built from and when.
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString preview $(git rev-parse --short HEAD) · $(date '+%b %-d %H:%M')" "$APP/Contents/Info.plist"
     /usr/libexec/PlistBuddy -c 'Add :OrtusPreviewBuild bool true' "$APP/Contents/Info.plist"
     /usr/libexec/PlistBuddy -c "Add :OrtusSourceCommit string $(git rev-parse --short HEAD)" "$APP/Contents/Info.plist"
     printf "export const NATIVE_HOST = 'com.ortus.browser.preview';\n" > "$APP/Contents/Resources/BrowserExtension/config.js"
