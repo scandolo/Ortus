@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { effectiveRules, matchingRule, networkRules, originalURL, validDomain, siteGroups, connectionMessage } from '../core.js';
+import { effectiveRules, matchingRule, networkRules, originalURL, validDomain, siteGroups, connectionMessage, offlineMessage } from '../core.js';
 import { glyph } from '../glyphs.js';
 
 const policy = { schemaVersion: 1, generatedAt: 100, heartbeatExpiresAt: 120, rules: [{ domain: 'linkedin.com', expiresAt: 150 }] };
@@ -48,6 +48,12 @@ test('transport errors become actionable recovery instructions', () => {
   assert.ok(message.includes('Website blocking'));
   assert.ok(!message.includes('native messaging'));
   assert.ok(connectionMessage('Access forbidden').includes('profile'));
+});
+test('a quiet app is named after the build this extension is paired with', () => {
+  assert.equal(offlineMessage('com.ortus.browser').title, 'Ortus isn’t running');
+  const preview = offlineMessage('com.ortus.browser.preview');
+  assert.equal(preview.title, 'Ortus Preview isn’t running');
+  assert.ok(preview.status.includes('Ortus Browser folder'));
 });
 
 test('custom website glyphs recognize services, subdomains and aliases without lookalike matches', () => {

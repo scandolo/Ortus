@@ -1,4 +1,5 @@
-import { effectiveRules, siteGroups, connectionMessage } from './core.js';
+import { effectiveRules, siteGroups, connectionMessage, offlineMessage } from './core.js';
+import { NATIVE_HOST } from './config.js';
 import { glyph } from './glyphs.js';
 const title = document.querySelector('#title');
 const status = document.querySelector('#status');
@@ -16,7 +17,7 @@ async function render() {
   const groups = connected && live ? siteGroups(effectiveRules(policy)) : [];
   const end = Math.max(0, ...groups.map(group => group.expiresAt));
   if (!connected) { setText(title, 'Not connected'); setText(status, connectionMessage(connection?.error)); }
-  else if (!live) { setText(title, 'Ortus isn’t running'); setText(status, 'Open Ortus to keep your focus sessions going.'); }
+  else if (!live) { const offline = offlineMessage(NATIVE_HOST); setText(title, offline.title); setText(status, offline.status); }
   else if (groups.length) { setText(title, 'Focus is on'); setText(status, `Until ${clock(end)}`); }
   else { setText(title, 'Ready when you are'); setText(status, 'Websites are blocked when a focus session starts.'); }
   const signature = JSON.stringify(groups);
