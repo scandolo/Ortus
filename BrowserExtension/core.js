@@ -56,3 +56,10 @@ export function connectionMessage(error) {
   if (/forbidden|not allowed|permission/i.test(error || '')) return 'Turn on the Ortus extension for this browser profile, then reconnect.';
   return 'Open Ortus, go to Settings → Website blocking, then reconnect.';
 }
+// The preview companion only talks to Ortus Preview. Name it, so a profile still loading
+// the preview folder doesn't read as "Ortus is down" while the release app runs.
+export function offlineMessage(host) {
+  if (host.endsWith('.preview')) return { title: 'Ortus Preview isn’t running',
+    status: 'This profile uses the preview extension. Open Ortus Preview, or load the Ortus Browser folder here instead.' };
+  return { title: 'Ortus isn’t running', status: 'Open Ortus to keep your focus sessions going.' };
+}
