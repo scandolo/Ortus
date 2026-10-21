@@ -18,19 +18,30 @@ case "$MODE" in
     *) echo "Usage: ./build.sh [debug|release|preview]" >&2; exit 1 ;;
 esac
 
-swift build -c "$CONFIG"
 STAGING=$(mktemp -d)
 trap 'rm -rf "$STAGING"' EXIT
+if [[ "$MODE" == release ]]; then
+    # Releases run on Apple silicon and Intel: build each architecture, then merge.
+    for ARCH in arm64 x86_64; do swift build -c release --triple "$ARCH-apple-macosx14.0"; done
+    BIN_DIR=".build/arm64-apple-macosx/release"
+    for EXECUTABLE in Ortus OrtusBrowserBridge; do
+        lipo -create -output "$STAGING/$EXECUTABLE" ".build/arm64-apple-macosx/release/$EXECUTABLE" ".build/x86_64-apple-macosx/release/$EXECUTABLE"
+    done
+else
+    swift build -c "$CONFIG"
+    BIN_DIR=$(swift build -c "$CONFIG" --show-bin-path)
+    cp "$BIN_DIR/Ortus" "$BIN_DIR/OrtusBrowserBridge" "$STAGING/"
+fi
 APP="$STAGING/$APP_NAME"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp ".build/$CONFIG/Ortus" "$APP/Contents/MacOS/Ortus"
-cp ".build/$CONFIG/OrtusBrowserBridge" "$APP/Contents/MacOS/OrtusBrowserBridge"
+mv "$STAGING/Ortus" "$APP/Contents/MacOS/Ortus"
+mv "$STAGING/OrtusBrowserBridge" "$APP/Contents/MacOS/OrtusBrowserBridge"
 chmod +x "$APP/Contents/MacOS/Ortus" "$APP/Contents/MacOS/OrtusBrowserBridge"
 cp Ortus/Info.plist "$APP/Contents/Info.plist"
 mkdir -p "$APP/Contents/Resources/BrowserExtension"
 cp BrowserExtension/*.js BrowserExtension/*.html BrowserExtension/*.css BrowserExtension/*.png BrowserExtension/manifest.json BrowserExtension/identity.json "$APP/Contents/Resources/BrowserExtension/"
 # SwiftPM resource bundles may be consulted by the app or a dependency at runtime.
-for RESOURCE in .build/"$CONFIG"/*.bundle; do
+for RESOURCE in "$BIN_DIR"/*.bundle; do
     [[ -d "$RESOURCE" ]] && cp -R "$RESOURCE" "$APP/Contents/Resources/"
 done
 if [[ "$IS_PREVIEW" == true ]]; then
