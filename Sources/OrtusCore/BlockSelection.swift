@@ -37,7 +37,7 @@ public struct BlockedApplication: Codable, Hashable, Identifiable, Sendable {
     public static let slack = Self(bundleID: "com.tinyspeck.slackmacgap", name: "Slack")
     public static let whatsApp = Self(bundleID: "net.whatsapp.WhatsApp", name: "WhatsApp")
     public static func isBlockable(_ id: String) -> Bool {
-        !id.hasPrefix("com.ortus.") && !["com.apple.finder", "com.apple.systempreferences", "com.apple.loginwindow"].contains(id)
+        !id.hasPrefix("com.ortus.") && !id.hasPrefix("com.ortusmode.") && !["com.apple.finder", "com.apple.systempreferences", "com.apple.loginwindow"].contains(id)
     }
 }
 

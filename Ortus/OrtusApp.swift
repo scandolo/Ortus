@@ -44,6 +44,24 @@ struct OrtusApp: App {
     @StateObject private var router = PanelRouter()
     @StateObject private var menuBarClock = MenuBarClock()
 
+    // Runs before the state objects above are created, so they read the copied preferences.
+    init() { Self.migrateLegacyPreferences() }
+
+    /// Bundle IDs moved from com.ortus.* to com.ortusmode.* before the public launch.
+    /// Preferences are stored per bundle ID, so copy the old ones over once.
+    private static func migrateLegacyPreferences() {
+        let defaults = UserDefaults.standard
+        let key = "didMigrateLegacyPreferences"
+        guard let id = Bundle.main.bundleIdentifier, !defaults.bool(forKey: key) else { return }
+        defaults.set(true, forKey: key)
+        let legacyID = id.replacingOccurrences(of: "com.ortusmode.", with: "com.ortus.")
+        guard legacyID != id, let legacy = defaults.persistentDomain(forName: legacyID) else { return }
+        // The login item belongs to the old app identity; let this one register itself.
+        for (name, value) in legacy where name != "didSetDefaultLoginItem" && defaults.object(forKey: name) == nil {
+            defaults.set(value, forKey: name)
+        }
+    }
+
     private var panel: some View { panel() }
 
     private func panel(tab: Int = 0, height: CGFloat? = nil, state: String? = nil, router: PanelRouter? = nil) -> some View {

@@ -8,12 +8,12 @@ SIGNING_IDENTITY="${ORTUS_SIGNING_IDENTITY:--}"
 MODE="${1:-debug}"
 CONFIG=debug
 APP_NAME="Ortus.app"
-BUNDLE_ID=com.ortus.app
+BUNDLE_ID=com.ortusmode.app
 URL_SCHEME=ortus
 IS_PREVIEW=false
 case "$MODE" in
     release) CONFIG=release ;;
-    preview) CONFIG=release; APP_NAME="Ortus Preview.app"; BUNDLE_ID=com.ortus.preview; URL_SCHEME=ortus-preview; IS_PREVIEW=true ;;
+    preview) CONFIG=release; APP_NAME="Ortus Preview.app"; BUNDLE_ID=com.ortusmode.preview; URL_SCHEME=ortus-preview; IS_PREVIEW=true ;;
     debug) ;;
     *) echo "Usage: ./build.sh [debug|release|preview]" >&2; exit 1 ;;
 esac
