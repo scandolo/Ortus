@@ -4,6 +4,7 @@ cd "$(dirname "$0")"
 
 # Local builds use ad-hoc signing: no keychain import, password, or trust dialog.
 # Website blocking uses a Native Messaging companion, not signature-bound TCC.
+# CI passes a Developer ID identity for releases (see .github/workflows/release.yml).
 SIGNING_IDENTITY="${ORTUS_SIGNING_IDENTITY:--}"
 MODE="${1:-debug}"
 CONFIG=debug
@@ -62,8 +63,12 @@ mkdir -p "$ICONSET"
 cp Ortus/Assets.xcassets/AppIcon.appiconset/icon_*.png "$ICONSET/"
 iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
 /usr/libexec/PlistBuddy -c 'Add :CFBundleIconFile string AppIcon' "$APP/Contents/Info.plist"
-codesign --force --sign "$SIGNING_IDENTITY" "$APP/Contents/MacOS/OrtusBrowserBridge"
-codesign --force --sign "$SIGNING_IDENTITY" --entitlements Ortus/Ortus.entitlements "$APP"
+SIGN=(codesign --force --sign "$SIGNING_IDENTITY")
+# Notarization requires the hardened runtime and a secure timestamp. Ad-hoc builds can't
+# be timestamped, and local builds don't need either.
+if [[ "$SIGNING_IDENTITY" != "-" ]]; then SIGN+=(--options runtime --timestamp); fi
+"${SIGN[@]}" "$APP/Contents/MacOS/OrtusBrowserBridge"
+"${SIGN[@]}" --entitlements Ortus/Ortus.entitlements "$APP"
 codesign --verify --deep --strict "$APP"
 # Building does not quit or replace a running installed app.
 if [[ -d "$APP_NAME" ]]; then mv "$APP_NAME" "$STAGING/previous.app"; fi
