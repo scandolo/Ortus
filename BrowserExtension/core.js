@@ -12,6 +12,7 @@ export function matchingRule(url, rules) {
     const parsed = new URL(url);
     if (!['http:', 'https:'].includes(parsed.protocol)) return null;
     const host = parsed.hostname.toLowerCase().replace(/\.$/, '');
+    if (host === 'api.slack.com') return null;
     return rules.filter(rule => host === rule.domain || host.endsWith('.' + rule.domain))
       .sort((a, b) => b.expiresAt - a.expiresAt)[0] ?? null;
   } catch { return null; }
@@ -22,9 +23,9 @@ export function networkRules(rules, extensionURL) {
   if (!domains.length) return [];
   return [
     { id: 1, priority: 2, action: { type: 'redirect', redirect: { regexSubstitution: extensionURL + 'blocked.html#redirect=\\0' } },
-      condition: { requestDomains: domains, regexFilter: '^https?://.*', resourceTypes: ['main_frame'] } },
+      condition: { requestDomains: domains, excludedRequestDomains: ['api.slack.com'], regexFilter: '^https?://.*', resourceTypes: ['main_frame'] } },
     { id: 2, priority: 1, action: { type: 'block' },
-      condition: { requestDomains: domains, excludedResourceTypes: ['main_frame'] } },
+      condition: { requestDomains: domains, excludedRequestDomains: ['api.slack.com'], excludedResourceTypes: ['main_frame'] } },
   ];
 }
 

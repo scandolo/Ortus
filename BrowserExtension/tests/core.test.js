@@ -18,6 +18,7 @@ test('host boundaries block subdomains without blocking lookalike or unrelated s
   for (const url of ['https://linkedin.com/feed', 'https://www.linkedin.com/feed', 'https://uk.linkedin.com/']) assert.ok(matchingRule(url, rules));
   for (const url of ['https://notlinkedin.com/', 'https://linkedin.com.evil.test/', 'https://google.com/', 'file:///linkedin.com', 'garbage']) assert.equal(matchingRule(url, rules), null);
   assert.equal(matchingRule('https://docs.google.com', [{domain:'mail.google.com',expiresAt:150}]), null);
+  assert.equal(matchingRule('https://api.slack.com/apps', [{domain:'slack.com',expiresAt:150}]), null);
 });
 test('network rules redirect pages and block background requests with deduplicated domains', () => {
   const rules = networkRules([...policy.rules, ...policy.rules], 'chrome-extension://example/');
