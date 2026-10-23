@@ -1,0 +1,10 @@
+{
+  "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/download/Ortus.dmg",
+      "destination": "https://github.com/scandolo/Ortus/releases/latest/download/Ortus.dmg",
+      "permanent": false
+    }
+  ]
+}

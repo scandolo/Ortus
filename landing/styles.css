@@ -1122,3 +1122,35 @@ img, svg { display: block; max-width: 100%; }
   border-radius: 999px;
   padding: 8px 18px;
 }
+
+/* --------------------------------------------------------------------------
+   Document pages (/download, /privacy)
+   -------------------------------------------------------------------------- */
+.doc {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: clamp(120px, 16vw, 160px) var(--gutter) clamp(64px, 10vw, 96px);
+}
+.doc h1 { font-size: clamp(2rem, 5vw, 2.8rem); font-weight: 600; }
+.doc h2 { font-size: 1.3rem; font-weight: 600; margin: 44px 0 12px; }
+.doc h3 { font-size: 1.02rem; font-weight: 600; margin: 24px 0 8px; }
+.doc p, .doc li { color: var(--muted); }
+.doc p + p { margin-top: 12px; }
+.doc ul, .doc ol { margin: 10px 0 0 20px; display: grid; gap: 8px; }
+.doc a:not(.btn) { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.doc code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.9em; color: var(--text); }
+.doc__lede { margin-top: 14px; font-size: 1.1rem; }
+.doc__updated { margin-top: 10px; font-size: 0.88rem; }
+.doc__card {
+  margin-top: 32px;
+  padding: clamp(22px, 4vw, 32px);
+  border-radius: var(--r-lg);
+  background: var(--card);
+  border: 1px solid var(--hairline);
+  box-shadow: var(--shadow-card);
+}
+.doc__card .btn { margin-bottom: 14px; }
+.doc__meta { font-size: 0.88rem; }
+.doc .install { margin-top: 12px; }
+.doc__card h2:first-child { margin-top: 0; }
+.doc ul + p, .doc ol + p { margin-top: 12px; }

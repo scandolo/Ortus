@@ -7,13 +7,13 @@
 **The most hardcore focus app for makers.**
 A Mac menu-bar app that blocks distractions so you can do deep work.
 
-[![Website](https://img.shields.io/badge/website-ortus.up.railway.app-FD9E4D)](https://ortus.up.railway.app)
+[![Website](https://img.shields.io/badge/website-ortusmode.com-FD9E4D)](https://ortusmode.com)
 [![Latest release](https://img.shields.io/github/v/release/scandolo/Ortus?color=FD9E4D&label=download)](https://github.com/scandolo/Ortus/releases/latest)
-[![Platform](https://img.shields.io/badge/macOS-14%2B-111111?logo=apple&logoColor=white)](https://ortus.up.railway.app)
+[![Platform](https://img.shields.io/badge/macOS-14%2B-111111?logo=apple&logoColor=white)](https://ortusmode.com)
 [![Built with SwiftUI](https://img.shields.io/badge/SwiftUI-Swift%206-FA7343?logo=swift&logoColor=white)](Package.swift)
 [![License: MIT](https://img.shields.io/badge/license-MIT-FD9E4D)](LICENSE)
 
-[Website](https://ortus.up.railway.app) · [Install](#install) · [How it works](#how-it-works) · [Development](#development)
+[Website](https://ortusmode.com) · [Install](#install) · [How it works](#how-it-works) · [Development](#development)
 
 <br />
 
@@ -82,21 +82,19 @@ python3 scripts/test-browser.py                 # end to end in headless Chromiu
 
 ## Install
 
-### One-line install (recommended)
+### Download (recommended)
+
+Download `Ortus.dmg` from [ortusmode.com/download](https://ortusmode.com/download), open
+it and drag Ortus into Applications. Releases are signed and notarized by Apple. Requires
+macOS 14 or later, on Apple silicon or Intel.
+
+### One-line install
 
 ```bash
-curl -fsSL https://ortus.up.railway.app/install.sh | bash
+curl -fsSL https://ortusmode.com/install.sh | bash
 ```
 
-This downloads the latest release into `/Applications` and launches it. Because it
-installs via the terminal (not a browser download), macOS does not quarantine the
-app, so Gatekeeper does not block it. Requires macOS 14 or later.
-
-### Download manually
-
-Grab the latest `Ortus-macOS.zip` from the
-[Releases page](https://github.com/scandolo/Ortus/releases/latest), unzip it, and
-move `Ortus.app` to `/Applications`.
+This downloads the latest release into `/Applications` and launches it.
 
 ### Build from source
 
@@ -144,7 +142,7 @@ Ortus/
 ├── Package.swift              # SPM config, macOS 14+: app, OrtusCore, bridge, core checks
 ├── AGENTS.md                  # Release process and checks for coding agents (CLAUDE.md links here)
 ├── build.sh                   # Builds and bundles Ortus.app (debug, release, preview)
-├── landing/                   # The marketing site (ortus.up.railway.app), served by Caddy
+├── landing/                   # The website (ortusmode.com), deployed by Vercel from main
 ├── BrowserExtension/          # Chromium companion: blocking rules, blocked page, popup
 ├── Sources/
 │   ├── OrtusCore/             # Shared model: targets, modes, schedules, sessions, browser policy
