@@ -150,7 +150,7 @@ struct BlockingTests {
     }
 
     func selectionDeduplicatesAndKeepsEscapeToolsAvailable() {
-        let selection = BlockSelection.union([.standard, .standard, .init(applications: [.init(bundleID: "com.ortus.preview", name: "Ortus Preview"), .init(bundleID: "com.apple.finder", name: "Finder")])])
+        let selection = BlockSelection.union([.standard, .standard, .init(applications: [.init(bundleID: "com.ortus.preview", name: "Ortus Preview"), .init(bundleID: "com.ortusmode.app", name: "Ortus"), .init(bundleID: "com.apple.finder", name: "Finder")])])
         expect(selection == .standard)
         expect(selection.summary.contains("Gmail"))
         expect(selection.applications.count == 1)

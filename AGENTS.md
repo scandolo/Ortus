@@ -15,6 +15,12 @@ out, read `README.md`. This repo is public.
   `Ortus/Info.plist` in the PR. A higher version there wins over the automatic bump.
 - `Info.plist` on `main` often shows an older version than the latest release.
   That's expected: CI writes the real version into its own checkout only.
+- Release builds are universal (Apple silicon + Intel). When the Developer ID secrets
+  listed in `release.yml` are set, CI signs with the hardened runtime, notarizes with
+  `scripts/notarize.sh` and also publishes `Ortus.dmg`; without them it falls back to
+  an ad-hoc signed zip.
+- Bundle IDs are `com.ortusmode.app` and `com.ortusmode.preview`. Older builds used
+  `com.ortus.*`; `OrtusApp` copies their preferences over once on first launch.
 
 ## Checks
 

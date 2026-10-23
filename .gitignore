@@ -12,6 +12,7 @@ DerivedData/
 .env.local
 .gstack/
 *.zip
+*.dmg
 ortus-next/
 .claude/
 .conductor/

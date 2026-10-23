@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleIdentifier</key>
-	<string>com.ortus.app</string>
+	<string>com.ortusmode.app</string>
 	<key>CFBundleName</key>
 	<string>Ortus</string>
 	<key>CFBundleExecutable</key>
