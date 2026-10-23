@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy policy · Ortus</title>
+  <meta name="description" content="What Ortus, its browser extension and ortusmode.com do with your data." />
+  <meta name="theme-color" content="#1A1A1C" />
+  <meta name="color-scheme" content="dark" />
+  <link rel="canonical" href="https://ortusmode.com/privacy" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="nav" id="nav" aria-label="Ortus">
+    <div class="nav__bar">
+      <a class="nav__brand" href="/" aria-label="Ortus home">
+        <img class="nav__logo" src="/assets/favicon.svg" width="30" height="30" alt="Ortus" />
+      </a>
+    </div>
+  </header>
+
+  <main class="doc">
+    <h1>Privacy policy</h1>
+    <p class="doc__updated">Last updated 23 October 2026</p>
+
+    <div class="doc__card">
+      <h2>The short version</h2>
+      <ul>
+        <li>Ortus has no accounts. It runs on your Mac, and your settings stay there.</li>
+        <li>We never see your messages, the websites you visit, or your AI chats.</li>
+        <li>The browser extension talks only to the Ortus app on your Mac. It sends nothing over the internet.</li>
+        <li>The Mac app sends anonymous usage events, like "focus session started", so we can see what works.</li>
+        <li>We don't sell data, show ads, or share data with anyone for marketing.</li>
+      </ul>
+    </div>
+
+    <h2>Who we are</h2>
+    <p>Ortus is made by Federico Scandolara, an independent developer based in Italy, who is responsible for the data described here. Questions or requests: <a href="mailto:support@ortusmode.com">support@ortusmode.com</a>.</p>
+
+    <h2>The Mac app</h2>
+    <h3>Stored only on your Mac</h3>
+    <ul>
+      <li>Your settings, modes, schedules and the state of your current session, in your macOS preferences.</li>
+      <li>If you connect Slack: your Slack sign-in, in a file in <code>~/Library/Application Support/Ortus</code> that only your Mac user account can read.</li>
+      <li>The list of websites to block during a session, which the browser extension reads.</li>
+    </ul>
+    <p>To remove all of it, delete Ortus, the <code>~/Library/Application Support/Ortus</code> folder, and <code>~/Library/Preferences/com.ortusmode.app.plist</code>.</p>
+
+    <h3>Anonymous usage events</h3>
+    <p>To understand how Ortus is used, the app sends short events to PostHog, our analytics provider, which stores them in the United States. Examples: the app opened, a focus session started, a schedule was added, the weekly emergency end was used, an update was installed, a chat message was sent, Slack was connected.</p>
+    <p>Each event carries a random ID for your installation (not linked to your name or email), the Ortus and macOS versions, your Mac's model, language and screen size, and a few counts, such as how many days a schedule covers. Like any internet request, it also reveals your IP address, which PostHog can use to estimate a rough location.</p>
+    <p>Events never include message contents, the websites or apps you block or visit, your Slack data, or what you ask in chat.</p>
+    <p>In this version the events are on by default. An upcoming update will ask before sending any, and will let you change your choice in Settings. Until then, email us if you'd like your events deleted.</p>
+
+    <h3>Updates</h3>
+    <p>Ortus checks GitHub for new versions and downloads updates from it. GitHub receives your IP address as part of those requests, under <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">its privacy statement</a>.</p>
+
+    <h3>Slack (optional)</h3>
+    <p>If you connect Slack, Ortus uses your sign-in only to set your Slack status and Do Not Disturb when a session starts and ends. It talks directly to Slack; nothing goes through us.</p>
+
+    <h3>Chat (optional)</h3>
+    <p>Chat runs your own Claude Code on your Mac. Your questions and the answers travel between Claude Code and Anthropic under your own Claude account and <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">Anthropic's terms</a>, and any connected tools (such as Slack or Gmail) are the ones you set up in Claude. Ortus doesn't send your chats to us and doesn't keep them after you quit. Claude Code may keep its own history on your Mac.</p>
+
+    <h2>The browser extension</h2>
+    <p>The Ortus extension for Chrome, Arc, Edge and Brave has one job: block the websites you chose in the Ortus app while a focus session is on.</p>
+    <ul>
+      <li>It gets your block list from the Ortus app on your Mac, through the browser's native messaging. It makes no internet requests.</li>
+      <li>To block a site, it compares the address of the pages you open with your block list, on your device. It doesn't record, store or send your browsing history.</li>
+      <li>It stores, in your browser only: whether it's connected to Ortus, a random ID that tells your browser profiles apart, and the current session's rules, which are cleared when the browser closes.</li>
+      <li>It has no analytics and no ads.</li>
+    </ul>
+    <p>The use of information received from Chrome APIs adheres to the <a href="https://developer.chrome.com/docs/webstore/program-policies/policies" target="_blank" rel="noopener">Chrome Web Store User Data Policy</a>, including the Limited Use requirements.</p>
+
+    <h2>This website</h2>
+    <p>ortusmode.com is hosted by Vercel, which processes standard request data, such as IP address and browser type, to deliver and protect the site. The site sets no cookies and has no analytics.</p>
+
+    <h2>Email</h2>
+    <p>Mail to support@ortusmode.com is forwarded by Cloudflare to our inbox. We use it only to reply to you.</p>
+
+    <h2>Legal basis and how long we keep data</h2>
+    <p>We send anonymous usage events based on our legitimate interest in improving Ortus. Once the opt-in ships, it will be based on your consent. We keep usage events for up to 24 months, and support emails for as long as needed to help you.</p>
+
+    <h2>Your rights</h2>
+    <p>You can ask to access or delete data about you, or object to its use, by emailing <a href="mailto:support@ortusmode.com">support@ortusmode.com</a>. Because usage events aren't linked to your identity, we may need your installation ID to find them. You can also complain to your data protection authority; in Italy that's the <a href="https://www.garanteprivacy.it" target="_blank" rel="noopener">Garante per la protezione dei dati personali</a>.</p>
+
+    <h2>Children</h2>
+    <p>Ortus isn't directed at children under 16.</p>
+
+    <h2>Changes</h2>
+    <p>If this policy changes, we'll update this page and the date at the top. For significant changes, we'll also say so in the app.</p>
+  </main>
+
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <div>
+          <p class="footer__word">Ortus</p>
+          <p class="footer__tag">Block distractions. Do the work.</p>
+        </div>
+      </div>
+      <nav class="footer__links" aria-label="Footer">
+        <a href="/download">Download</a>
+        <a href="/privacy">Privacy</a>
+        <a href="mailto:support@ortusmode.com">Support</a>
+        <a href="https://github.com/scandolo/Ortus" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </div>
+    <div class="footer__base">
+      <p class="footer__latin">Carpe lucem.</p>
+      <p class="footer__copy">© 2026 Ortus · Free &amp; open source</p>
+    </div>
+  </footer>
+
+  <script src="/script.js" defer></script>
+</body>
+</html>
