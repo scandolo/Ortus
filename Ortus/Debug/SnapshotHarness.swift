@@ -40,6 +40,7 @@ enum SnapshotHarness {
             try? await Task.sleep(for: .seconds(1))
             await render("focus-idle", tab: 0)
             await render("focus-idle-dark", tab: 0, dark: true)
+            await render("focus-no-browser", tab: 0, state: "no-browser")
             await render("focus-modes", tab: 0, height: 760, state: "modes")
             await render("mode-editor", tab: 0, height: 760, state: "mode-editor")
             await render("browser-setup", tab: 0, state: "browser-setup")

@@ -3,7 +3,10 @@ import OrtusCore
 
 struct FocusView: View {
     @EnvironmentObject var focusManager: FocusManager
+    @EnvironmentObject var router: PanelRouter
+    @Environment(\.snapshotState) private var snapshotState
     @AppStorage("genZMode") private var genZ = false
+    @AppStorage("didStartFocusSession") private var didStartFocusSession = false
     @State private var manualDuration: Double = 90
 
     var body: some View {
@@ -26,17 +29,45 @@ struct FocusView: View {
         }
             // The primary action stays pinned and visible, like "Add schedule".
             if !focusManager.isInFocus {
-                Button {
-                    focusManager.startFocusSession(name: "Focus", duration: manualDuration * 60)
-                } label: {
-                    Text(startLabel).frame(maxWidth: .infinity)
+                VStack(spacing: OrtusTheme.spacingSM) {
+                    if blocksNothing {
+                        // A locked session that blocks nothing is the worst first impression.
+                        Button { router.modal = .browserSetup } label: {
+                            Text("Set up website blocking").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(OrtusPrimaryButtonStyle())
+                        Button("Start anyway") { startSession() }
+                            .buttonStyle(OrtusGhostButtonStyle())
+                    } else {
+                        Button { startSession() } label: {
+                            Text(startLabel).frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(OrtusPrimaryButtonStyle())
+                        .disabled(focusManager.manualSelection.isEmpty)
+                        if !didStartFocusSession {
+                            Text("Once it starts, there's no end button. You'll have 30 seconds to change your mind.")
+                                .font(OrtusTheme.Typo.caption)
+                                .foregroundStyle(OrtusTheme.textMuted)
+                                .multilineTextAlignment(.center)
+                        }
+                    }
                 }
-                .buttonStyle(OrtusPrimaryButtonStyle())
-                .disabled(focusManager.manualSelection.isEmpty)
                 .padding(.horizontal, OrtusTheme.spacingMD)
                 .padding(.bottom, OrtusTheme.spacingSM)
             }
         }
+    }
+
+    /// A websites-only mode blocks nothing until a browser is connected.
+    private var blocksNothing: Bool {
+        let selection = focusManager.manualSelection
+        let connected = !focusManager.websites.connectedBrowsers.isEmpty && snapshotState != "no-browser"
+        return selection.applications.isEmpty && !selection.websites.isEmpty && !connected
+    }
+
+    private func startSession() {
+        didStartFocusSession = true
+        focusManager.startFocusSession(name: "Focus", duration: manualDuration * 60)
     }
 
     /// The start button gets bolder as the session gets longer.
