@@ -1124,7 +1124,7 @@ img, svg { display: block; max-width: 100%; }
 }
 
 /* --------------------------------------------------------------------------
-   Document pages (/download, /privacy)
+   Document pages (/privacy)
    -------------------------------------------------------------------------- */
 .doc {
   max-width: 720px;
@@ -1139,7 +1139,6 @@ img, svg { display: block; max-width: 100%; }
 .doc ul, .doc ol { margin: 10px 0 0 20px; display: grid; gap: 8px; }
 .doc a:not(.btn) { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
 .doc code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.9em; color: var(--text); }
-.doc__lede { margin-top: 14px; font-size: 1.1rem; }
 .doc__updated { margin-top: 10px; font-size: 0.88rem; }
 .doc__card {
   margin-top: 32px;
@@ -1149,8 +1148,46 @@ img, svg { display: block; max-width: 100%; }
   border: 1px solid var(--hairline);
   box-shadow: var(--shadow-card);
 }
-.doc__card .btn { margin-bottom: 14px; }
-.doc__meta { font-size: 0.88rem; }
-.doc .install { margin-top: 12px; }
 .doc__card h2:first-child { margin-top: 0; }
 .doc ul + p, .doc ol + p { margin-top: 12px; }
+
+/* --------------------------------------------------------------------------
+   Download dialog (opened by "Download for Mac" and /#download)
+   -------------------------------------------------------------------------- */
+.dl {
+  margin: auto;
+  width: min(460px, calc(100vw - 32px));
+  max-width: none;
+  padding: 32px;
+  border-radius: var(--r-xl);
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--hairline-strong);
+  box-shadow: var(--shadow-lift);
+}
+.dl:focus-visible { outline: none; }
+.dl::backdrop { background: rgba(10, 10, 12, 0.62); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.dl__close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.dl__close:hover { background: var(--raised); color: var(--text); }
+.dl__title { font-size: 1.5rem; font-weight: 600; }
+.dl__steps { margin: 18px 0 0 20px; display: grid; gap: 8px; color: var(--muted); }
+.dl__note { margin-top: 16px; font-size: 0.9rem; color: var(--muted); }
+.dl__again { margin-top: 22px; }
+.dl__meta { margin-top: 12px; font-size: 0.82rem; color: var(--muted); }
+.dl__terminal { margin-top: 18px; border-top: 1px solid var(--hairline); padding-top: 14px; }
+.dl__terminal summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; }
+.dl__terminal .install { margin-top: 12px; width: 100%; }
+.dl__terminal .install__cmd { flex: 1; min-width: 0; font-size: 0.8rem; }

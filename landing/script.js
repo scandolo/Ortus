@@ -52,7 +52,8 @@
       var id = link.getAttribute("href");
       if (id === "#" || id.length < 2) return;
       var target = document.querySelector(id);
-      if (!target) return;
+      // A link to the download dialog opens it (section 6) instead of scrolling.
+      if (!target || target.tagName === "DIALOG") return;
       e.preventDefault();
       var top =
         target.getBoundingClientRect().top + window.scrollY - navH - 12;
@@ -110,4 +111,27 @@
       });
     });
   });
+  /* ----- 6. Download: the link downloads the dmg; a dialog shows how to install ----- */
+  var dl = document.getElementById("download");
+  if (dl && typeof dl.showModal === "function") {
+    var dlTitle = dl.querySelector(".dl__title");
+    var dlAgain = dl.querySelector(".dl__again");
+    var openDownload = function (started) {
+      var state = started ? "data-started" : "data-idle";
+      dlTitle.textContent = dlTitle.getAttribute(state);
+      dlAgain.textContent = dlAgain.getAttribute(state);
+      if (!dl.open) dl.showModal();
+    };
+    document.querySelectorAll("[data-download]").forEach(function (link) {
+      link.addEventListener("click", function () { openDownload(true); });
+    });
+    // ortusmode.com/download redirects to /#download, and the footer links to it.
+    var openFromHash = function () { if (location.hash === "#download") openDownload(false); };
+    window.addEventListener("hashchange", openFromHash);
+    openFromHash();
+    dl.addEventListener("click", function (e) { if (e.target === dl) dl.close(); });
+    dl.addEventListener("close", function () {
+      if (location.hash === "#download") history.replaceState(null, "", location.pathname + location.search);
+    });
+  }
 })();
