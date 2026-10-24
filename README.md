@@ -126,8 +126,8 @@ detection.
 ## Privacy
 
 Your Slack token is stored in the macOS Keychain and is only sent to Slack. Chat
-uses Claude Code's existing authentication. Ortus sends anonymous, aggregate
-usage events (via PostHog) to help improve the app. There are no Ortus accounts.
+uses Claude Code's existing authentication. If you opt in (on the welcome page or in
+Settings), Ortus sends anonymous usage events via PostHog. There are no Ortus accounts.
 
 ## Development
 

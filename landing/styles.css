@@ -1154,3 +1154,15 @@ img, svg { display: block; max-width: 100%; }
 .doc .install { margin-top: 12px; }
 .doc__card h2:first-child { margin-top: 0; }
 .doc ul + p, .doc ol + p { margin-top: 12px; }
+
+/* --------------------------------------------------------------------------
+   Welcome page (/welcome, opened by Ortus on first launch)
+   -------------------------------------------------------------------------- */
+.welcome__lede { margin-top: 14px; font-size: 1.1rem; }
+.welcome__action { margin-top: 18px; }
+.welcome__small { margin-top: 12px; font-size: 0.85rem; }
+.welcome__choice { display: flex; gap: 12px; align-items: flex-start; margin-top: 16px; cursor: pointer; }
+.welcome__choice input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+.welcome__choice span { color: var(--muted); font-size: 0.95rem; }
+.welcome__choice strong { color: var(--text); }
+.doc__card + .doc__card { margin-top: 20px; }
