@@ -57,15 +57,9 @@
           </p>
 
           <div class="hero__cta fade-up d4">
-            <a class="btn btn--primary btn--lg" href="/download">Download for Mac</a>
-            <div class="install" role="group" aria-label="Install command">
-              <code class="install__cmd"><span class="install__prompt">$</span> curl -fsSL https://ortusmode.com/install.sh | bash</code>
-              <button class="install__copy" type="button" data-copy="curl -fsSL https://ortusmode.com/install.sh | bash" aria-label="Copy install command">
-                <svg class="install__icon-copy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-                <span class="install__copy-label">Copy</span>
-              </button>
-            </div>
+            <a class="btn btn--primary btn--lg" href="/download/Ortus.dmg" data-download>Download for Mac</a>
           </div>
+          <p class="hero__meta fade-up d4">Free · macOS 14 or later · Apple silicon and Intel</p>
         </div>
 
         <!-- ===== macOS MENU-BAR MOCKUP (the proof) ===== -->
@@ -220,14 +214,7 @@
         <div class="cta__glow" aria-hidden="true"></div>
         <h2 class="cta__title" id="cta-title">First light. First task.</h2>
         <p class="cta__sub">Block the distractions, drop into deep work, and ship.</p>
-        <a class="btn btn--primary btn--lg" href="/download">Download for Mac</a>
-        <div class="install" role="group" aria-label="Install command">
-          <code class="install__cmd"><span class="install__prompt">$</span> curl -fsSL https://ortusmode.com/install.sh | bash</code>
-          <button class="install__copy" type="button" data-copy="curl -fsSL https://ortusmode.com/install.sh | bash" aria-label="Copy install command">
-            <svg class="install__icon-copy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-            <span class="install__copy-label">Copy</span>
-          </button>
-        </div>
+        <a class="btn btn--primary btn--lg" href="/download/Ortus.dmg" data-download>Download for Mac</a>
         <p class="cta__meta">macOS 14+ · Free &amp; open source</p>
       </div>
     </section>
@@ -245,7 +232,7 @@
 
       <nav class="footer__links" aria-label="Footer">
         <a href="#how">How it works</a>
-        <a href="/download">Download</a>
+        <a href="#download">Download</a>
         <a href="/privacy">Privacy</a>
         <a href="mailto:support@ortusmode.com">Support</a>
         <a href="https://github.com/scandolo/Ortus" target="_blank" rel="noopener">GitHub</a>
@@ -257,6 +244,30 @@
       <p class="footer__copy">© 2026 Ortus · Free &amp; open source</p>
     </div>
   </footer>
+
+  <!-- ============================== DOWNLOAD MODAL ============================== -->
+  <dialog class="dl" id="download" aria-labelledby="dl-title">
+    <form method="dialog"><button class="dl__close" aria-label="Close">×</button></form>
+    <h2 class="dl__title" id="dl-title" data-started="Ortus is downloading" data-idle="Install Ortus">Install Ortus</h2>
+    <ol class="dl__steps">
+      <li>Open <strong>Ortus.dmg</strong> from your Downloads.</li>
+      <li>Drag Ortus into Applications.</li>
+      <li>Open it. Look for the sun in your menu bar.</li>
+    </ol>
+    <p class="dl__note">Ortus closes Mac apps on its own. For websites, it walks you through adding its extension to Chrome, Arc, Edge or Brave.</p>
+    <a class="btn btn--primary dl__again" href="/download/Ortus.dmg" data-download data-idle="Download Ortus.dmg" data-started="Download again">Download Ortus.dmg</a>
+    <p class="dl__meta">macOS 14 or later · Apple silicon and Intel · Signed and notarized by Apple</p>
+    <details class="dl__terminal">
+      <summary>Prefer Terminal?</summary>
+      <div class="install" role="group" aria-label="Install command">
+        <code class="install__cmd"><span class="install__prompt">$</span> curl -fsSL https://ortusmode.com/install.sh | bash</code>
+        <button class="install__copy" type="button" data-copy="curl -fsSL https://ortusmode.com/install.sh | bash" aria-label="Copy install command">
+          <svg class="install__icon-copy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+          <span class="install__copy-label">Copy</span>
+        </button>
+      </div>
+    </details>
+  </dialog>
 
   <script src="script.js" defer></script>
 </body>
