@@ -22,7 +22,7 @@
 
   <main class="doc">
     <h1>Privacy policy</h1>
-    <p class="doc__updated">Last updated 23 October 2026</p>
+    <p class="doc__updated">Last updated 24 October 2026</p>
 
     <div class="doc__card">
       <h2>The short version</h2>
@@ -30,7 +30,7 @@
         <li>Ortus has no accounts. It runs on your Mac, and your settings stay there.</li>
         <li>We never see your messages, the websites you visit, or your AI chats.</li>
         <li>The browser extension talks only to the Ortus app on your Mac. It sends nothing over the internet.</li>
-        <li>The Mac app sends anonymous usage events, like "focus session started", so we can see what works.</li>
+        <li>If you opt in, the Mac app sends anonymous usage events, like "focus session started", so we can see what works. It's off unless you turn it on.</li>
         <li>We don't sell data, show ads, or share data with anyone for marketing.</li>
       </ul>
     </div>
@@ -48,10 +48,10 @@
     <p>To remove all of it, delete Ortus, the <code>~/Library/Application Support/Ortus</code> folder, and <code>~/Library/Preferences/com.ortusmode.app.plist</code>.</p>
 
     <h3>Anonymous usage events</h3>
-    <p>To understand how Ortus is used, the app sends short events to PostHog, our analytics provider, which stores them in the United States. Examples: the app opened, a focus session started, a schedule was added, the weekly emergency end was used, an update was installed, a chat message was sent, Slack was connected.</p>
+    <p>If you opt in, on the welcome page after installing or in Ortus → Settings → Share anonymous usage, the app sends short events to PostHog, our analytics provider, which stores them in the United States. Examples: the app opened, a focus session started, a schedule was added, the weekly emergency end was used, an update was installed, a chat message was sent, Slack was connected.</p>
     <p>Each event carries a random ID for your installation (not linked to your name or email), the Ortus and macOS versions, your Mac's model, language and screen size, and a few counts, such as how many days a schedule covers. Like any internet request, it also reveals your IP address, which PostHog can use to estimate a rough location.</p>
     <p>Events never include message contents, the websites or apps you block or visit, your Slack data, or what you ask in chat.</p>
-    <p>In this version the events are on by default. An upcoming update will ask before sending any, and will let you change your choice in Settings. Until then, email us if you'd like your events deleted.</p>
+    <p>Nothing is sent until you opt in, and turning it off in Settings stops it straight away. Earlier versions sent these events by default; email us if you'd like those deleted.</p>
 
     <h3>Updates</h3>
     <p>Ortus checks GitHub for new versions and downloads updates from it. GitHub receives your IP address as part of those requests, under <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">its privacy statement</a>.</p>
@@ -79,7 +79,7 @@
     <p>Mail to support@ortusmode.com is forwarded by Cloudflare to our inbox. We use it only to reply to you.</p>
 
     <h2>Legal basis and how long we keep data</h2>
-    <p>We send anonymous usage events based on our legitimate interest in improving Ortus. Once the opt-in ships, it will be based on your consent. We keep usage events for up to 24 months, and support emails for as long as needed to help you.</p>
+    <p>We send anonymous usage events only with your consent, which you can withdraw anytime in Settings. We keep usage events for up to 24 months, and support emails for as long as needed to help you.</p>
 
     <h2>Your rights</h2>
     <p>You can ask to access or delete data about you, or object to its use, by emailing <a href="mailto:support@ortusmode.com">support@ortusmode.com</a>. Because usage events aren't linked to your identity, we may need your installation ID to find them. You can also complain to your data protection authority; in Italy that's the <a href="https://www.garanteprivacy.it" target="_blank" rel="noopener">Garante per la protezione dei dati personali</a>.</p>

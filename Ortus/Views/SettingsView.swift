@@ -16,6 +16,7 @@ struct SettingsView: View {
     @State private var showSlackPreview = false
     @State private var taglineIndex = 0
     @AppStorage("genZMode") private var genZ = false
+    @AppStorage(Analytics.consentKey) private var shareUsage = false
 
     /// Easter egg: tapping "Ortus" cycles through a few sunrise-themed lines.
     private let taglines = [
@@ -50,6 +51,12 @@ struct SettingsView: View {
                         toggle($launchAtLogin)
                     }
                     OrtusGroupDivider()
+                    OrtusListRow(title: "Share anonymous usage", subtitle: "Which features get used. Never messages or sites") {
+                        Image(systemName: "chart.bar")
+                    } trailing: {
+                        toggle($shareUsage)
+                    }
+                    OrtusGroupDivider()
                     OrtusListRow(title: "Gen Z mode", subtitle: genZ ? "it’s giving focus" : "Rewrites Ortus in Gen Z") {
                         Image(systemName: "sparkles")
                     } trailing: {
@@ -71,6 +78,7 @@ struct SettingsView: View {
             launchAtLogin = SMAppService.mainApp.status == .enabled
         }
         .onChange(of: launchAtLogin) { _, newValue in setLaunchAtLogin(newValue) }
+        .onChange(of: shareUsage) { _, newValue in Analytics.setConsent(newValue) }
     }
 
     private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
