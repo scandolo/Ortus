@@ -98,8 +98,10 @@ final class WebsiteBlockingService: ObservableObject {
                     try contents.write(to: destination, options: [.atomic])
                 }
             }
+            // The unpacked development build and the Chrome Web Store build have different IDs.
+            let origins = [id, identity["storeID"]].compactMap { $0 }.map { "chrome-extension://\($0)/" }
             let manifest: [String: Any] = ["name": hostName, "description": "Ortus focus rules", "path": bridge.path,
-                                          "type": "stdio", "allowed_origins": ["chrome-extension://\(id)/"]]
+                                          "type": "stdio", "allowed_origins": origins]
             let json = try JSONSerialization.data(withJSONObject: manifest, options: [.prettyPrinted, .sortedKeys])
             for path in ["Google/Chrome", "Arc/User Data", "Microsoft Edge", "BraveSoftware/Brave-Browser", "Chromium"] {
                 let folder = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/\(path)/NativeMessagingHosts")
