@@ -148,7 +148,7 @@ Ortus/
 │   ├── OrtusCore/             # Shared model: targets, modes, schedules, sessions, browser policy
 │   └── OrtusBrowserBridge/    # Native Messaging host between the app and the extension
 ├── Tests/OrtusCoreTests/      # Core checks (run with Command Line Tools only)
-├── scripts/                   # Preview installer, release notarization, app/browser integration tests
+├── scripts/                   # Preview installer, release notarization, extension packaging, integration tests
 └── Ortus/
     ├── OrtusApp.swift         # @main entry, MenuBarExtra scene, quit-blocking AppDelegate
     ├── Models/                # ChatMessage, emoji catalog, Slack API types
