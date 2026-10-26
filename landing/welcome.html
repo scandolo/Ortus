@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome to Ortus</title>
+  <meta name="robots" content="noindex" />
+  <meta name="theme-color" content="#1A1A1C" />
+  <meta name="color-scheme" content="dark" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="nav" id="nav" aria-label="Ortus">
+    <div class="nav__bar">
+      <a class="nav__brand" href="/" aria-label="Ortus home">
+        <img class="nav__logo" src="/assets/favicon.svg" width="30" height="30" alt="Ortus" />
+      </a>
+    </div>
+  </header>
+
+  <!-- Opened by Ortus on first launch. The choices go back to the app through its URL scheme. -->
+  <main class="doc">
+    <h1>Ortus is running</h1>
+    <p class="welcome__lede">Look for the sun in your menu bar. Every session starts there.</p>
+
+    <section class="doc__card" aria-labelledby="ext-title">
+      <h2 id="ext-title">Block websites too</h2>
+      <p>Ortus closes Mac apps on its own. For websites, add its extension. Chrome, Arc, Edge and Brave all install it from the Chrome Web Store.</p>
+      <a class="btn btn--primary welcome__action" href="https://chromewebstore.google.com/detail/ciafdnbfjkhigoohedbchjbjlboejfjj" target="_blank" rel="noopener">Add to Chrome</a>
+      <p class="welcome__small">Safari and Firefox aren't supported yet.</p>
+    </section>
+
+    <section class="doc__card" aria-labelledby="choices-title">
+      <h2 id="choices-title">Two choices</h2>
+      <label class="welcome__choice">
+        <input type="checkbox" id="login" checked />
+        <span><strong>Open Ortus when you log in</strong><br />Schedules only run while Ortus is open.</span>
+      </label>
+      <label class="welcome__choice">
+        <input type="checkbox" id="analytics" />
+        <span><strong>Share anonymous usage</strong><br />Which features get used, never your messages or the sites you visit. <a href="/privacy">Privacy policy</a></span>
+      </label>
+      <a class="btn btn--primary welcome__action" id="save" href="ortus://welcome?login=1&amp;analytics=0">Save choices</a>
+      <p class="welcome__small" id="save-note">Your browser will ask to open Ortus. You can change both anytime in Ortus → Settings.</p>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      // Preview builds pass their own scheme (ortus-preview) so the choices reach them.
+      var scheme = new URLSearchParams(location.search).get("scheme");
+      if (scheme !== "ortus-preview") scheme = "ortus";
+      var save = document.getElementById("save");
+      var login = document.getElementById("login");
+      var analytics = document.getElementById("analytics");
+      var update = function () {
+        save.href = scheme + "://welcome?login=" + (login.checked ? 1 : 0) + "&analytics=" + (analytics.checked ? 1 : 0);
+      };
+      login.addEventListener("change", update);
+      analytics.addEventListener("change", update);
+      update();
+      save.addEventListener("click", function () {
+        document.getElementById("save-note").textContent = "Saved once you allow your browser to open Ortus. You can change both anytime in Ortus → Settings.";
+      });
+    })();
+  </script>
+</body>
+</html>
