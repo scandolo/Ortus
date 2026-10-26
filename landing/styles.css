@@ -1191,3 +1191,15 @@ img, svg { display: block; max-width: 100%; }
 .dl__terminal summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; }
 .dl__terminal .install { margin-top: 12px; width: 100%; }
 .dl__terminal .install__cmd { flex: 1; min-width: 0; font-size: 0.8rem; }
+
+/* --------------------------------------------------------------------------
+   Welcome page (/welcome, opened by Ortus on first launch)
+   -------------------------------------------------------------------------- */
+.welcome__lede { margin-top: 14px; font-size: 1.1rem; }
+.welcome__action { margin-top: 18px; }
+.welcome__small { margin-top: 12px; font-size: 0.85rem; }
+.welcome__choice { display: flex; gap: 12px; align-items: flex-start; margin-top: 16px; cursor: pointer; }
+.welcome__choice input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+.welcome__choice span { color: var(--muted); font-size: 0.95rem; }
+.welcome__choice strong { color: var(--text); }
+.doc__card + .doc__card { margin-top: 20px; }
