@@ -62,6 +62,9 @@ three steps (load the `/Applications/Ortus Browser` folder, or `Ortus Preview Br
 for a preview build, as an unpacked extension). Repeat for each browser profile;
 Safari and Firefox are not covered.
 Reload the extension once after installing a new build.
+During a website session, a browser that has connected to Ortus before must keep the
+extension on and allowed in incognito. Otherwise Ortus opens a warning tab, counts down
+60 seconds in the menu bar and quits the browser (again on each reopen).
 
 **How it fits together.** `Sources/OrtusCore` holds the shared model (targets,
 schedules, sessions, browser policy). The app publishes a short-lived policy;

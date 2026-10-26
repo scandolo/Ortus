@@ -18,6 +18,7 @@ struct FocusView: View {
                    focusManager.websites.connectedBrowsers.isEmpty {
                     OrtusGroup { BrowserStatusRow(service: focusManager.websites) }
                 }
+                ClosingBrowserRow(service: focusManager.websites)
                 if focusManager.isInFocus && focusManager.isInGracePeriod {
                     gracePeriodState
                 } else if focusManager.isInFocus {

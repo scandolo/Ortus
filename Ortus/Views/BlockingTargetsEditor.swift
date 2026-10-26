@@ -290,6 +290,27 @@ struct BrowserStatusRow: View {
     }
 }
 
+/// Shown while Ortus counts down to closing a browser whose extension is off.
+struct ClosingBrowserRow: View {
+    @ObservedObject var service: WebsiteBlockingService
+
+    var body: some View {
+        if let closing = service.closingBrowser {
+            OrtusGroup {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    OrtusListRow(title: "\(closing.name) closes in \(FocusView.formatDuration(max(0, closing.closesAt.timeIntervalSince(context.date))))",
+                                 subtitle: "Turn the Ortus extension back on and allow it in incognito.") {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(OrtusTheme.warning)
+                    } trailing: {
+                        Button("Fix") { service.openExtensionsPage(browserID: closing.bundleID) }
+                            .buttonStyle(OrtusRowButtonStyle())
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// The three setup steps, shown in a modal.
 struct BrowserSetupModal: View {
     @ObservedObject var service: WebsiteBlockingService

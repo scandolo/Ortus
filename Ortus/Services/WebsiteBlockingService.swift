@@ -17,6 +17,12 @@ final class WebsiteBlockingService: ObservableObject {
          .init(id: "com.brave.Browser", name: "Brave", page: "brave://extensions")]
             .filter { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0.id) != nil }
     }
+    /// The next browser Ortus will close because its extension is off.
+    struct ClosingBrowser: Equatable { let name: String; let bundleID: String; let closesAt: Date }
+    @Published private(set) var closingBrowser: ClosingBrowser?
+    private var browserGuard = BrowserGuard()
+    /// Browsers with a working extension right now, by bundle ID.
+    private var protectedBrowsers: Set<String> = []
     @Published private(set) var error: String?
     @Published private(set) var enforcementError: String?
     @Published private(set) var setupError: String?
@@ -59,12 +65,45 @@ final class WebsiteBlockingService: ObservableObject {
             return client
         }
         let ready = clients.filter { $0.state == "ready" }
+        // A connected extension that fails to apply rules is Ortus's problem, not a reason to close the browser.
+        protectedBrowsers = Set(clients.filter { $0.incognito != false }.compactMap(\.bundleID))
+        let guarded = Set(UserDefaults.standard.stringArray(forKey: "guardedBrowsers") ?? [])
+        let seen = guarded.union(ready.compactMap(\.bundleID))
+        if seen != guarded { UserDefaults.standard.set(seen.sorted(), forKey: "guardedBrowsers") }
         connectedBrowsers = Array(Set(ready.map(\.browser))).sorted()
         connectionSummary = connectedBrowsers.map { name in
             let count = ready.filter { $0.browser == name }.count
             return "\(name) · \(count) profile\(count == 1 ? "" : "s")"
         }.joined(separator: ", ")
         enforcementError = clients.contains { $0.state == "error" } ? "A browser could not apply your rules. Open its Ortus extension and reconnect." : nil
+    }
+
+    /// During a website session, a browser that has used Ortus before must keep the extension on
+    /// (and allowed in incognito). Otherwise it gets a warning tab, a countdown, then a normal quit.
+    func guardBrowsers(active: Bool, now: Date = Date()) {
+        let guarded = Set(UserDefaults.standard.stringArray(forKey: "guardedBrowsers") ?? [])
+        let browsers = !active ? [] : NSWorkspace.shared.runningApplications.filter { app in
+            guard let id = app.bundleIdentifier, !app.isTerminated else { return false }
+            return guarded.contains(id) && !protectedBrowsers.contains(id)
+        }
+        let steps = browserGuard.update(unprotected: Set(browsers.map(\.processIdentifier)), now: now)
+        var next: ClosingBrowser?
+        for app in browsers {
+            let name = app.localizedName ?? "Your browser"
+            guard let closesAt = browserGuard.closesAt(app.processIdentifier) else { continue }
+            switch steps[app.processIdentifier] {
+            case .warn:
+                var page = URLComponents(string: "https://ortusmode.com/extension-off")!
+                page.queryItems = [URLQueryItem(name: "browser", value: name), URLQueryItem(name: "closes", value: String(Int(closesAt.timeIntervalSince1970)))]
+                if let url = page.url, let browser = app.bundleURL {
+                    NSWorkspace.shared.open([url], withApplicationAt: browser, configuration: .init(), completionHandler: nil)
+                }
+            case .close: app.terminate()
+            case nil: break
+            }
+            if next.map({ closesAt < $0.closesAt }) ?? true { next = ClosingBrowser(name: name, bundleID: app.bundleIdentifier ?? "", closesAt: closesAt) }
+        }
+        if closingBrowser != next { closingBrowser = next }
     }
 
     /// User-level registration only. Re-running updates the executable path after moving a build.
