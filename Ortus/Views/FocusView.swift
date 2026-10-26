@@ -275,7 +275,7 @@ private struct BlockedTags: View {
     private struct Item: Identifiable { let id: String; let glyph: String; let name: String; let isApp: Bool }
 
     /// Marks shown before the count takes over.
-    private static let visibleLimit = 5
+    private static let visibleLimit = 6
 
     /// One tag per preset the selection touches (Gmail, Slack), then one per other website or app.
     private var items: [Item] {
@@ -299,7 +299,7 @@ private struct BlockedTags: View {
         let names = items.map(\.name).joined(separator: ", ")
         if !items.isEmpty {
             HStack(spacing: OrtusTheme.spacingSM) {
-                HStack(spacing: -9) {
+                HStack(spacing: -7) {
                     ForEach(Array(items.prefix(Self.visibleLimit).enumerated()), id: \.element.id) { index, item in
                         glyph(item).opacity(0.85)
                             .frame(width: 24, height: 24)
