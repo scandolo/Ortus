@@ -32,10 +32,20 @@ notarize() {
     echo "Notarized $1"
 }
 
+# Attaches the ticket. Apple's ticket lookup sometimes drops the connection right
+# after notarizing (stapler error 68), so retry a few times before giving up.
+staple() {
+    for attempt in 1 2 3 4 5; do
+        xcrun stapler staple "$1" && return
+        [[ $attempt == 5 ]] && exit 1
+        sleep 15
+    done
+}
+
 # 1. The app. Stapling attaches the ticket so the first launch works offline too.
 ditto -c -k --keepParent "$APP" "$WORK/Ortus.zip"
 notarize "$WORK/Ortus.zip"
-xcrun stapler staple "$APP"
+staple "$APP"
 rm -f Ortus-macOS.zip
 ditto -c -k --keepParent "$APP" Ortus-macOS.zip
 
@@ -52,7 +62,7 @@ for attempt in 1 2 3; do
 done
 codesign --force --sign "$ORTUS_SIGNING_IDENTITY" --timestamp Ortus.dmg
 notarize Ortus.dmg
-xcrun stapler staple Ortus.dmg
+staple Ortus.dmg
 
 # 3. Check them the way Gatekeeper will on a user's Mac.
 spctl --assess --type exec -vv "$APP"
