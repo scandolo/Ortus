@@ -267,12 +267,15 @@ struct FocusView: View {
 
 // MARK: - Blocked tags
 
-/// What a focus session is blocking: brand mark plus name. Deliberately not
-/// button-shaped (flat, recessed, square-ish corners) so it never reads as an action.
+/// What a focus session is blocking: overlapping brand marks plus a count, on one
+/// line however long the list. Names show on hover.
 private struct BlockedTags: View {
     let selection: BlockSelection
 
     private struct Item: Identifiable { let id: String; let glyph: String; let name: String; let isApp: Bool }
+
+    /// Marks shown before the count takes over.
+    private static let visibleLimit = 5
 
     /// One tag per preset the selection touches (Gmail, Slack), then one per other website or app.
     private var items: [Item] {
@@ -293,20 +296,28 @@ private struct BlockedTags: View {
 
     var body: some View {
         let items = items
-        FlowLayout(spacing: 6, centered: true) {
-            ForEach(items) { item in
-                HStack(spacing: 5) {
-                    glyph(item).opacity(0.75)
-                    Text(item.name).font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
+        let names = items.map(\.name).joined(separator: ", ")
+        if !items.isEmpty {
+            HStack(spacing: OrtusTheme.spacingSM) {
+                HStack(spacing: -9) {
+                    ForEach(Array(items.prefix(Self.visibleLimit).enumerated()), id: \.element.id) { index, item in
+                        glyph(item).opacity(0.85)
+                            .frame(width: 24, height: 24)
+                            .background(Circle().fill(OrtusTheme.cardSurface))
+                            .overlay(Circle().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
+                            .padding(2)
+                            .background(Circle().fill(OrtusTheme.canvas))
+                            .zIndex(Double(-index))
+                    }
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusSM / 2, style: .continuous).fill(Color.primary.opacity(0.05)))
+                Text(items.count == 1 ? items[0].name : "\(items.count) blocked")
+                    .font(OrtusTheme.Typo.caption)
+                    .foregroundStyle(OrtusTheme.textMuted)
             }
+            .help(names)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Blocked: " + names)
         }
-        .frame(maxWidth: 320)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Blocked: " + items.map(\.name).joined(separator: ", "))
     }
 
     @ViewBuilder private func glyph(_ item: Item) -> some View {
