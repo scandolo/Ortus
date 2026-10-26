@@ -59,6 +59,8 @@ async function connect() {
     // Chromium user agents don't reliably identify Arc; the companion popup lets a
     // user label that connection without collecting their profile or account name.
     const browser = saved.browserName || (/Edg\//.test(navigator.userAgent) ? 'Edge' : 'Chrome');
+    // Ortus closes the browser during focus if blocked sites stay open in incognito.
+    const incognito = await chrome.extension.isAllowedIncognitoAccess();
     const connection = chrome.runtime.connectNative(NATIVE_HOST);
     port = connection;
     connection.onMessage.addListener(message => {
@@ -71,7 +73,7 @@ async function connect() {
       apply(null, false, error);
       retryTimer = setTimeout(connect, 3000);
     });
-    connection.postMessage({ type: 'hello', clientID, browser });
+    connection.postMessage({ type: 'hello', clientID, browser, incognito });
   } catch (error) {
     port = null;
     apply(null, false, error.message);
