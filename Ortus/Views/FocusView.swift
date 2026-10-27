@@ -36,20 +36,14 @@ struct FocusView: View {
                             Text("Set up website blocking").frame(maxWidth: .infinity)
                         }
                         .buttonStyle(OrtusPrimaryButtonStyle())
-                        Button("Start anyway") { startSession() }
+                        Button("Start anyway") { requestStart() }
                             .buttonStyle(OrtusGhostButtonStyle())
                     } else {
-                        Button { startSession() } label: {
+                        Button { requestStart() } label: {
                             Text(startLabel).frame(maxWidth: .infinity)
                         }
                         .buttonStyle(OrtusPrimaryButtonStyle())
                         .disabled(focusManager.manualSelection.isEmpty)
-                        if !didStartFocusSession {
-                            Text("Once it starts, there's no end button. You'll have 30 seconds to change your mind.")
-                                .font(OrtusTheme.Typo.caption)
-                                .foregroundStyle(OrtusTheme.textMuted)
-                                .multilineTextAlignment(.center)
-                        }
                     }
                 }
                 .padding(.horizontal, OrtusTheme.spacingMD)
@@ -63,6 +57,15 @@ struct FocusView: View {
         let selection = focusManager.manualSelection
         let connected = !focusManager.websites.connectedBrowsers.isEmpty && snapshotState != "no-browser"
         return selection.applications.isEmpty && !selection.websites.isEmpty && !connected
+    }
+
+    /// The first session explains the lock before it starts.
+    private func requestStart() {
+        guard didStartFocusSession else {
+            router.modal = .focusIntro { startSession() }
+            return
+        }
+        startSession()
     }
 
     private func startSession() {
@@ -293,6 +296,39 @@ struct FocusView: View {
             return String(format: "%d:%02d:%02d", h, m, s)
         }
         return String(format: "%d:%02d", m, s)
+    }
+}
+
+// MARK: - First session
+
+/// Shown once, before the first session: there's no way out once it starts.
+struct FocusIntroModal: View {
+    @EnvironmentObject var router: PanelRouter
+    let onConfirm: () -> Void
+
+    var body: some View {
+        OrtusModal(title: "Before you start", onClose: { router.modal = nil }) {
+            VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
+                OrtusGroup {
+                    OrtusListRow(title: "There's no end button", subtitle: "Once it starts, the session runs until the timer ends.") {
+                        Image(systemName: "lock")
+                    } trailing: { EmptyView() }
+                    OrtusGroupDivider()
+                    OrtusListRow(title: "30 seconds to change your mind", subtitle: "Forgot something? You can still go back right after you start.") {
+                        Image(systemName: "arrow.uturn.backward")
+                    } trailing: { EmptyView() }
+                }
+                HStack {
+                    Spacer()
+                    Button("Understood, start") {
+                        router.modal = nil
+                        onConfirm()
+                    }
+                    .buttonStyle(OrtusPrimaryButtonStyle())
+                    .keyboardShortcut(.defaultAction)
+                }
+            }
+        }
     }
 }
 
