@@ -9,6 +9,7 @@ struct ChatView: View {
     @AppStorage("genZMode") private var genZ = false
     @FocusState private var isInputFocused: Bool
     @State private var isBarHovering = false
+    @State private var barWidth: CGFloat = 0
 
     var body: some View {
         VStack(spacing: 0) {
@@ -35,6 +36,10 @@ struct ChatView: View {
                     ChatMessage(role: .assistant, content: "Gmail · search_threads", kind: .permissionRequest(toolName: "mcp__claude_ai_Gmail__search_threads")),
                 ]
             } else if snapshotState == "chat-draft" {
+                claudeCodeService.messages = [
+                    ChatMessage(role: .user, content: "Anything urgent in my email?"),
+                    ChatMessage(role: .assistant, content: "Two things: Haroun replied about the contract, and your Lisbon flight moved to 9:40."),
+                ]
                 inputText = "Go through my Slack DMs from this morning, pull out anything that needs a reply today, and draft short answers I can send when the session ends"
             }
         }
@@ -113,46 +118,39 @@ struct ChatView: View {
 
     // MARK: - Input Bar
 
+    /// One line sits in a capsule with the buttons beside the text. Once the draft
+    /// needs a second line, the bar opens into a card: the text takes the full width
+    /// and the buttons drop to a row underneath.
     private var inputBar: some View {
-        // Bottom-aligned so the buttons stay on the last line as a long draft wraps.
-        HStack(alignment: .bottom, spacing: OrtusTheme.spacingSM) {
-            if !claudeCodeService.messages.isEmpty {
-                Button {
-                    claudeCodeService.clearConversation()
-                } label: {
-                    Image(systemName: "trash")
-                        .font(.callout)
-                        .foregroundStyle(OrtusTheme.textMuted)
-                        .frame(width: 28, height: 28)
-                }
-                .buttonStyle(OrtusPressableStyle(cornerRadius: 14))
-                .help("Clear conversation")
-                .disabled(claudeCodeService.isProcessing)
+        VStack(alignment: .leading, spacing: 0) {
+            // The field keeps its place in both layouts, so switching keeps focus.
+            HStack(spacing: OrtusTheme.spacingSM) {
+                if !isExpanded && hasConversation { newChatButton }
+                inputField
+                if !isExpanded { sendButton }
             }
+            .padding(.leading, isExpanded || !hasConversation ? OrtusTheme.spacingMD : 6)
+            .padding(.trailing, isExpanded ? OrtusTheme.spacingMD : 6)
+            .padding(.top, 6)
+            .padding(.bottom, isExpanded ? 0 : 6)
 
-            // Wraps instead of scrolling sideways, and grows to six lines before it
-            // scrolls. Return still sends.
-            TextField("", text: $inputText, prompt: Text(genZ ? "spill…" : "What do you need?").foregroundStyle(OrtusTheme.textMuted), axis: .vertical)
-                .textFieldStyle(.plain)
-                .font(OrtusTheme.Typo.body)
-                .lineLimit(1...6)
-                .padding(.vertical, 6)
-                .focused($isInputFocused)
-                .onSubmit { sendMessage() }
-                .disabled(!claudeCodeService.isConfigured || claudeCodeService.isProcessing)
-
-            if claudeCodeService.isProcessing {
-                ChatStopButton(action: { claudeCodeService.stop() })
-            } else {
-                ChatSendButton(canSend: canSend, action: sendMessage)
+            if isExpanded {
+                HStack {
+                    if hasConversation { newChatButton }
+                    Spacer()
+                    sendButton
+                }
+                .padding([.horizontal, .bottom], 6)
+                .padding(.top, 2)
             }
         }
-        // With the clear button showing, it mirrors the send button's inset.
-        .padding(.leading, claudeCodeService.messages.isEmpty ? OrtusTheme.spacingMD : 6)
-        .padding(.trailing, 6)
-        .padding(.vertical, 6)
         .frame(minHeight: OrtusTheme.controlHeight)
         .background(inputBarBackground)
+        .background(GeometryReader { proxy in
+            Color.clear
+                .onAppear { barWidth = proxy.size.width }
+                .onChange(of: proxy.size.width) { barWidth = proxy.size.width }
+        })
         // The whole bar is the field: clicks on its padding focus the text box.
         .contentShape(inputBarShape)
         .onTapGesture { isInputFocused = true }
@@ -167,26 +165,82 @@ struct ChatView: View {
         .animation(.easeOut(duration: 0.18), value: isBarHovering)
     }
 
-    /// A capsule on one line. A longer draft keeps the same end radius, so the bar
-    /// opens into a soft rounded rectangle rather than a tall stadium.
+    // Wraps instead of scrolling sideways, and grows to six lines before it
+    // scrolls. Return still sends.
+    private var inputField: some View {
+        TextField("", text: $inputText, prompt: Text(genZ ? "spill…" : "What do you need?").foregroundStyle(OrtusTheme.textMuted), axis: .vertical)
+            .textFieldStyle(.plain)
+            .font(OrtusTheme.Typo.body)
+            .lineLimit(1...6)
+            .padding(.vertical, 6)
+            .focused($isInputFocused)
+            .onSubmit { sendMessage() }
+            .disabled(!claudeCodeService.isConfigured || claudeCodeService.isProcessing)
+    }
+
+    private var newChatButton: some View {
+        Button {
+            claudeCodeService.clearConversation()
+        } label: {
+            Image(systemName: "square.and.pencil")
+                .font(.callout)
+                .foregroundStyle(OrtusTheme.textMuted)
+                .frame(width: 28, height: 28)
+        }
+        .buttonStyle(OrtusPressableStyle(cornerRadius: 14))
+        .help("New chat")
+        .disabled(claudeCodeService.isProcessing)
+    }
+
+    @ViewBuilder private var sendButton: some View {
+        if claudeCodeService.isProcessing {
+            ChatStopButton(action: { claudeCodeService.stop() })
+        } else {
+            ChatSendButton(canSend: canSend, action: sendMessage)
+        }
+    }
+
+    private var hasConversation: Bool { !claudeCodeService.messages.isEmpty }
+
+    /// True once the draft no longer fits on one line beside the buttons. Measured
+    /// against the one-line layout, so the card doesn't flip back when it widens.
+    private var isExpanded: Bool {
+        if inputText.contains("\n") { return true }
+        guard barWidth > 0, !inputText.isEmpty else { return false }
+        let buttons: CGFloat = (hasConversation ? 2 : 1) * (28 + OrtusTheme.spacingSM)
+        let insets: CGFloat = (hasConversation ? 6 : OrtusTheme.spacingMD) + 6
+        let textWidth = (inputText as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 13)]).width
+        // Some slack so the card opens before the field itself starts to wrap.
+        return textWidth > barWidth - buttons - insets - 8
+    }
+
+    /// A capsule on one line. The card keeps the same end radius, so a long draft
+    /// reads as a soft rounded rectangle rather than a tall stadium.
     private var inputBarShape: RoundedRectangle {
         RoundedRectangle(cornerRadius: OrtusTheme.controlHeight / 2, style: .continuous)
     }
 
     private var inputBarBackground: some View {
-        inputBarShape
-            .fill(OrtusTheme.cardSurface)
-            .overlay(
-                inputBarShape.strokeBorder(
-                    isInputFocused ? OrtusTheme.accent : isBarHovering ? OrtusTheme.accent.opacity(0.45) : OrtusTheme.hairline,
-                    lineWidth: isInputFocused ? 1.5 : 1
+        ZStack {
+            // While typing, a soft amber halo just outside the edge, not a heavy ring.
+            inputBarShape
+                .stroke(OrtusTheme.accent.opacity(isInputFocused ? 0.14 : 0), lineWidth: 7)
+            inputBarShape
+                .fill(OrtusTheme.cardSurface)
+                .shadow(
+                    color: .black.opacity(isBarHovering ? 0.16 : 0.12),
+                    radius: isBarHovering ? 16 : 14,
+                    y: isBarHovering ? 5 : 4
                 )
-            )
-            .shadow(
-                color: isInputFocused ? OrtusTheme.accent.opacity(0.30) : .black.opacity(isBarHovering ? 0.16 : 0.12),
-                radius: isInputFocused ? 8 : isBarHovering ? 16 : 14,
-                y: isInputFocused ? 2 : isBarHovering ? 5 : 4
-            )
+            // A thin top highlight lifts the surface in dark mode.
+            inputBarShape
+                .strokeBorder(LinearGradient(colors: [OrtusTheme.innerHighlight, .clear], startPoint: .top, endPoint: .center), lineWidth: 1)
+            inputBarShape
+                .strokeBorder(
+                    isInputFocused ? OrtusTheme.accent.opacity(0.55) : isBarHovering ? OrtusTheme.accent.opacity(0.35) : OrtusTheme.hairline,
+                    lineWidth: 1
+                )
+        }
     }
 
     // MARK: - Helpers
@@ -216,14 +270,17 @@ private struct ChatSendButton: View {
         Button(action: action) {
             Image(systemName: "arrow.up")
                 .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(OrtusTheme.onAccent)
+                .foregroundStyle(canSend ? OrtusTheme.onAccent : OrtusTheme.textMuted)
                 .frame(width: 28, height: 28)
                 .background(
-                    Circle().fill(
-                        canSend
-                            ? (isHovering ? OrtusTheme.accentInkHover : OrtusTheme.accentInk)
-                            : Color.secondary.opacity(0.22)
-                    )
+                    Circle()
+                        .fill(
+                            canSend
+                                ? (isHovering ? OrtusTheme.accentInkHover : OrtusTheme.accentInk)
+                                : Color.primary.opacity(0.08)
+                        )
+                        // A soft sheen from the top gives the filled button some depth.
+                        .overlay(Circle().fill(LinearGradient(colors: [.white.opacity(canSend ? 0.2 : 0), .clear], startPoint: .top, endPoint: .center)))
                 )
                 .overlay(
                     Circle().strokeBorder(
