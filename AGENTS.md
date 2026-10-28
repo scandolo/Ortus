@@ -3,6 +3,21 @@
 `CLAUDE.md` is a symlink to this file. For what Ortus is and how the code is laid
 out, read `README.md`. This repo is public.
 
+## Backlog
+
+The backlog for Ortus is the Notion database **Ortus backlog**
+(https://app.notion.com/p/9b7c57bae4c94a2d9498a6beb6cef65f), a board grouped by Status.
+Use the Notion tools to read and update it.
+
+- Statuses: **Idea → Triaged → Building → Shipped**.
+- An idea you find or suggest goes in as **Idea** with a one-line Summary, Area and
+  Source. Check for an existing card first.
+- **Never move a card to Triaged yourself.** It moves only after the maintainer has
+  said what it means, what we want and whether it makes sense. Record that input
+  on the card.
+- Work from Triaged cards. Set Building when you start and Shipped when it's merged,
+  and add the PR to the card.
+
 ## Releasing: main = release
 
 - Every push to `main` that touches `Ortus/`, `Sources/`, `BrowserExtension/`,
