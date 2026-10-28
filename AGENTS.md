@@ -31,6 +31,22 @@ out, read `README.md`. This repo is public.
   `ORTUS_SNAPSHOT_DIR=/path` (`Ortus/Debug/SnapshotHarness.swift`). Design rules
   live at the top of `Ortus/Views/OrtusTheme.swift`.
 
+## UI changes: show them in the PR
+
+- A PR that changes what people see or do (layout, styling, copy, states, flows)
+  puts images in its description: before and after, plus dark and light mode
+  when colours change.
+- Prefer real renders. On a Mac, use the snapshot harness and add a snapshot state
+  for the new UI if none shows it. For the browser extension and landing page,
+  screenshot the real pages with Playwright.
+- If the app can't run (no macOS or Xcode), build an HTML mock-up at real size from
+  the `OrtusTheme` tokens and render it with Playwright at 2x. Label it as a
+  mock-up, not a render of the app.
+- Keep images off the PR branch so they never land on `main`. Commit them to the
+  `pr-assets` branch (an orphan branch; create it if missing) in a folder named
+  after the PR branch, and link them as
+  `https://raw.githubusercontent.com/scandolo/Ortus/pr-assets/<pr-branch>/<name>.png`.
+
 ## Private notes
 
 `.context/` is git-ignored and copied into each Conductor workspace from the
