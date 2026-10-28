@@ -15,7 +15,6 @@ DerivedData/
 *.dmg
 ortus-next/
 .claude/
-.agents/
 .conductor/
 
 # Internal working docs — keep out of the public repo
