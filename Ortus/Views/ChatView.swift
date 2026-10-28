@@ -34,6 +34,8 @@ struct ChatView: View {
                     ChatMessage(role: .assistant, content: "I need your OK to search Gmail. Allow it below and I'll check."),
                     ChatMessage(role: .assistant, content: "Gmail · search_threads", kind: .permissionRequest(toolName: "mcp__claude_ai_Gmail__search_threads")),
                 ]
+            } else if snapshotState == "chat-draft" {
+                inputText = "Go through my Slack DMs from this morning, pull out anything that needs a reply today, and draft short answers I can send when the session ends"
             }
         }
         // Chat works with no setup, so the first visit explains what it is instead.
@@ -112,7 +114,8 @@ struct ChatView: View {
     // MARK: - Input Bar
 
     private var inputBar: some View {
-        HStack(spacing: OrtusTheme.spacingSM) {
+        // Bottom-aligned so the buttons stay on the last line as a long draft wraps.
+        HStack(alignment: .bottom, spacing: OrtusTheme.spacingSM) {
             if !claudeCodeService.messages.isEmpty {
                 Button {
                     claudeCodeService.clearConversation()
@@ -120,15 +123,19 @@ struct ChatView: View {
                     Image(systemName: "trash")
                         .font(.callout)
                         .foregroundStyle(OrtusTheme.textMuted)
+                        .frame(width: 28, height: 28)
                 }
-                .buttonStyle(OrtusPressableStyle(inset: 6, cornerRadius: 14))
+                .buttonStyle(OrtusPressableStyle(cornerRadius: 14))
                 .help("Clear conversation")
                 .disabled(claudeCodeService.isProcessing)
             }
 
-            TextField("", text: $inputText, prompt: Text(genZ ? "spill…" : "What do you need?").foregroundStyle(OrtusTheme.textMuted))
+            // Wraps instead of scrolling sideways, and grows to six lines before it
+            // scrolls. Return still sends.
+            TextField("", text: $inputText, prompt: Text(genZ ? "spill…" : "What do you need?").foregroundStyle(OrtusTheme.textMuted), axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(OrtusTheme.Typo.body)
+                .lineLimit(1...6)
                 .padding(.vertical, 6)
                 .focused($isInputFocused)
                 .onSubmit { sendMessage() }
@@ -140,17 +147,18 @@ struct ChatView: View {
                 ChatSendButton(canSend: canSend, action: sendMessage)
             }
         }
-        .padding(.leading, OrtusTheme.spacingMD)
+        // With the clear button showing, it mirrors the send button's inset.
+        .padding(.leading, claudeCodeService.messages.isEmpty ? OrtusTheme.spacingMD : 6)
         .padding(.trailing, 6)
         .padding(.vertical, 6)
         .frame(minHeight: OrtusTheme.controlHeight)
         .background(inputBarBackground)
-        // The whole capsule is the field: clicks on its padding focus the text box.
-        .contentShape(Capsule())
+        // The whole bar is the field: clicks on its padding focus the text box.
+        .contentShape(inputBarShape)
         .onTapGesture { isInputFocused = true }
         .onHover { hovering in
             isBarHovering = hovering
-            // The whole capsule behaves like the text field, cursor included.
+            // The whole bar behaves like the text field, cursor included.
             if hovering { NSCursor.iBeam.push() } else { NSCursor.pop() }
         }
         .padding(.horizontal, OrtusTheme.spacingMD)
@@ -159,11 +167,17 @@ struct ChatView: View {
         .animation(.easeOut(duration: 0.18), value: isBarHovering)
     }
 
+    /// A capsule on one line. A longer draft keeps the same end radius, so the bar
+    /// opens into a soft rounded rectangle rather than a tall stadium.
+    private var inputBarShape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: OrtusTheme.controlHeight / 2, style: .continuous)
+    }
+
     private var inputBarBackground: some View {
-        Capsule()
+        inputBarShape
             .fill(OrtusTheme.cardSurface)
             .overlay(
-                Capsule().strokeBorder(
+                inputBarShape.strokeBorder(
                     isInputFocused ? OrtusTheme.accent : isBarHovering ? OrtusTheme.accent.opacity(0.45) : OrtusTheme.hairline,
                     lineWidth: isInputFocused ? 1.5 : 1
                 )
