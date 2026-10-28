@@ -51,6 +51,7 @@ enum SnapshotHarness {
             await render("chat-intro", tab: 2, state: "chat-intro")
             await render("chat-permission", tab: 2, state: "chat-permission")
             await render("chat-draft", tab: 2, state: "chat-draft")
+            await render("chat-draft-dark", tab: 2, state: "chat-draft", dark: true)
             await render("settings", tab: 3)
             await render("settings-dark", tab: 3, dark: true)
             await render("chat-setup", tab: 3, state: "chat-setup")
