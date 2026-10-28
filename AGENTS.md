@@ -47,6 +47,18 @@ out, read `README.md`. This repo is public.
   after the PR branch, and link them as
   `https://raw.githubusercontent.com/scandolo/Ortus/pr-assets/<pr-branch>/<name>.png`.
 
+## Marketing and distribution
+
+- For marketing and distribution work (positioning, landing page copy, SEO, launch
+  posts, store listings, onboarding and activation, pricing, email), use the skills
+  from [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills).
+  If your agent doesn't have them, install them with
+  `npx skills add coreyhaines31/marketingskills` into `.claude/skills/` (git-ignored).
+- The skills share a product marketing context doc, by default
+  `.agents/product-marketing.md`. In Ortus it lives with the other private notes:
+  use `.context/product-marketing.md`, built from the positioning brief and research
+  already in `.context/plans/` and `.context/research/`. Don't create `.agents/`.
+
 ## Private notes
 
 `.context/` is git-ignored and copied into each Conductor workspace from the
