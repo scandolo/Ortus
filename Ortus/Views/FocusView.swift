@@ -4,6 +4,7 @@ import OrtusCore
 struct FocusView: View {
     @EnvironmentObject var focusManager: FocusManager
     @EnvironmentObject var router: PanelRouter
+    @Environment(\.snapshotState) private var snapshotState
     @AppStorage("genZMode") private var genZ = false
     @AppStorage("didStartFocusSession") private var didStartFocusSession = false
     @State private var manualDuration: Double = 90
@@ -28,11 +29,23 @@ struct FocusView: View {
         }
             // The primary action stays pinned and visible, like "Add schedule".
             if !focusManager.isInFocus {
-                Button { requestStart() } label: {
-                    Text(startLabel).frame(maxWidth: .infinity)
+                VStack(spacing: OrtusTheme.spacingSM) {
+                    if blocksNothing {
+                        // A locked session that blocks nothing is the worst first impression.
+                        Button { router.modal = .browserSetup } label: {
+                            Text("Set up website blocking").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(OrtusPrimaryButtonStyle())
+                        Button("Start anyway") { requestStart() }
+                            .buttonStyle(OrtusGhostButtonStyle())
+                    } else {
+                        Button { requestStart() } label: {
+                            Text(startLabel).frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(OrtusPrimaryButtonStyle())
+                        .disabled(focusManager.manualSelection.isEmpty)
+                    }
                 }
-                .buttonStyle(OrtusPrimaryButtonStyle())
-                .disabled(focusManager.manualSelection.isEmpty)
                 .padding(.horizontal, OrtusTheme.spacingMD)
                 .padding(.bottom, OrtusTheme.spacingSM)
             }
@@ -42,14 +55,17 @@ struct FocusView: View {
     /// A websites-only mode blocks nothing until a browser is connected.
     private var blocksNothing: Bool {
         let selection = focusManager.manualSelection
-        return selection.applications.isEmpty && !selection.websites.isEmpty && focusManager.websites.connectedBrowsers.isEmpty
+        let connected = !focusManager.websites.connectedBrowsers.isEmpty && snapshotState != "no-browser"
+        return selection.applications.isEmpty && !selection.websites.isEmpty && !connected
     }
 
-    /// Stops before a session that would block nothing (the worst first impression),
-    /// and before the first session, to explain the lock.
+    /// The first session explains the lock before it starts.
     private func requestStart() {
-        guard blocksNothing || !didStartFocusSession else { return startSession() }
-        router.modal = .beforeFocus(blocksNothing: blocksNothing, explainLock: !didStartFocusSession) { startSession() }
+        guard didStartFocusSession else {
+            router.modal = .focusIntro { startSession() }
+            return
+        }
+        startSession()
     }
 
     private func startSession() {
@@ -283,56 +299,36 @@ struct FocusView: View {
     }
 }
 
-// MARK: - Before a session
+// MARK: - First session
 
-/// Shown when starting would block nothing, and before the first session:
-/// once it starts, there's no way out.
-struct BeforeFocusModal: View {
+/// Shown once, before the first session: there's no way out once it starts.
+struct FocusIntroModal: View {
     @EnvironmentObject var router: PanelRouter
-    let blocksNothing: Bool
-    let explainLock: Bool
-    let onStart: () -> Void
+    let onConfirm: () -> Void
 
     var body: some View {
-        OrtusModal(title: explainLock ? "Before you start" : "Nothing to block yet", onClose: { router.modal = nil }) {
+        OrtusModal(title: "Before you start", onClose: { router.modal = nil }) {
             VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
                 OrtusGroup {
-                    if blocksNothing {
-                        OrtusListRow(title: "Website blocking isn't set up", subtitle: "This mode only blocks websites, and no browser is connected yet.") {
-                            Image(systemName: "exclamationmark.shield.fill").foregroundStyle(OrtusTheme.warning)
-                        } trailing: { EmptyView() }
-                    }
-                    if blocksNothing && explainLock { OrtusGroupDivider() }
-                    if explainLock {
-                        OrtusListRow(title: "There's no end button", subtitle: "Once it starts, the session runs until the timer ends.") {
-                            Image(systemName: "lock")
-                        } trailing: { EmptyView() }
-                        OrtusGroupDivider()
-                        OrtusListRow(title: "30 seconds to change your mind", subtitle: "Forgot something? You can still go back right after you start.") {
-                            Image(systemName: "arrow.uturn.backward")
-                        } trailing: { EmptyView() }
-                    }
+                    OrtusListRow(title: "There's no end button", subtitle: "Once it starts, the session runs until the timer ends.") {
+                        Image(systemName: "lock")
+                    } trailing: { EmptyView() }
+                    OrtusGroupDivider()
+                    OrtusListRow(title: "30 seconds to change your mind", subtitle: "Forgot something? You can still go back right after you start.") {
+                        Image(systemName: "arrow.uturn.backward")
+                    } trailing: { EmptyView() }
                 }
                 HStack {
                     Spacer()
-                    if blocksNothing {
-                        Button("Start anyway", action: start).buttonStyle(OrtusGhostButtonStyle())
-                        Button("Set up website blocking") { router.modal = .browserSetup }
-                            .buttonStyle(OrtusPrimaryButtonStyle())
-                            .keyboardShortcut(.defaultAction)
-                    } else {
-                        Button("Understood, start", action: start)
-                            .buttonStyle(OrtusPrimaryButtonStyle())
-                            .keyboardShortcut(.defaultAction)
+                    Button("Understood, start") {
+                        router.modal = nil
+                        onConfirm()
                     }
+                    .buttonStyle(OrtusPrimaryButtonStyle())
+                    .keyboardShortcut(.defaultAction)
                 }
             }
         }
-    }
-
-    private func start() {
-        router.modal = nil
-        onStart()
     }
 }
 

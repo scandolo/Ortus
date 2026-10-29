@@ -164,9 +164,7 @@ struct OrtusApp: App {
             case "slack-setup": .slackSetup
             case "chat-setup": .chatSetup
             case "chat-intro": .chatIntro
-            case "focus-intro": .beforeFocus(blocksNothing: false, explainLock: true) {}
-            case "no-browser": .beforeFocus(blocksNothing: true, explainLock: true) {}
-            case "no-browser-again": .beforeFocus(blocksNothing: true, explainLock: false) {}
+            case "focus-intro": .focusIntro {}
             case "mode-editor": .modeEditor(FocusMode(name: focusManager.nextCustomModeName, blocked: focusManager.manualSelection)) { _ in }
             default: nil
             }
