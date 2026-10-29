@@ -74,6 +74,20 @@ final class FocusManager: ObservableObject {
         }
     }
 
+    // MARK: Chat
+
+    /// One sentence for the chat assistant about the user's focus right now.
+    func chatContext(now: Date = Date()) -> String {
+        guard isInFocus, let start = focusStartTime, let end = focusEndTime else {
+            return "The user is not in a focus session right now."
+        }
+        let elapsed = max(0, Int(now.timeIntervalSince(start) / 60))
+        let left = max(0, Int((end.timeIntervalSince(now) / 60).rounded(.up)))
+        let name = currentSessionName.map { " (\"\($0)\")" } ?? ""
+        let ends = end.formatted(date: .omitted, time: .shortened)
+        return "The user is in a focus session\(name) that started \(elapsed) minutes ago and ends at \(ends) (\(left) minutes left). Blocked: \(activeSelection.summary)."
+    }
+
     // MARK: Modes
 
     var modes: [FocusMode] { FocusMode.builtIn + customModes }

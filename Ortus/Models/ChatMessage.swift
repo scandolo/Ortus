@@ -1,4 +1,5 @@
 import Foundation
+import OrtusCore
 
 enum ChatRole: String, Codable {
     case user
@@ -8,10 +9,9 @@ enum ChatRole: String, Codable {
 
 enum ChatMessageKind: Equatable {
     case text
-    case toolUse(toolName: String)
+    /// What Claude is doing or did for this answer; updated in place while it works.
+    case activity(ChatActivity)
     case error
-    /// Claude was refused this tool; the row offers to allow it.
-    case permissionRequest(toolName: String)
 }
 
 struct ChatMessage: Identifiable, Equatable {

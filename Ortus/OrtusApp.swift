@@ -115,6 +115,7 @@ struct OrtusApp: App {
                 // Inject SlackService here (not in App.init) — the StateObject
                 // backing store isn't ready until a view installs it.
                 focusManager.slackService = slackService
+                claudeCodeService.focusContext = { [weak focusManager] in focusManager?.chatContext() }
             }
     }
 

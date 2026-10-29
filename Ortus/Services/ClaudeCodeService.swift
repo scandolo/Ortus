@@ -1,4 +1,5 @@
 import Foundation
+import OrtusCore
 import SwiftUI
 
 /// Drives the in-app chat by spawning the user's locally-installed `claude` CLI
@@ -16,39 +17,12 @@ final class ClaudeCodeService: ObservableObject {
 
     @AppStorage("claudeBinaryPath") var claudeBinaryPath = ""
 
-    /// Tools the user allowed from an inline "Allow" button, on top of `defaultAllowedTools`.
-    @Published private(set) var allowedTools: [String] = UserDefaults.standard.stringArray(forKey: ClaudeCodeService.allowedToolsKey) ?? []
-    private static let allowedToolsKey = "chatAllowedTools"
+    /// The user's focus right now, in one sentence for the system prompt. Set by the
+    /// app once FocusManager exists; read again on every message.
+    var focusContext: () -> String? = { nil }
 
-    /// Basic reads that run without asking. `-p` mode can't show a permission prompt,
-    /// so any other tool is refused and comes back as an "Allow" button in the chat.
-    private static let defaultAllowedTools = [
-        "mcp__claude_ai_Gmail__search_threads",
-        "mcp__claude_ai_Gmail__get_thread",
-        "mcp__claude_ai_Gmail__get_message",
-        "mcp__claude_ai_Gmail__list_labels",
-        "mcp__claude_ai_Gmail__list_drafts",
-        "mcp__claude_ai_Gmail__get_draft",
-        "mcp__claude_ai_Google_Calendar__list_calendars",
-        "mcp__claude_ai_Google_Calendar__list_events",
-        "mcp__claude_ai_Google_Calendar__search_events",
-        "mcp__claude_ai_Google_Calendar__get_event",
-        "mcp__claude_ai_Google_Calendar__suggest_time",
-        "mcp__claude_ai_Google_Drive__search_files",
-        "mcp__claude_ai_Google_Drive__list_recent_files",
-        "mcp__claude_ai_Google_Drive__get_file_metadata",
-        "mcp__claude_ai_Google_Drive__read_file_content",
-        "mcp__claude_ai_Slack__slack_search_public",
-        "mcp__claude_ai_Slack__slack_search_public_and_private",
-        "mcp__claude_ai_Slack__slack_search_channels",
-        "mcp__claude_ai_Slack__slack_search_users",
-        "mcp__claude_ai_Slack__slack_read_channel",
-        "mcp__claude_ai_Slack__slack_read_thread",
-        "mcp__claude_ai_Slack__slack_read_user_profile",
-        "mcp__claude_ai_Notion__notion-search",
-        "mcp__claude_ai_Notion__notion-fetch",
-        "WebSearch",
-    ]
+    /// The text sent from each draft card, which then shows it read-only.
+    @Published var sentDrafts: [String: String] = [:]
 
     @Published private(set) var canUndoClear = false
     private var clearedConversation: (messages: [ChatMessage], sessionID: String, started: Bool)?
@@ -56,6 +30,10 @@ final class ClaudeCodeService: ObservableObject {
     private var hasStartedSession = false
     private var currentProcess: Process?
     private var currentTask: Task<Void, Never>?
+    /// The answer being streamed, and the chat rows that show it.
+    private var turn: ChatTurn?
+    private var activityID: UUID?
+    private var answerID: UUID?
 
     /// `claude` resolved from the user's login-shell PATH. Filled in asynchronously
     /// by `detectIfNeeded()` so we catch installs that aren't in `defaultBinaryPaths`
@@ -183,6 +161,10 @@ final class ClaudeCodeService: ObservableObject {
 
         clearedConversation = nil; canUndoClear = false
         if !isRetry { messages.append(ChatMessage(role: .user, content: trimmed)) }
+        let newTurn = ChatTurn(startedAt: Date())
+        let activity = ChatMessage(role: .assistant, content: "", kind: .activity(newTurn.activity))
+        messages.append(activity)
+        turn = newTurn; activityID = activity.id; answerID = nil
         isProcessing = true
         error = nil
         errorDetails = nil
@@ -194,6 +176,7 @@ final class ClaudeCodeService: ObservableObject {
 
         currentTask = Task { @MainActor in
             await runClaude(binary: binary, prompt: trimmed, sessionID: session, isFirstTurn: isFirstTurn)
+            self.updateTurn { $0.finish(at: Date(), stopped: Task.isCancelled) }
             if self.error != nil { self.failedPrompt = trimmed }
             self.isProcessing = false
             self.currentProcess = nil
@@ -201,15 +184,13 @@ final class ClaudeCodeService: ObservableObject {
         }
     }
 
-    /// Remembers the tool and asks Claude to pick up where the refusal stopped it.
-    func allowTool(_ name: String) {
+    /// The draft card's Send button: a normal chat message, like typing it. Edits go
+    /// along in full so Claude sends the user's version.
+    func sendDraft(id: String, original: String, edited: String) {
         guard !isProcessing else { return }
-        if !allowedTools.contains(name) {
-            allowedTools.append(name)
-            UserDefaults.standard.set(allowedTools, forKey: Self.allowedToolsKey)
-        }
-        Analytics.capture("chat_tool_allowed", ["tool": name])
-        sendMessage("I allowed \(name). Try again.", isRetry: true)
+        let text = edited.trimmingCharacters(in: .whitespacesAndNewlines)
+        sendMessage(text == original.trimmingCharacters(in: .whitespacesAndNewlines) ? "Send it." : "Send it, with my edits:\n\n\(text)")
+        sentDrafts[id] = text
     }
 
     func stop() {
@@ -224,6 +205,7 @@ final class ClaudeCodeService: ObservableObject {
         stop()
         Analytics.capture("chat_cleared", ["message_count": messages.count])
         messages.removeAll()
+        turn = nil; activityID = nil; answerID = nil
         sessionID = UUID().uuidString
         hasStartedSession = false
         error = nil
@@ -256,9 +238,10 @@ final class ClaudeCodeService: ObservableObject {
             "--verbose",
             "--model", "claude-sonnet-5-5",
             "--effort", "low",
-            "--append-system-prompt", Self.systemPrompt,
-            "--permission-mode", "default",
-            "--allowedTools", (Self.defaultAllowedTools + allowedTools).joined(separator: ","),
+            "--append-system-prompt", Self.systemPrompt(now: Date(), focus: focusContext()),
+            // Every tool is on, like Claude Code in the user's terminal. The prompt has it
+            // draft anything that sends or changes something and wait for the user's OK.
+            "--permission-mode", "bypassPermissions",
         ]
         if isFirstTurn {
             args.append(contentsOf: ["--session-id", sessionID])
@@ -311,111 +294,130 @@ final class ClaudeCodeService: ObservableObject {
     // MARK: - Stream parsing
 
     private func handleStreamLine(_ line: String) {
-        guard !line.isEmpty,
-              let data = line.data(using: .utf8),
-              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let type = obj["type"] as? String else { return }
+        guard !line.isEmpty else { return }
+        updateTurn { $0.consume(line, at: Date()) }
+    }
 
-        switch type {
-        case "system":
-            if obj["subtype"] as? String == "init" { hasStartedSession = true }
-        case "assistant":
-            guard let message = obj["message"] as? [String: Any],
-                  let content = message["content"] as? [[String: Any]] else { return }
-            handleAssistantContent(content)
-        case "result":
-            if let isError = obj["is_error"] as? Bool, isError,
-               let result = obj["result"] as? String, !result.isEmpty {
-                recordFailure("Claude Code could not finish this request. Check assistant setup or retry.", details: result)
-            }
-            // One "Allow" button per refused tool, even if Claude tried it several times.
-            let denied = (obj["permission_denials"] as? [[String: Any]] ?? []).compactMap { $0["tool_name"] as? String }
-            var seen = Set<String>()
-            for name in denied where seen.insert(name).inserted && !allowedTools.contains(name) {
-                messages.append(ChatMessage(role: .assistant, content: Self.displayName(for: name), kind: .permissionRequest(toolName: name)))
-            }
-        default:
+    /// Applies a change to the current answer and mirrors it into the chat rows:
+    /// the activity row updates in place, the answer appears under it (and leaves
+    /// again if it turns out to be narration before a tool call), and an error is
+    /// added once the answer is finished.
+    private func updateTurn(_ change: (inout ChatTurn) -> Void) {
+        guard var current = turn else { return }
+        let wasFinished = current.isFinished
+        change(&current)
+        turn = current
+        if current.didStartSession { hasStartedSession = true }
+
+        guard let activityIndex = messages.firstIndex(where: { $0.id == activityID }) else { return }
+        messages[activityIndex].kind = .activity(current.activity)
+
+        let answerIndex = messages.firstIndex { $0.id == answerID }
+        switch (answerIndex, current.answer.isEmpty) {
+        case (nil, false):
+            let answer = ChatMessage(role: .assistant, content: current.answer)
+            messages.insert(answer, at: activityIndex + 1)
+            answerID = answer.id
+        case (let index?, false):
+            if messages[index].content != current.answer { messages[index].content = current.answer }
+        case (let index?, true):
+            messages.remove(at: index)
+            answerID = nil
+        case (nil, true):
             break
         }
-    }
 
-    private func handleAssistantContent(_ content: [[String: Any]]) {
-        var textParts: [String] = []
-        var toolUses: [(name: String, summary: String)] = []
-
-        for block in content {
-            guard let blockType = block["type"] as? String else { continue }
-            if blockType == "text", let text = block["text"] as? String, !text.isEmpty {
-                textParts.append(text)
-            } else if blockType == "tool_use", let name = block["name"] as? String {
-                let summary = summarizeTool(name: name, input: block["input"] as? [String: Any])
-                toolUses.append((name: name, summary: summary))
-            }
+        guard current.isFinished, !wasFinished else { return }
+        if let failure = current.failure {
+            recordFailure("Claude Code could not finish this request. Check assistant setup or retry.", details: failure)
         }
-
-        if !textParts.isEmpty {
-            messages.append(ChatMessage(
-                role: .assistant,
-                content: textParts.joined(separator: "\n\n"),
-                kind: .text
-            ))
-        }
-        for tu in toolUses {
-            messages.append(ChatMessage(
-                role: .assistant,
-                content: tu.summary,
-                kind: .toolUse(toolName: tu.name)
-            ))
-        }
-    }
-
-    private func summarizeTool(name: String, input: [String: Any]?) -> String {
-        let display = Self.displayName(for: name)
-        if let input, !input.isEmpty {
-            for key in ["query", "channel", "channel_id", "user", "user_id", "text", "name"] {
-                if let value = input[key] as? String, !value.isEmpty {
-                    let trimmed = value.count > 60 ? String(value.prefix(60)) + "…" : value
-                    return "\(display): \(trimmed)"
-                }
-            }
-        }
-        return display
-    }
-
-    /// Make tool names human-readable: mcp__claude_ai_Slack__slack_search_public → "Slack · slack_search_public"
-    private static func displayName(for name: String) -> String {
-        var display = name
-        if let prefixRange = display.range(of: "mcp__") {
-            display = String(display[prefixRange.upperBound...])
-            if let serverRange = display.range(of: "__") {
-                let server = display[..<serverRange.lowerBound]
-                    .replacingOccurrences(of: "claude_ai_", with: "")
-                    .replacingOccurrences(of: "plugin_", with: "")
-                    .replacingOccurrences(of: "_", with: " ")
-                let tool = String(display[serverRange.upperBound...])
-                display = "\(server) · \(tool)"
-            }
-        }
-        return display
     }
 
     // MARK: - System prompt
 
-    private static let systemPrompt = """
-    You are the assistant inside Ortus, a macOS focus app. The user is in a focus session and the apps \
-    and websites that distract them (for example Slack, email, social media) are blocked. They use this \
-    chat to find information or get small tasks done without opening those apps.
+    /// Rebuilt for every message: each one starts a new `claude` process (resuming the
+    /// same session), so the time and the focus state are always current.
+    static func systemPrompt(now: Date, focus: String?) -> String {
+        let clock = DateFormatter()
+        clock.locale = Locale(identifier: "en_US_POSIX")
+        clock.dateFormat = "EEEE d MMMM yyyy, HH:mm"
+        let today = "Right now it is \(clock.string(from: now)) (\(TimeZone.current.identifier))."
+        return """
+        You are the assistant inside Ortus, a macOS focus app. The apps and websites that distract the user \
+        (for example Slack, email, social media) are blocked while they focus. They use this chat to find \
+        information or get small tasks done without opening those apps. Answer what they asked and protect \
+        their attention.
 
-    Guidelines:
-    - Use whatever connected tools fit the request: Slack, email, calendar, documents, the web.
-    - Be concise. Default to short answers. Skip preamble. Don't say "I'll help you with that," just do it.
-    - When summarizing messages, give the gist, the sender and where it came from. Don't dump raw transcripts.
-    - Resolve user IDs to display names before showing them.
-    - Before anything that changes something (sending a message or email, editing a document, accepting \
-      an invite), confirm the target and the content with the user first.
-    - Don't pull the user back into distraction: no feeds, no unrelated highlights. Answer what they asked.
-    - If a tool is refused because the user hasn't allowed it yet, say so in one short line: they can \
-      allow it with the button under your reply. Don't send them to connector settings.
-    - Format for quick scanning. Short lists when helpful. No emoji unless the user uses them first.
-    """
+        \(today)
+        \(focus ?? "")
+
+        Guidelines:
+        - Use whatever connected tools fit the request: Slack, email, calendar, documents, the web.
+        - Answer in the first sentence. Skip preamble. Don't narrate what you're about to do.
+        - Show only what matters for the question. If the answer is no or nothing, say so in one line and \
+        stop: don't list what else you came across (other channels, newsletters, promotions, past events, \
+        "they did post elsewhere…").
+        - For "anything urgent?" questions, mention only what needs the user before their session ends or \
+        today. Everything else is one short closing line at most, without names.
+        - Resolve user IDs to display names before showing them.
+        - Never send or change anything (a message, an email, a document, an invite) until the user says \
+        so. Write messages as a draft block (format below) and stop; the user can edit it and press Send, \
+        which replies "Send it." or "Send it, with my edits:" followed by their text. Then send exactly that \
+        text, to the recipient in the draft, and confirm in one short line.
+
+        Formatting (the chat panel is narrow, about 50 characters per line):
+        - Short paragraphs. A bullet list only for three or more parallel items. Bold sparingly, for names \
+        or the key fact.
+        - No headings, no tables, no emoji unless the user uses them first.
+        - Times in the user's local time, relative when close ("yesterday at 11:37", "Thursday at 9:00"). \
+        Never write time zone names.
+
+        Quoting messages: when you show what someone actually wrote (a Slack message or thread, an email, a \
+        social post), put it in a quote block so Ortus shows it as a card. Text inside is copied verbatim \
+        from the tool result; shorten long text with "…" but never reword it. When the user asks what a \
+        message, email or post said, quote it rather than paraphrasing; open the full message if you only \
+        have a preview. Quote only the messages that answer the question, usually one to four; summarize \
+        the rest in a sentence outside the block. Don't repeat in prose or bullets what the quote already \
+        says. Format:
+
+        ```quote
+        source: slack
+        place: #general
+        ---
+        from: Maya Chen
+        time: 2026-10-25T10:12:00+00:00
+
+        The pricing page won't be ready for Friday…
+        ---
+        skipped: 4
+        ---
+        from: Tom Price
+        time: 2026-10-25T10:37:00+00:00
+
+        Agreed
+        ```
+
+        - source is slack, gmail, linkedin, x or other. place is the channel ("#general", "DM with Maya"), \
+        the email subject, or the site.
+        - One section per message, oldest first, separated by "---". Header lines, then a blank line, then \
+        the text.
+        - For a thread, include the parent and only the replies that matter; a "skipped: N" section marks \
+        replies you left out (don't explain the skipping in prose).
+        - Emails may add "to:" under "from:". Posts may add "about:" with the author's headline.
+        - Times are ISO 8601 with offset, copied from the tool result.
+
+        Draft blocks use the same format with "draft" instead of "quote": source and place (the channel or \
+        the email subject) in the header, then one section with "to:" and the text. Write the text exactly \
+        as it will be sent, in the user's voice, without placeholders.
+
+        ```draft
+        source: gmail
+        place: Re: Q1 pilot proposal
+        ---
+        to: Sara Conti
+
+        Hi Sara, 12 January works for us.
+        ```
+        """
+    }
 }

@@ -218,7 +218,7 @@ struct BlockingTests {
 
 // A plain Swift runner works with Apple's Command Line Tools as well as Xcode.
 // The CLT-only toolchain doesn't ship XCTest or swift-testing.
-private func expect(_ condition: Bool, file: StaticString = #file, line: UInt = #line) {
+func expect(_ condition: Bool, file: StaticString = #file, line: UInt = #line) {
     precondition(condition, "Expectation failed", file: file, line: line)
 }
 private func expectThrows(_ body: () throws -> String, file: StaticString = #file, line: UInt = #line) {
@@ -243,6 +243,13 @@ struct CoreChecks {
         checks.presetEditingPreservesUnrelatedTargets()
         checks.partialPresetsDescribeActualCoverage()
         checks.builtInModesAreNamedAndRecognised()
-        print("PASS: 15 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, framing, modes)")
+        let chat = ChatTests()
+        chat.hidesPlumbingAndNamesSteps()
+        chat.parallelCallsKeepOneLabelAndMatchResultsByID()
+        chat.thinkingNarrationAndHelpersFoldIntoSteps()
+        chat.hidesSavedResultReadsAndReportsFailures()
+        chat.parsesAnswersIntoBlocksAndQuoteCards()
+        chat.labelsTimesRelativeToNow()
+        print("PASS: 21 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, framing, modes, chat stream, chat blocks)")
     }
 }
