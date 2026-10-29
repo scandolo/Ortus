@@ -15,36 +15,42 @@ enum ChatFixtures {
         return true
     }
 
-    /// A Slack reply drafted by Claude, and after Send: "-sending", "-sent" or "-failed".
+    /// A Slack reply drafted by Claude, and after Send: "-sent" or "-failed".
+    /// "-email" is a Gmail reply instead, before Send.
     @MainActor private static func applyDraft(after phase: String, to service: ClaudeCodeService) {
-        let draft = "Thursday works for me. I'll have the pricing page ready by Wednesday evening."
+        let email = phase == "-email"
+        let draft = email
+            ? "Hi Sara, 12 January works for us. I'll update the plan and send the PO details this week.\n\nBest,\nFederico"
+            : "Thursday works for me. I'll have the pricing page ready by Wednesday evening."
         let answer = ChatMessage(role: .assistant, content: """
-        Here's a reply for the thread in #launch.
+        Here's a reply. Send it when you're happy with it.
 
         ```draft
-        source: slack
-        place: #launch
+        source: \(email ? "gmail" : "slack")
+        place: \(email ? "Re: Q1 pilot proposal" : "#launch")
         ---
-        to: Maya Chen, in the thread
+        to: \(email ? "Sara Conti" : "Maya Chen, in the thread")
 
         \(draft)
         ```
         """)
         service.messages = [
-            ChatMessage(role: .user, content: "tell maya thursday works for me"),
+            ChatMessage(role: .user, content: email ? "reply to sara that 12 january works" : "tell maya thursday works for me"),
             ChatMessage(role: .assistant, content: "", kind: .activity(replay([
-                (0, tool("t1", "mcp__claude_ai_Slack__slack_search_public_and_private", #"{"query":"launch Thursday"}"#)), (2, result("t1")), (4, end),
+                (0, email ? tool("t1", "mcp__claude_ai_Gmail__search_threads", #"{"query":"from:sara pilot"}"#)
+                          : tool("t1", "mcp__claude_ai_Slack__slack_search_public_and_private", #"{"query":"launch Thursday"}"#)),
+                (2, result("t1")), (4, end),
             ]).activity)),
             answer,
         ]
-        guard !phase.isEmpty else { return }
+        guard !phase.isEmpty, !email else { return }
         var events = [(0.0, tool("t2", "mcp__claude_ai_Slack__slack_send_message", #"{"channel_id":"C1"}"#))]
-        if phase != "-sending" { events += [(2, result("t2", error: phase == "-failed")), (3, end)] }
+        events += [(2, result("t2", error: phase == "-failed")), (3, end)]
         let activity = ChatMessage(role: .assistant, content: "", kind: .activity(replay(events, startedAt: Date().addingTimeInterval(-4)).activity))
         service.messages += [ChatMessage(role: .user, content: "Send it."), activity]
         if phase == "-sent" { service.messages.append(ChatMessage(role: .assistant, content: "Sent to the thread in #launch.")) }
         if phase == "-failed" { service.messages.append(ChatMessage(role: .assistant, content: "Slack didn't accept the message, so nothing was posted. Want me to try again?")) }
-        service.sentDrafts["\(answer.id)-1"] = (draft, activity.id)
+        service.sentDrafts["\(answer.id)-1"] = draft
     }
 
     /// The chat rows for a snapshot state, or nil when the state isn't a chat fixture.

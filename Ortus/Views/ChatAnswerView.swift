@@ -210,14 +210,16 @@ private extension View {
 
 // MARK: - Draft card
 
-/// A message Claude wrote for the user to send. The text is editable in place;
-/// Send posts a normal chat message ("Send it.", with the edited text if it changed)
-/// and the card then follows that turn: sending, sent, or not sent.
+/// A message Claude wrote for the user to send. The text reads like the rest of the
+/// card and is editable in place. Send posts a normal chat message ("Send it.", with
+/// the edited text if it changed); the card then keeps what was sent, read-only, and
+/// the activity line and Claude's reply below say how it went.
 private struct DraftCard: View {
     let draft: ChatQuote
     let id: String
     @EnvironmentObject private var claudeCodeService: ClaudeCodeService
     @State private var text: String
+    @State private var isHovering = false
     @FocusState private var isEditing: Bool
 
     init(draft: ChatQuote, id: String) {
@@ -227,20 +229,27 @@ private struct DraftCard: View {
     }
 
     private var message: ChatQuote.Message? { draft.messages.first }
-    private var sent: (text: String, activityID: UUID)? { claudeCodeService.sentDrafts[id] }
 
     var body: some View {
+        let sent = claudeCodeService.sentDrafts[id]
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 BrandGlyph(id: draft.source, size: 12)
                 if sent == nil {
-                    Text("Draft")
-                        .font(OrtusTheme.Typo.badge)
+                    Text("DRAFT")
+                        .font(OrtusTheme.Typo.section).tracking(0.6)
                         .foregroundStyle(OrtusTheme.accentInk)
                         .padding(.horizontal, 7).padding(.vertical, 2)
                         .background(Capsule().fill(OrtusTheme.accentSoft))
                 }
                 Text(appName(draft.source)).foregroundStyle(OrtusTheme.textMuted)
+                Spacer(minLength: 0)
+                if sent == nil {
+                    Button { isEditing = true } label: { Label("Edit", systemImage: "pencil") }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(isEditing ? OrtusTheme.accentInk : OrtusTheme.textMuted)
+                        .help("Change the text before sending")
+                }
             }
             .font(OrtusTheme.Typo.caption)
 
@@ -252,60 +261,46 @@ private struct DraftCard: View {
             }
 
             if let sent {
-                Text(sent.text).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
-                Divider()
-                status(sent.activityID)
+                Text(sent).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
             } else {
                 editor
-                Button("Send") { claudeCodeService.sendDraft(id: id, original: message?.text ?? "", edited: text) }
-                    .buttonStyle(OrtusPrimaryButtonStyle())
-                    .disabled(claudeCodeService.isProcessing || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                Divider().padding(.top, 4)
+                sendButton
             }
         }
         .chatCard()
     }
 
-    /// A recessed field that grows with the text: the hidden copy sets the height.
+    /// Looks like plain text; a faint tint on hover and while typing is the only chrome.
+    /// The hidden copy sets the height, so the field grows with the text.
     private var editor: some View {
         ZStack(alignment: .topLeading) {
-            Text(text + " ").padding(.horizontal, 5).opacity(0).accessibilityHidden(true)
+            Text(text + " ").opacity(0).accessibilityHidden(true)
             TextEditor(text: $text)
                 .scrollContentBackground(.hidden)
                 .scrollDisabled(true)
                 .focused($isEditing)
+                .padding(.horizontal, -5) // NSTextView's line padding, so the text lines up with the labels
         }
         .font(OrtusTheme.Typo.body)
-        .padding(6)
-        .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous).fill(OrtusTheme.inputSurface))
-        .overlay(
+        .background(
             RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous)
-                .strokeBorder(isEditing ? OrtusTheme.accent.opacity(0.55) : OrtusTheme.hairline, lineWidth: 1)
+                .fill(Color.primary.opacity(isEditing ? 0.05 : isHovering ? 0.03 : 0))
+                .padding(-4)
         )
+        .onHover { isHovering = $0 }
+        .animation(.easeOut(duration: 0.15), value: isHovering)
     }
 
-    /// Only claims "Sent" once the turn finished and a send step in this app succeeded.
-    /// A false "Not sent" is better than a false "Sent"; Claude's reply says what happened.
-    @ViewBuilder private func status(_ activityID: UUID) -> some View {
-        let activity = claudeCodeService.messages.first { $0.id == activityID }.flatMap { message -> ChatActivity? in
-            if case .activity(let activity) = message.kind { activity } else { nil }
-        }
-        if let activity, let finished = activity.finishedAt {
-            let succeeded = !activity.wasStopped && activity.toolSteps.contains {
-                $0.status == .done && $0.verb == "Sent" && ($0.source?.rawValue == draft.source || ChatActivity.Source(rawValue: draft.source) == nil)
-            }
-            if succeeded {
-                Label("Sent at \(finished.formatted(date: .omitted, time: .shortened))", systemImage: "checkmark")
-                    .foregroundStyle(OrtusTheme.success)
-            } else {
-                Label("Not sent. See the reply below.", systemImage: "exclamationmark.circle")
-                    .foregroundStyle(OrtusTheme.warning)
-            }
-        } else {
-            HStack(spacing: 6) {
-                ProgressView().controlSize(.small)
-                Text("Sending…").foregroundStyle(OrtusTheme.textMuted)
-            }
-        }
+    private var sendButton: some View {
+        Button("Send") { claudeCodeService.sendDraft(id: id, original: message?.text ?? "", edited: text) }
+            .buttonStyle(.plain)
+            .font(OrtusTheme.Typo.button)
+            .foregroundStyle(OrtusTheme.onAccent)
+            .padding(.horizontal, 16).padding(.vertical, 6)
+            .background(Capsule().fill(OrtusTheme.accentInk))
+            .opacity(claudeCodeService.isProcessing ? 0.45 : 1)
+            .disabled(claudeCodeService.isProcessing || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     }
 }
 

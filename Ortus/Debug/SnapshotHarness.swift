@@ -57,7 +57,7 @@ enum SnapshotHarness {
             await render("chat-working", tab: 2, state: "chat-working")
             await render("chat-compose", tab: 2, state: "chat-compose")
             await render("chat-compose-dark", tab: 2, state: "chat-compose", dark: true)
-            await render("chat-compose-sending", tab: 2, state: "chat-compose-sending")
+            await render("chat-compose-email", tab: 2, state: "chat-compose-email")
             await render("chat-compose-sent", tab: 2, state: "chat-compose-sent")
             await render("chat-compose-failed", tab: 2, state: "chat-compose-failed")
             await render("chat-draft", tab: 2, state: "chat-draft")

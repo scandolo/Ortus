@@ -21,9 +21,8 @@ final class ClaudeCodeService: ObservableObject {
     /// app once FocusManager exists; read again on every message.
     var focusContext: () -> String? = { nil }
 
-    /// Drafts sent from a draft card: the text that went out and the activity row of
-    /// the turn that sends it, which the card watches to show how it went.
-    @Published var sentDrafts: [String: (text: String, activityID: UUID)] = [:]
+    /// The text sent from each draft card, which then shows it read-only.
+    @Published var sentDrafts: [String: String] = [:]
 
     @Published private(set) var canUndoClear = false
     private var clearedConversation: (messages: [ChatMessage], sessionID: String, started: Bool)?
@@ -191,7 +190,7 @@ final class ClaudeCodeService: ObservableObject {
         guard !isProcessing else { return }
         let text = edited.trimmingCharacters(in: .whitespacesAndNewlines)
         sendMessage(text == original.trimmingCharacters(in: .whitespacesAndNewlines) ? "Send it." : "Send it, with my edits:\n\n\(text)")
-        if let activityID { sentDrafts[id] = (text, activityID) }
+        sentDrafts[id] = text
     }
 
     func stop() {
