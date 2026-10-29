@@ -227,15 +227,14 @@ enum SnapshotHarness {
                 image("menubar-focus-symbol", menuBarSymbol("sunrise.fill"))
                 await render("settings-emergency-used-dark", tab: 3, height: 760, dark: true)
                 SnapshotHarness.updates?.state = .available(version: "1.2.0")
-                await render("settings-update-in-focus-dark", tab: 3, height: 760, dark: true)
+                await render("settings-update-in-focus-dark", tab: 3, height: 1120, dark: true)
                 SnapshotHarness.updates?.installsAfterFocus = true
-                await render("settings-update-after-focus-dark", tab: 3, height: 760, dark: true)
+                await render("settings-update-after-focus-dark", tab: 3, height: 1120, dark: true)
                 SnapshotHarness.updates?.installsAfterFocus = false
                 SnapshotHarness.updates?.state = .idle
                 focusManager.developerModeEnabled = true
                 await render("focus-active-dev-dark", tab: 0, height: 620, dark: true)
                 focusManager.developerModeEnabled = false
-                await render("schedule-in-focus-dark", tab: 1, dark: true)
             }
             exit(0)
         }
