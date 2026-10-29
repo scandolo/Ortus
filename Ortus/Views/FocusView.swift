@@ -383,7 +383,7 @@ struct FocusIntroModal: View {
 private struct BlockedItem: Identifiable {
     let id: String; let glyph: String; let name: String; let isApp: Bool
 
-    static func all(in selection: BlockSelection) -> [BlockedItem] {
+    @MainActor static func all(in selection: BlockSelection) -> [BlockedItem] {
         var items: [BlockedItem] = []
         var websites = selection.websites
         var apps = selection.applications
