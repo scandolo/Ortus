@@ -36,6 +36,8 @@ struct ChatView: View {
                     ChatMessage(role: .assistant, content: "I need your OK to search Gmail. Allow it below and I'll check."),
                     ChatMessage(role: .assistant, content: "Gmail · search_threads", kind: .permissionRequest(toolName: "mcp__claude_ai_Gmail__search_threads")),
                 ]
+            } else if let fixture = ChatFixtures.messages(for: snapshotState) {
+                claudeCodeService.messages = fixture
             } else if snapshotState == "chat-draft" {
                 claudeCodeService.messages = [
                     ChatMessage(role: .user, content: "Anything urgent in my email?"),
@@ -331,6 +333,7 @@ private struct ChatStopButton: View {
 /// 2 steps") that opens into the list of steps. It opens by itself when a step failed.
 private struct ActivityRow: View {
     let activity: ChatActivity
+    @Environment(\.snapshotState) private var snapshotState
     @State private var isOpen = false
 
     var body: some View {
@@ -364,7 +367,7 @@ private struct ActivityRow: View {
         }
         .padding(.leading, 4)
         .onChange(of: activity.hasProblem, initial: true) {
-            if activity.hasProblem { isOpen = true }
+            if activity.hasProblem || snapshotState == "chat-steps" { isOpen = true }
         }
     }
 
@@ -444,35 +447,25 @@ private struct MessageRow: View {
         }
     }
 
-    private var textBubble: some View {
-        HStack(alignment: .bottom, spacing: 0) {
-            if message.role == .user { Spacer(minLength: 36) }
-
-            VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 3) {
+    @ViewBuilder private var textBubble: some View {
+        if message.role == .user {
+            HStack(spacing: 0) {
+                Spacer(minLength: 36)
                 Text(renderMarkdown(message.content))
                     .font(OrtusTheme.Typo.body)
                     .textSelection(.enabled)
-                    .foregroundStyle(message.role == .user ? OrtusTheme.onAccent : .primary)
-
-                Text(message.timestamp, style: .time)
-                    .font(OrtusTheme.Typo.meta)
-                    .foregroundStyle(message.role == .user ? OrtusTheme.onAccent.opacity(0.8) : OrtusTheme.textMuted)
+                    .foregroundStyle(OrtusTheme.onAccent)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(userBubbleBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous))
+                    .shadow(color: .black.opacity(0.05), radius: 4, y: 2)
+                    .help(message.timestamp.formatted(date: .omitted, time: .shortened))
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(
-                Group {
-                    if message.role == .user {
-                        userBubbleBackground
-                    } else {
-                        assistantBubbleBackground
-                    }
-                }
-            )
-            .clipShape(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous))
-            .shadow(color: .black.opacity(0.05), radius: 4, y: 2)
-
-            if message.role == .assistant { Spacer(minLength: 36) }
+        } else {
+            // Answers read as a document across the panel, not a bubble.
+            ChatAnswerView(text: message.content)
+                .help(message.timestamp.formatted(date: .omitted, time: .shortened))
         }
     }
 
@@ -482,15 +475,6 @@ private struct MessageRow: View {
             .overlay(
                 RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous)
                     .strokeBorder(OrtusTheme.innerHighlightStrong, lineWidth: 1)
-            )
-    }
-
-    private var assistantBubbleBackground: some View {
-        RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous)
-            .fill(OrtusTheme.cardSurface)
-            .overlay(
-                RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous)
-                    .strokeBorder(OrtusTheme.innerHighlight, lineWidth: 1)
             )
     }
 

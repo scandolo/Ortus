@@ -13,6 +13,104 @@ enum ChatFixtures {
         ]).activity
     }
 
+    /// The chat rows for a snapshot state, or nil when the state isn't a chat fixture.
+    static func messages(for state: String?) -> [ChatMessage]? {
+        switch state {
+        case "chat-answer", "chat-steps":
+            return [
+                ChatMessage(role: .user, content: "what did the team decide about the launch date?"),
+                ChatMessage(role: .assistant, content: "", kind: .activity(launchThread.activity)),
+                ChatMessage(role: .assistant, content: launchThread.answer),
+            ]
+        case "chat-email":
+            return [
+                ChatMessage(role: .user, content: "did sara reply about the pilot?"),
+                ChatMessage(role: .assistant, content: "", kind: .activity(pilotEmail.activity)),
+                ChatMessage(role: .assistant, content: pilotEmail.answer),
+            ]
+        case "chat-working":
+            return [
+                ChatMessage(role: .user, content: "did tom reach out today, slack or email?"),
+                ChatMessage(role: .assistant, content: "", kind: .activity(replay([
+                    (0, tool("t0", "ToolSearch", #"{"query":"select:mcp__claude_ai_Slack__slack_search_users,mcp__claude_ai_Gmail__search_threads"}"#)),
+                    (5, tool("t1", "mcp__claude_ai_Slack__slack_search_users", #"{"query":"Tom"}"#)),
+                    (5, tool("t2", "mcp__claude_ai_Gmail__search_threads", #"{"query":"from:tom newer_than:1d"}"#)),
+                ], startedAt: Date().addingTimeInterval(-7)).activity)),
+            ]
+        default:
+            return nil
+        }
+    }
+
+    private static var launchThread: ChatTurn {
+        replay([
+            (0, #"{"type":"system","subtype":"init"}"#),
+            (3, tool("t0", "ToolSearch", #"{"query":"select:mcp__claude_ai_Slack__slack_search_public_and_private,mcp__claude_ai_Slack__slack_read_thread"}"#)),
+            (4, tool("t1", "mcp__claude_ai_Slack__slack_search_public_and_private", #"{"query":"launch date in:#launch"}"#)),
+            (5, result("t1")),
+            (6, tool("t2", "mcp__claude_ai_Slack__slack_read_thread", #"{"channel_id":"C1","message_ts":"1"}"#)),
+            (7, result("t2")),
+            (7, thinkingTokens), (11, thinking),
+            (11, text("""
+            They moved the launch to **Thursday 6 November**, so the pricing page gets an extra week.
+
+            ```quote
+            source: slack
+            place: #launch
+            ---
+            from: Maya Chen
+            time: \(iso(daysAgo: 1, 9, 12))
+
+            The pricing page won't be ready for Friday. Can we move the launch to next Thursday?
+            ---
+            from: Sam Okafor
+            time: \(iso(daysAgo: 1, 9, 20))
+
+            Thursday works for sales, as long as the email goes out on Wednesday.
+            ---
+            skipped: 2
+            ---
+            from: Tom Price
+            time: \(iso(daysAgo: 1, 9, 41))
+
+            Agreed. Let's lock Thursday 6 Nov, I'll tell the press contacts today.
+            ---
+            from: Maya Chen
+            time: \(iso(daysAgo: 1, 9, 43))
+
+            Locked. Updating the plan now
+            ```
+            """)),
+            (12, end),
+        ])
+    }
+
+    private static var pilotEmail: ChatTurn {
+        replay([
+            (0, tool("t1", "mcp__claude_ai_Gmail__search_threads", #"{"query":"from:sara pilot"}"#)),
+            (2, result("t1")),
+            (3, tool("t2", "mcp__claude_ai_Gmail__get_message", #"{"messageId":"1"}"#)),
+            (4, result("t2")),
+            (5, tool("t3", "Bash", #"{"command":"jq -r .plaintextBody ~/.claude/projects/x/tool-results/mcp-gmail.txt"}"#)),
+            (6, result("t3")),
+            (9, text("""
+            Yes, this morning. She's in, and only wants to move the start to **12 January** so it doesn't clash with their planning week.
+
+            ```quote
+            source: gmail
+            place: Re: Q1 pilot proposal
+            ---
+            from: Sara Conti (sara@lumen.studio)
+            to: you
+            time: \(iso(daysAgo: 0, 9, 14))
+
+            Hi Federico, thanks for sending this over. We're happy to go ahead with the pilot. The only thing we'd change is the start date: could we push it to 12 January so it doesn't clash with our planning week? Everything else looks good to us, and I've shared the proposal with our finance team so the PO can go out before the holidays.
+            ```
+            """)),
+            (10, end),
+        ])
+    }
+
     // MARK: - Building events
 
     static func replay(_ events: [(Double, String)], startedAt: Date = Date().addingTimeInterval(-30)) -> ChatTurn {
@@ -27,6 +125,21 @@ enum ChatFixtures {
 
     static func result(_ id: String, error: Bool = false) -> String {
         #"{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"\#(id)","is_error":\#(error)}]}}"#
+    }
+
+    static func text(_ value: String) -> String {
+        let json = try! JSONSerialization.data(withJSONObject: ["type": "assistant", "message": ["content": [["type": "text", "text": value]]]])
+        return String(decoding: json, as: UTF8.self)
+    }
+
+    static let thinkingTokens = #"{"type":"system","subtype":"thinking_tokens","estimated_tokens":120}"#
+    static let thinking = #"{"type":"assistant","message":{"content":[{"type":"thinking","thinking":"","signature":"x"}]}}"#
+
+    /// A local time on a recent day, as Claude writes it in a quote block.
+    static func iso(daysAgo: Int, _ hour: Int, _ minute: Int) -> String {
+        let day = Calendar.current.date(byAdding: .day, value: -daysAgo, to: Date())!
+        let date = Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: day)!
+        return ISO8601DateFormatter().string(from: date)
     }
 
     static let end = #"{"type":"result","subtype":"success","is_error":false,"permission_denials":[]}"#
