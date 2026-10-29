@@ -293,9 +293,10 @@ struct BrowserStatusRow: View {
 /// Shown while Ortus counts down to closing a browser whose extension is off.
 struct ClosingBrowserRow: View {
     @ObservedObject var service: WebsiteBlockingService
+    @Environment(\.snapshotState) private var snapshotState
 
     var body: some View {
-        if let closing = service.closingBrowser {
+        if let closing = service.closingBrowser ?? (snapshotState == "closing-browser" ? .init(name: "Arc", bundleID: "", closesAt: .now + 42) : nil) {
             OrtusGroup {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     OrtusListRow(title: "\(closing.name) closes in \(FocusView.formatDuration(max(0, closing.closesAt.timeIntervalSince(context.date))))",

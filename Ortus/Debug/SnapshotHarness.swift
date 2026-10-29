@@ -77,6 +77,8 @@ enum SnapshotHarness {
                 try? await Task.sleep(for: .seconds(31))
                 await render("focus-active", tab: 0)
                 await render("focus-active-dark", tab: 0, dark: true)
+                await render("focus-closing-browser", tab: 0, state: "closing-browser")
+                await render("focus-closing-browser-dark", tab: 0, state: "closing-browser", dark: true)
             }
             exit(0)
         }
