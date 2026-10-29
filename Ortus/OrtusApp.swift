@@ -1,10 +1,12 @@
 import SwiftUI
 import ServiceManagement
+@preconcurrency import UserNotifications
 import OrtusCore
 
 @MainActor
-class AppDelegate: NSObject, NSApplicationDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     var focusManager: FocusManager?
+    var router: PanelRouter?
     /// Set in OrtusApp.init, before anything writes preferences.
     static var isFreshInstall = false
 
@@ -14,6 +16,32 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         Analytics.capture("app_launched", ["version": version])
         enableLaunchAtLoginByDefault()
         if Self.isFreshInstall { openWelcomePage() }
+        // Notification Center needs a bundle; a bare `swift run` binary has none.
+        if Bundle.main.bundleIdentifier != nil { UNUserNotificationCenter.current().delegate = self }
+    }
+
+    /// Clicking the update notification opens the panel on Settings, where the update button is.
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+                                            withCompletionHandler completionHandler: @escaping () -> Void) {
+        let identifier = response.notification.request.identifier
+        completionHandler()
+        guard identifier == UpdateService.notificationID else { return }
+        Task { @MainActor in
+            router?.requestedTab = 3
+            Self.openPanel()
+        }
+    }
+
+    /// MenuBarExtra has no API to open its panel, so click Ortus's menu bar button
+    /// unless the panel is already showing (a click would close it).
+    private static func openPanel() {
+        let statusWindows = NSApp.windows.filter { $0.className == "NSStatusBarWindow" }
+        guard !NSApp.windows.contains(where: { $0.isVisible && !statusWindows.contains($0) && $0.className.contains("MenuBarExtra") }) else { return }
+        func button(in view: NSView?) -> NSStatusBarButton? {
+            guard let view else { return nil }
+            return view as? NSStatusBarButton ?? view.subviews.lazy.compactMap { button(in: $0) }.first
+        }
+        statusWindows.lazy.compactMap { button(in: $0.contentView) }.first?.performClick(nil)
     }
 
     /// Earlier versions turned launch at login on silently at first run. Users who updated
@@ -134,6 +162,11 @@ struct OrtusApp: App {
             panel
         } label: {
             menuBarIcon
+                .onAppear {
+                    // The label appears at launch; the panel only when first opened.
+                    appDelegate.router = router
+                    updateService.startBackgroundChecks(focusManager)
+                }
                 #if DEBUG
                 .onAppear(perform: openDebugWindowIfRequested)
                 #endif

@@ -17,6 +17,8 @@ enum PanelModal {
 @MainActor
 final class PanelRouter: ObservableObject {
     @Published var modal: PanelModal?
+    /// A tab to switch to from outside the panel, like a notification click.
+    @Published var requestedTab: Int?
     init(modal: PanelModal? = nil) { self.modal = modal }
 }
 
