@@ -55,7 +55,7 @@ struct FocusView: View {
 
     /// The chosen mode blocks websites, but no browser is connected to block them.
     private var needsBrowser: Bool {
-        let connected = !focusManager.websites.connectedBrowsers.isEmpty && snapshotState != "no-browser"
+        let connected = !focusManager.websites.connectedBrowsers.isEmpty && !(snapshotState?.hasPrefix("no-browser") ?? false)
         return !focusManager.manualSelection.websites.isEmpty && !connected
     }
 
@@ -285,26 +285,23 @@ struct FocusView: View {
                 )
                 Rectangle().fill(OrtusTheme.hairline).frame(height: 1)
                 ModePicker(selection: $focusManager.manualSelection, boxed: false)
-                if needsBrowser { browserProblem }
+                    // On the corner of the mode's 46pt icon cluster: the things that won't be blocked.
+                    .overlay(alignment: .topLeading) {
+                        if needsBrowser {
+                            ProblemBadge(message: problemMessage, action: { router.modal = .browserSetup },
+                                         showsHint: snapshotState == "no-browser-hint")
+                                .offset(x: 30, y: -6)
+                        }
+                    }
             }
             .ortusCard()
 
         }
     }
 
-    /// What the missing browser means for this mode. When it would block nothing, the
-    /// start button becomes the fix, so the line only explains.
-    private var browserProblem: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "exclamationmark.shield.fill").foregroundStyle(OrtusTheme.warning)
-            Text(blocksNothing ? "Blocks nothing until your browser is connected" : "Websites stay open until your browser is connected")
-                .font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 8)
-            if !blocksNothing {
-                Button("Set up") { router.modal = .browserSetup }.buttonStyle(OrtusRowButtonStyle())
-            }
-        }
+    private var problemMessage: String {
+        blocksNothing ? "Blocks nothing until your browser is connected."
+            : "Websites stay open until your browser is connected."
     }
 
     // MARK: - Helpers

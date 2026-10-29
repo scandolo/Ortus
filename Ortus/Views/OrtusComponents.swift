@@ -155,6 +155,50 @@ struct OrtusRowButtonStyle: ButtonStyle {
     }
 }
 
+/// A setup problem reduced to a mark: it explains itself on hover and opens the fix
+/// on click. The hint opens above and to the right.
+struct ProblemBadge: View {
+    let message: String
+    var actionHint = "Click to set up"
+    let action: () -> Void
+    /// Snapshots can't hover.
+    var showsHint = false
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "exclamationmark.shield.fill")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(OrtusTheme.warning)
+                .frame(width: 22, height: 22)
+                .background(Circle().fill(OrtusTheme.cardSurface))
+                .overlay(Circle().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
+        }
+        .buttonStyle(OrtusPressableStyle(cornerRadius: 11, highlight: false))
+        .onHover { hovering = $0 }
+        .overlay(alignment: .bottomLeading) {
+            if hovering || showsHint {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(message).foregroundStyle(.primary)
+                    Text(actionHint).foregroundStyle(OrtusTheme.textMuted)
+                }
+                    .font(OrtusTheme.Typo.caption)
+                    .frame(width: 210, alignment: .leading)
+                    .padding(.horizontal, 10).padding(.vertical, 8)
+                    .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous).fill(OrtusTheme.cardSurface)
+                        .shadow(color: .black.opacity(0.16), radius: 10, y: 3))
+                    .overlay(RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous).strokeBorder(OrtusTheme.hairline, lineWidth: 1))
+                    .fixedSize()
+                    .offset(y: -30)
+                    .allowsHitTesting(false)
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeOut(duration: 0.12), value: hovering)
+        .accessibilityLabel(message)
+    }
+}
+
 /// For anything clickable that has no button chrome of its own (rows, chips, icons,
 /// text actions): a soft highlight on hover and a small press-in on click.
 struct OrtusPressableStyle: ButtonStyle {
