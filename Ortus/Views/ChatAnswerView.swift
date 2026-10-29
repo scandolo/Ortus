@@ -75,16 +75,11 @@ private struct QuoteCard: View {
     @State private var showsFullEmail = false
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
         VStack(alignment: .leading, spacing: 10) {
             header
             if quote.source == "gmail" { email } else { thread }
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(shape.fill(OrtusTheme.cardSurface))
-        .overlay(shape.strokeBorder(OrtusTheme.hairline, lineWidth: 1))
-        .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
+        .chatCard()
     }
 
     private var header: some View {
@@ -101,12 +96,7 @@ private struct QuoteCard: View {
     }
 
     private var title: String {
-        switch quote.source {
-        case "gmail": "Gmail"
-        case "linkedin": "LinkedIn"
-        case "x": quote.place.isEmpty ? "X" : quote.place
-        default: quote.place.isEmpty ? "Quote" : quote.place
-        }
+        ["gmail", "linkedin"].contains(quote.source) || quote.place.isEmpty ? appName(quote.source) : quote.place
     }
 
     // MARK: Slack, posts
@@ -201,6 +191,23 @@ private struct QuoteCard: View {
     }
 }
 
+/// The app a card's `source` names, for its header.
+private func appName(_ source: String) -> String {
+    ["gmail": "Gmail", "slack": "Slack", "linkedin": "LinkedIn", "x": "X"][source] ?? source.capitalized
+}
+
+private extension View {
+    /// The lifted card the quote and draft cards sit on, like OrtusGroup.
+    func chatCard() -> some View {
+        let shape = RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
+        return padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(shape.fill(OrtusTheme.cardSurface))
+            .overlay(shape.strokeBorder(OrtusTheme.hairline, lineWidth: 1))
+            .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
+    }
+}
+
 // MARK: - Draft card
 
 /// A message Claude wrote for the user to send. The text is editable in place;
@@ -223,7 +230,6 @@ private struct DraftCard: View {
     private var sent: (text: String, activityID: UUID)? { claudeCodeService.sentDrafts[id] }
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 BrandGlyph(id: draft.source, size: 12)
@@ -234,7 +240,7 @@ private struct DraftCard: View {
                         .padding(.horizontal, 7).padding(.vertical, 2)
                         .background(Capsule().fill(OrtusTheme.accentSoft))
                 }
-                Text(Self.appName(draft.source)).foregroundStyle(OrtusTheme.textMuted)
+                Text(appName(draft.source)).foregroundStyle(OrtusTheme.textMuted)
             }
             .font(OrtusTheme.Typo.caption)
 
@@ -256,11 +262,7 @@ private struct DraftCard: View {
                     .disabled(claudeCodeService.isProcessing || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(shape.fill(OrtusTheme.cardSurface))
-        .overlay(shape.strokeBorder(OrtusTheme.hairline, lineWidth: 1))
-        .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
+        .chatCard()
     }
 
     /// A recessed field that grows with the text: the hidden copy sets the height.
@@ -304,10 +306,6 @@ private struct DraftCard: View {
                 Text("Sending…").foregroundStyle(OrtusTheme.textMuted)
             }
         }
-    }
-
-    private static func appName(_ source: String) -> String {
-        ["gmail": "Gmail", "slack": "Slack", "linkedin": "LinkedIn", "x": "X"][source] ?? source.capitalized
     }
 }
 
