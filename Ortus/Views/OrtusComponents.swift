@@ -10,7 +10,7 @@ enum PanelModal {
     case slackSetup
     case chatSetup
     case chatIntro
-    case focusIntro(onConfirm: () -> Void)
+    case beforeFocus(blocksNothing: Bool, explainLock: Bool, onStart: () -> Void)
     case modeEditor(FocusMode, onSave: (FocusMode) -> Void)
 }
 
