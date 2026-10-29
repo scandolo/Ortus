@@ -3,6 +3,9 @@ name: Snapshots
 # Renders every panel state with the debug snapshot harness (Ortus/Debug/SnapshotHarness.swift)
 # on a macOS runner and commits the PNGs to the pr-assets branch, in a folder named after
 # the branch. Never runs on main, so it never releases.
+#
+# Each script in .github/snapshot-variants/ is a design experiment: it edits this checkout
+# only (never the branch), the app is rebuilt, and its renders land in snapshots/<script name>/.
 
 on:
   push:
@@ -10,6 +13,7 @@ on:
     paths:
       - ".github/workflows/snapshots.yml"
       - "Ortus/**"
+      - ".github/snapshot-variants/**"
   workflow_dispatch:
 
 permissions:
@@ -34,11 +38,28 @@ jobs:
         run: |
           OUT="$RUNNER_TEMP/snapshots"
           mkdir -p "$OUT"
-          # macOS has no `timeout`; perl's alarm stops a hung harness after five minutes.
-          ORTUS_SNAPSHOT_DIR="$OUT" ORTUS_SNAPSHOT_SESSION=1 \
-            perl -e 'alarm shift; exec @ARGV' 300 ./Ortus.app/Contents/MacOS/Ortus || echo "harness exited with $?"
-          ls -la "$OUT"
-          test -n "$(ls "$OUT"/*.png 2>/dev/null)"
+          render() {
+            mkdir -p "$1"
+            # Start each run from a fresh install, so an earlier run's session doesn't carry over.
+            defaults delete com.ortusmode.app 2>/dev/null || true
+            # macOS has no `timeout`; perl's alarm stops a hung harness after five minutes.
+            ORTUS_SNAPSHOT_DIR="$1" ORTUS_SNAPSHOT_SESSION=1 \
+              perl -e 'alarm shift; exec @ARGV' 300 ./Ortus.app/Contents/MacOS/Ortus || echo "harness exited with $?"
+            ls "$1"
+            test -n "$(ls "$1"/*.png 2>/dev/null)"
+          }
+          render "$OUT"
+          for VARIANT in .github/snapshot-variants/*.sh; do
+            [ -e "$VARIANT" ] || continue
+            NAME=$(basename "$VARIANT" .sh)
+            echo "::group::Variant $NAME"
+            bash "$VARIANT"
+            git diff --stat
+            ./build.sh debug
+            render "$OUT/$NAME"
+            git checkout -- Ortus
+            echo "::endgroup::"
+          done
 
       - uses: actions/upload-artifact@v4
         with:
@@ -55,7 +76,7 @@ jobs:
           git worktree add "$RUNNER_TEMP/assets" origin/pr-assets
           cd "$RUNNER_TEMP/assets"
           mkdir -p "$BRANCH/snapshots"
-          cp "$RUNNER_TEMP"/snapshots/*.png "$BRANCH/snapshots/"
+          cp -R "$RUNNER_TEMP"/snapshots/. "$BRANCH/snapshots/"
           git add "$BRANCH/snapshots"
           git commit -m "Snapshots for $BRANCH at ${GITHUB_SHA::7}" || exit 0
           git push origin HEAD:pr-assets
