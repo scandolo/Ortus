@@ -217,6 +217,11 @@ struct OrtusApp: App {
             case "mode-editor": .modeEditor(FocusMode(name: focusManager.nextCustomModeName, blocked: focusManager.manualSelection)) { _ in }
             default: nil
             }
+            switch state {
+            case "up-to-date": updateService.pinForSnapshot(.upToDate)
+            case "update-available": updateService.pinForSnapshot(.available(version: "1.2.0"))
+            default: break
+            }
             return AnyView(panel(tab: tab, height: height, state: state, router: PanelRouter(modal: modal)))
         }
         guard ProcessInfo.processInfo.environment["ORTUS_DEBUG_WINDOW"] != nil else { return }
