@@ -93,7 +93,9 @@ final class WebsiteBlockingService: ObservableObject {
             guard let closesAt = browserGuard.closesAt(app.processIdentifier) else { continue }
             switch steps[app.processIdentifier] {
             case .warn:
-                var page = URLComponents(string: "https://ortusmode.com/extension-off")!
+                // `defaults write <bundle id> webBase http://localhost:8765` tests the page before it's deployed.
+                let site = UserDefaults.standard.string(forKey: "webBase") ?? "https://ortusmode.com"
+                guard var page = URLComponents(string: site + "/extension-off") else { break }
                 page.queryItems = [URLQueryItem(name: "browser", value: name), URLQueryItem(name: "closes", value: String(Int(closesAt.timeIntervalSince1970)))]
                 if let url = page.url, let browser = app.bundleURL {
                     NSWorkspace.shared.open([url], withApplicationAt: browser, configuration: .init(), completionHandler: nil)
