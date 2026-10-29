@@ -11,13 +11,14 @@ struct FocusView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+        GeometryReader { proxy in
         ScrollView {
             VStack(spacing: OrtusTheme.spacingLG) {
                 // Before a session, the setup problem sits on the mode it affects (idle state).
                 ClosingBrowserRow(service: focusManager.websites,
                                   showSetupProblem: focusManager.isInFocus && !focusManager.activeSelection.websites.isEmpty
                                       && focusManager.websites.connectedBrowsers.isEmpty)
-                if focusManager.isInFocus && focusManager.isInGracePeriod {
+                if inGracePeriod {
                     gracePeriodState
                 } else if focusManager.isInFocus {
                     activeFocusState
@@ -26,6 +27,9 @@ struct FocusView: View {
                 }
             }
             .padding(OrtusTheme.spacingMD)
+            // The grace countdown sits in the middle of the panel, not at the top.
+            .frame(maxWidth: inGracePeriod ? .infinity : nil, minHeight: inGracePeriod ? proxy.size.height : nil)
+        }
         }
             // The primary action stays pinned and visible, like "Add schedule".
             if !focusManager.isInFocus {
@@ -50,6 +54,10 @@ struct FocusView: View {
                 .padding(.bottom, OrtusTheme.spacingSM)
             }
         }
+    }
+
+    private var inGracePeriod: Bool {
+        focusManager.isInFocus && focusManager.isInGracePeriod
     }
 
     /// The chosen mode blocks websites, but no browser is connected to block them.
