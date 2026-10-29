@@ -78,7 +78,9 @@ struct ChatView: View {
     private var messageList: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
+                // Not lazy: a chat is short, and a lazy stack kept re-laying out its rows
+                // forever in 1.1.15 (selectable text and draft cards resize as they lay out).
+                VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
                     ForEach(claudeCodeService.messages) { message in
                         MessageRow(message: message)
                             .id(message.id)

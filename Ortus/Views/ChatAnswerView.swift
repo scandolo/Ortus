@@ -24,7 +24,7 @@ struct ChatAnswerView: View {
     @ViewBuilder private func blockView(_ block: ChatBlock, id: String) -> some View {
         switch block {
         case .paragraph(let text):
-            Text(Self.inline(text)).fixedSize(horizontal: false, vertical: true)
+            Text(Self.inline(text))
         case .bullets(let items):
             list(items.map { ("•", $0) })
         case .numbered(let items):
@@ -32,7 +32,7 @@ struct ChatAnswerView: View {
         case .blockquote(let text):
             HStack(alignment: .top, spacing: 10) {
                 RoundedRectangle(cornerRadius: 1).fill(OrtusTheme.accent).frame(width: 2)
-                Text(Self.inline(text)).fixedSize(horizontal: false, vertical: true)
+                Text(Self.inline(text))
             }
         case .code(let text):
             Text(text)
@@ -52,7 +52,7 @@ struct ChatAnswerView: View {
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text(item.0).foregroundStyle(OrtusTheme.textMuted).monospacedDigit()
-                    Text(Self.inline(item.1)).fixedSize(horizontal: false, vertical: true)
+                    Text(Self.inline(item.1))
                 }
             }
         }
@@ -140,7 +140,7 @@ private struct QuoteCard: View {
                     if let about = message.about {
                         Text(about).font(OrtusTheme.Typo.meta).foregroundStyle(OrtusTheme.textMuted)
                     }
-                    Text(ChatAnswerView.inline(message.text)).fixedSize(horizontal: false, vertical: true)
+                    Text(ChatAnswerView.inline(message.text))
                 }
             }
         }
@@ -160,7 +160,7 @@ private struct QuoteCard: View {
         let messages = quote.messages
         VStack(alignment: .leading, spacing: 4) {
             if !quote.place.isEmpty {
-                Text(quote.place).font(OrtusTheme.Typo.bodyMedium.weight(.semibold)).fixedSize(horizontal: false, vertical: true)
+                Text(quote.place).font(OrtusTheme.Typo.bodyMedium.weight(.semibold))
             }
             // Earlier messages in the thread, one line each.
             ForEach(Array(messages.dropLast().enumerated()), id: \.offset) { _, message in
@@ -175,7 +175,6 @@ private struct QuoteCard: View {
                     .foregroundStyle(OrtusTheme.textMuted)
                 Text(ChatAnswerView.inline(last.text))
                     .lineLimit(showsFullEmail ? nil : 4)
-                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 2)
                 if last.text.count > 240 && !showsFullEmail {
                     ExpandButton(title: "Show more") { showsFullEmail = true }
@@ -264,7 +263,7 @@ private struct DraftCard: View {
             }
 
             if let sent {
-                Text(sent).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
+                Text(sent).textSelection(.enabled)
             } else {
                 editor
                 Divider().padding(.top, 4)
