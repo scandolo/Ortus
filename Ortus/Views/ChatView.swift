@@ -29,14 +29,7 @@ struct ChatView: View {
             inputBar
         }
         .onAppear {
-            if snapshotState == "chat-permission" {
-                claudeCodeService.messages = [
-                    ChatMessage(role: .user, content: "Did Haroun reply to my email from yesterday?"),
-                    ChatMessage(role: .assistant, content: "", kind: .activity(ChatFixtures.refusedGmailSearch)),
-                    ChatMessage(role: .assistant, content: "I need your OK to search Gmail. Allow it below and I'll check."),
-                    ChatMessage(role: .assistant, content: "Gmail · search_threads", kind: .permissionRequest(toolName: "mcp__claude_ai_Gmail__search_threads")),
-                ]
-            } else if let fixture = ChatFixtures.messages(for: snapshotState) {
+            if let fixture = ChatFixtures.messages(for: snapshotState) {
                 claudeCodeService.messages = fixture
             } else if snapshotState == "chat-draft" {
                 claudeCodeService.messages = [
@@ -399,18 +392,15 @@ private struct ActivityRow: View {
         VStack(alignment: .leading, spacing: 5) {
             ForEach(activity.steps) { step in
                 HStack(alignment: .firstTextBaseline, spacing: 5) {
-                    if step.status == .failed || step.status == .needsPermission {
+                    if step.status == .failed {
                         Image(systemName: "exclamationmark.circle.fill")
                             .font(.system(size: 10))
-                            .foregroundStyle(step.status == .failed ? OrtusTheme.danger : OrtusTheme.warning)
+                            .foregroundStyle(OrtusTheme.danger)
                     }
                     Text(step.title)
                         .italic(step.kind != .tool)
                         .foregroundStyle(step.kind == .tool ? OrtusTheme.textMuted : OrtusTheme.textMuted.opacity(0.75))
                         .lineLimit(3)
-                    if step.status == .needsPermission {
-                        Text("needs your OK").foregroundStyle(OrtusTheme.textMuted.opacity(0.7))
-                    }
                 }
             }
             if let finished = activity.finishedAt {
@@ -431,7 +421,6 @@ private struct ActivityRow: View {
 // MARK: - Message Row
 
 private struct MessageRow: View {
-    @EnvironmentObject var claudeCodeService: ClaudeCodeService
     let message: ChatMessage
 
     var body: some View {
@@ -442,8 +431,6 @@ private struct MessageRow: View {
             ActivityRow(activity: activity)
         case .error:
             errorBubble
-        case .permissionRequest(let toolName):
-            permissionRow(toolName: toolName)
         }
     }
 
@@ -476,29 +463,6 @@ private struct MessageRow: View {
                 RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous)
                     .strokeBorder(OrtusTheme.innerHighlightStrong, lineWidth: 1)
             )
-    }
-
-    @ViewBuilder
-    private func permissionRow(toolName: String) -> some View {
-        if claudeCodeService.allowedTools.contains(toolName) {
-            HStack(spacing: 6) {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(OrtusTheme.accent)
-                Text("Allowed \(message.content)")
-                    .font(OrtusTheme.Typo.meta)
-                    .foregroundStyle(OrtusTheme.textMuted)
-            }
-            .padding(.leading, 16)
-        } else {
-            Button { claudeCodeService.allowTool(toolName) } label: {
-                Label("Allow \(message.content)", systemImage: "checkmark.shield")
-            }
-            .buttonStyle(OrtusSecondaryButtonStyle())
-            .disabled(claudeCodeService.isProcessing)
-            .help("Let Chat use this tool from now on, then retry")
-            .padding(.leading, 6)
-        }
     }
 
     private var errorBubble: some View {

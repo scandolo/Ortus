@@ -247,7 +247,7 @@ struct CoreChecks {
         chat.hidesPlumbingAndNamesSteps()
         chat.parallelCallsKeepOneLabelAndMatchResultsByID()
         chat.thinkingNarrationAndHelpersFoldIntoSteps()
-        chat.refusalsOfferAllowOnlyForConnectors()
+        chat.hidesSavedResultReadsAndReportsFailures()
         chat.parsesAnswersIntoBlocksAndQuoteCards()
         chat.labelsTimesRelativeToNow()
         print("PASS: 21 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, framing, modes, chat stream, chat blocks)")

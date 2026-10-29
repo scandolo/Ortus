@@ -12,8 +12,6 @@ enum ChatMessageKind: Equatable {
     /// What Claude is doing or did for this answer; updated in place while it works.
     case activity(ChatActivity)
     case error
-    /// Claude was refused this tool; the row offers to allow it.
-    case permissionRequest(toolName: String)
 }
 
 struct ChatMessage: Identifiable, Equatable {

@@ -4,15 +4,6 @@ import OrtusCore
 /// Made-up chat turns for the snapshot harness. Built by replaying stream-json
 /// events through ChatTurn, the same path a real answer takes.
 enum ChatFixtures {
-    static var refusedGmailSearch: ChatActivity {
-        replay([
-            (0, tool("g", "mcp__claude_ai_Gmail__search_threads", #"{"query":"from:haroun newer_than:3d"}"#)),
-            (0, #"{"type":"system","subtype":"permission_denied","tool_name":"mcp__claude_ai_Gmail__search_threads","tool_use_id":"g"}"#),
-            (0, result("g", error: true)),
-            (3, end),
-        ]).activity
-    }
-
     /// The chat rows for a snapshot state, or nil when the state isn't a chat fixture.
     static func messages(for state: String?) -> [ChatMessage]? {
         switch state {

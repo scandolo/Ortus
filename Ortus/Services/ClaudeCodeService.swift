@@ -21,40 +21,6 @@ final class ClaudeCodeService: ObservableObject {
     /// app once FocusManager exists; read again on every message.
     var focusContext: () -> String? = { nil }
 
-    /// Tools the user allowed from an inline "Allow" button, on top of `defaultAllowedTools`.
-    @Published private(set) var allowedTools: [String] = UserDefaults.standard.stringArray(forKey: ClaudeCodeService.allowedToolsKey) ?? []
-    private static let allowedToolsKey = "chatAllowedTools"
-
-    /// Basic reads that run without asking. `-p` mode can't show a permission prompt,
-    /// so any other tool is refused and comes back as an "Allow" button in the chat.
-    private static let defaultAllowedTools = [
-        "mcp__claude_ai_Gmail__search_threads",
-        "mcp__claude_ai_Gmail__get_thread",
-        "mcp__claude_ai_Gmail__get_message",
-        "mcp__claude_ai_Gmail__list_labels",
-        "mcp__claude_ai_Gmail__list_drafts",
-        "mcp__claude_ai_Gmail__get_draft",
-        "mcp__claude_ai_Google_Calendar__list_calendars",
-        "mcp__claude_ai_Google_Calendar__list_events",
-        "mcp__claude_ai_Google_Calendar__search_events",
-        "mcp__claude_ai_Google_Calendar__get_event",
-        "mcp__claude_ai_Google_Calendar__suggest_time",
-        "mcp__claude_ai_Google_Drive__search_files",
-        "mcp__claude_ai_Google_Drive__list_recent_files",
-        "mcp__claude_ai_Google_Drive__get_file_metadata",
-        "mcp__claude_ai_Google_Drive__read_file_content",
-        "mcp__claude_ai_Slack__slack_search_public",
-        "mcp__claude_ai_Slack__slack_search_public_and_private",
-        "mcp__claude_ai_Slack__slack_search_channels",
-        "mcp__claude_ai_Slack__slack_search_users",
-        "mcp__claude_ai_Slack__slack_read_channel",
-        "mcp__claude_ai_Slack__slack_read_thread",
-        "mcp__claude_ai_Slack__slack_read_user_profile",
-        "mcp__claude_ai_Notion__notion-search",
-        "mcp__claude_ai_Notion__notion-fetch",
-        "WebSearch",
-    ]
-
     @Published private(set) var canUndoClear = false
     private var clearedConversation: (messages: [ChatMessage], sessionID: String, started: Bool)?
     private var sessionID = UUID().uuidString
@@ -215,17 +181,6 @@ final class ClaudeCodeService: ObservableObject {
         }
     }
 
-    /// Remembers the tool and asks Claude to pick up where the refusal stopped it.
-    func allowTool(_ name: String) {
-        guard !isProcessing else { return }
-        if !allowedTools.contains(name) {
-            allowedTools.append(name)
-            UserDefaults.standard.set(allowedTools, forKey: Self.allowedToolsKey)
-        }
-        Analytics.capture("chat_tool_allowed", ["tool": name])
-        sendMessage("I allowed \(name). Try again.", isRetry: true)
-    }
-
     func stop() {
         currentProcess?.terminate()
         currentTask?.cancel()
@@ -272,8 +227,9 @@ final class ClaudeCodeService: ObservableObject {
             "--model", "claude-sonnet-5-5",
             "--effort", "low",
             "--append-system-prompt", Self.systemPrompt(now: Date(), focus: focusContext()),
-            "--permission-mode", "default",
-            "--allowedTools", (Self.defaultAllowedTools + allowedTools).joined(separator: ","),
+            // Every tool is on, like Claude Code in the user's terminal. The prompt has it
+            // draft anything that sends or changes something and wait for the user's OK.
+            "--permission-mode", "bypassPermissions",
         ]
         if isFirstTurn {
             args.append(contentsOf: ["--session-id", sessionID])
@@ -332,8 +288,8 @@ final class ClaudeCodeService: ObservableObject {
 
     /// Applies a change to the current answer and mirrors it into the chat rows:
     /// the activity row updates in place, the answer appears under it (and leaves
-    /// again if it turns out to be narration before a tool call), and refusals and
-    /// errors are added once the answer is finished.
+    /// again if it turns out to be narration before a tool call), and an error is
+    /// added once the answer is finished.
     private func updateTurn(_ change: (inout ChatTurn) -> Void) {
         guard var current = turn else { return }
         let wasFinished = current.isFinished
@@ -363,26 +319,6 @@ final class ClaudeCodeService: ObservableObject {
         if let failure = current.failure {
             recordFailure("Claude Code could not finish this request. Check assistant setup or retry.", details: failure)
         }
-        for name in current.deniedTools where !allowedTools.contains(name) {
-            messages.append(ChatMessage(role: .assistant, content: Self.displayName(for: name), kind: .permissionRequest(toolName: name)))
-        }
-    }
-
-    /// Make tool names human-readable: mcp__claude_ai_Slack__slack_search_public → "Slack · slack_search_public"
-    private static func displayName(for name: String) -> String {
-        var display = name
-        if let prefixRange = display.range(of: "mcp__") {
-            display = String(display[prefixRange.upperBound...])
-            if let serverRange = display.range(of: "__") {
-                let server = display[..<serverRange.lowerBound]
-                    .replacingOccurrences(of: "claude_ai_", with: "")
-                    .replacingOccurrences(of: "plugin_", with: "")
-                    .replacingOccurrences(of: "_", with: " ")
-                let tool = String(display[serverRange.upperBound...])
-                display = "\(server) · \(tool)"
-            }
-        }
-        return display
     }
 
     // MARK: - System prompt
@@ -414,8 +350,6 @@ final class ClaudeCodeService: ObservableObject {
         - Resolve user IDs to display names before showing them.
         - Before anything that changes something (sending a message or email, editing a document, accepting \
         an invite), confirm the target and the content with the user first.
-        - If a tool is refused because the user hasn't allowed it yet, say so in one short line: they can \
-        allow it with the button under your reply. Don't send them to connector settings.
 
         Formatting (the chat panel is narrow, about 50 characters per line):
         - Short paragraphs. A bullet list only for three or more parallel items. Bold sparingly, for names \

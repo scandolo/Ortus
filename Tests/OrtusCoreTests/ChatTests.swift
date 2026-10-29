@@ -3,8 +3,7 @@ import OrtusCore
 
 /// Streams below copy the shapes of real Claude Code 2.1 `stream-json` runs (with
 /// made-up content): ToolSearch first, parallel calls whose results arrive out of
-/// order, empty thinking blocks, a live permission refusal, a large result read back
-/// with Bash.
+/// order, empty thinking blocks, a large result read back with Bash.
 struct ChatTests {
     private let start = Date(timeIntervalSince1970: 1_800_000_000)
 
@@ -24,9 +23,7 @@ struct ChatTests {
     }
     private let thinkingTokens = #"{"type":"system","subtype":"thinking_tokens","estimated_tokens":50}"#
     private let thinking = #"{"type":"assistant","message":{"content":[{"type":"thinking","thinking":"","signature":"abc"}]}}"#
-    private func end(denials: String = "[]") -> String {
-        #"{"type":"result","subtype":"success","is_error":false,"result":"done","permission_denials":\#(denials)}"#
-    }
+    private func end() -> String { #"{"type":"result","subtype":"success","is_error":false,"result":"done"}"# }
 
     func hidesPlumbingAndNamesSteps() {
         var live = ChatTurn(startedAt: start)
@@ -80,26 +77,16 @@ struct ChatTests {
         expect(turn([(0, thinking), (0, text("Hi")), (0, end())]).activity.steps.isEmpty)
     }
 
-    func refusalsOfferAllowOnlyForConnectors() {
+    func hidesSavedResultReadsAndReportsFailures() {
         let savedResult = #"{"command":"jq -r .body /Users/me/.claude/projects/x/tool-results/mcp-gmail.txt"}"#
         let done = turn([
             (0, toolUse("m", "mcp__claude_ai_Gmail__get_message", #"{"messageId":"1"}"#)), (1, result("m")),
-            (1, toolUse("b", "Bash", savedResult)),
-            (1, #"{"type":"system","subtype":"permission_denied","tool_name":"Bash","tool_use_id":"b"}"#),
-            (2, toolUse("l", "mcp__claude_ai_Slack__slack_list_user_channels")),
-            (2, #"{"type":"system","subtype":"permission_denied","tool_name":"mcp__claude_ai_Slack__slack_list_user_channels","tool_use_id":"l"}"#),
-            (2, result("l", error: true)),
-            (3, text("I need your OK to list channels.")),
-            (3, end(denials: #"[{"tool_name":"Bash"},{"tool_name":"mcp__claude_ai_Slack__slack_list_user_channels"},{"tool_name":"mcp__claude_ai_Slack__slack_list_user_channels"}]"#)),
+            (1, toolUse("b", "Bash", savedResult)), (2, result("b")),
+            (2, toolUse("c", "Bash", #"{"command":"ls ~/Desktop"}"#)), (3, result("c")),
+            (3, end()),
         ])
-        expect(done.deniedTools == ["mcp__claude_ai_Slack__slack_list_user_channels"])
-        expect(done.activity.toolSteps.map(\.title) == ["Opened the email", "Listed your channels"])
-        expect(done.activity.toolSteps.last?.status == .needsPermission)
-        expect(!done.activity.hasProblem)
-        expect(done.activity.summary == "Checked Gmail · 1 step") // the refused call never ran
-        let onlyRefused = turn([(0, toolUse("g", "mcp__claude_ai_Gmail__search_threads")),
-                                (0, #"{"type":"system","subtype":"permission_denied","tool_name":"mcp__claude_ai_Gmail__search_threads","tool_use_id":"g"}"#), (1, end())])
-        expect(onlyRefused.activity.summary == "Needs your OK for Gmail")
+        expect(done.activity.toolSteps.map(\.title) == ["Opened the email", "Ran a command"])
+        expect(done.activity.summary == "Checked Gmail · 2 steps")
 
         let failed = turn([(0, toolUse("w", "WebSearch", #"{"query":"ortus"}"#)), (1, result("w", error: true)),
                            (2, #"{"type":"result","is_error":true,"result":"Overloaded"}"#)])

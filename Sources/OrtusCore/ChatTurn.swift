@@ -11,9 +11,6 @@ public struct ChatTurn: Equatable, Sendable {
     /// Text written after the last tool call. Text written before a tool call is
     /// narration ("Let me check Slack") and moves into the activity instead.
     public private(set) var answer = ""
-    /// Tools Claude was refused and the user can allow: connectors and web tools only.
-    /// Built-in tools like Bash are Claude Code's own business, never an Allow button.
-    public private(set) var deniedTools: [String] = []
     public private(set) var failure: String?
     public private(set) var didStartSession = false
     public var isFinished: Bool { activity.finishedAt != nil }
@@ -37,8 +34,6 @@ public struct ChatTurn: Equatable, Sendable {
             didStartSession = true
         case ("system", "thinking_tokens"):
             if thinkingSince == nil { thinkingSince = now }
-        case ("system", "permission_denied"):
-            if let id = event["tool_use_id"] as? String { activity.setStatus(.needsPermission, forStep: id) }
         case ("assistant", _):
             let content = (event["message"] as? [String: Any])?["content"] as? [[String: Any]] ?? []
             for block in content { consumeAssistant(block, at: now) }
@@ -51,10 +46,6 @@ public struct ChatTurn: Equatable, Sendable {
         case ("result", _):
             if event["is_error"] as? Bool == true {
                 failure = (event["result"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "Claude Code stopped with an error."
-            }
-            for denial in event["permission_denials"] as? [[String: Any]] ?? [] {
-                guard let name = denial["tool_name"] as? String, Self.isAllowable(name), !deniedTools.contains(name) else { continue }
-                deniedTools.append(name)
             }
             finish(at: now)
         default:
@@ -90,10 +81,6 @@ public struct ChatTurn: Equatable, Sendable {
             break
         }
     }
-
-    static func isAllowable(_ tool: String) -> Bool {
-        tool.hasPrefix("mcp__") || tool == "WebSearch" || tool == "WebFetch"
-    }
 }
 
 /// The work behind one answer, shown as a single collapsible line in the chat.
@@ -115,7 +102,7 @@ public struct ChatActivity: Equatable, Sendable {
 
     public struct Step: Equatable, Sendable, Identifiable {
         public enum Kind: Equatable, Sendable { case tool, thought, note }
-        public enum Status: Equatable, Sendable { case running, done, failed, needsPermission }
+        public enum Status: Equatable, Sendable { case running, done, failed }
         public let id: String
         public let kind: Kind
         public let source: Source?
@@ -141,19 +128,13 @@ public struct ChatActivity: Equatable, Sendable {
     public var hasProblem: Bool { toolSteps.contains { $0.status == .failed } }
 
     /// "Searched Slack and Gmail · 3 steps", or nil when Claude used no tools.
-    /// Calls waiting for the user's OK didn't run, so they don't count.
     public var summary: String? {
         let tools = toolSteps
         guard !tools.isEmpty else { return nil }
-        let ran = tools.filter { $0.status != .needsPermission }
-        if ran.isEmpty {
-            let names = Self.list(Self.sources(of: tools).map(\.name))
-            return names.isEmpty ? "Needs your OK" : "Needs your OK for \(names)"
-        }
-        let names = Self.list(Self.sources(of: ran).map(\.name))
-        let verb = ran.contains(where: \.isSearch) ? "Searched" : "Checked"
+        let names = Self.list(Self.sources(of: tools).map(\.name))
+        let verb = tools.contains(where: \.isSearch) ? "Searched" : "Checked"
         let what = names.isEmpty ? "Worked on it" : "\(verb) \(names)"
-        return "\(what) · \(ran.count) step\(ran.count == 1 ? "" : "s")"
+        return "\(what) · \(tools.count) step\(tools.count == 1 ? "" : "s")"
     }
 
     /// What the live line says while Claude works, without the trailing ellipsis.
@@ -180,11 +161,6 @@ public struct ChatActivity: Equatable, Sendable {
     mutating func complete(step id: String, failed: Bool) {
         guard let index = steps.firstIndex(where: { $0.id == id }), steps[index].status == .running else { return }
         steps[index].status = failed ? .failed : .done
-    }
-
-    mutating func setStatus(_ status: Step.Status, forStep id: String) {
-        guard let index = steps.firstIndex(where: { $0.id == id }) else { return }
-        steps[index].status = status
     }
 
     mutating func addThought(seconds: Int) {
