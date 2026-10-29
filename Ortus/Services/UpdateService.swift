@@ -44,6 +44,15 @@ final class UpdateService: ObservableObject {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
     }
 
+    #if DEBUG
+    private var pinnedForSnapshot = false
+    /// The snapshot harness shows a fixed state; checks leave it alone.
+    func pinForSnapshot(_ state: UpdateState) {
+        self.state = state
+        pinnedForSnapshot = true
+    }
+    #endif
+
     var availableVersion: String? {
         if case let .available(version) = state { return version }
         return nil
@@ -58,7 +67,11 @@ final class UpdateService: ObservableObject {
         guard Bundle.main.object(forInfoDictionaryKey: "OrtusPreviewBuild") as? Bool != true else { return }
         if case .downloading = state { return }
         if case .checking = state { return }
-        state = .checking
+        #if DEBUG
+        if pinnedForSnapshot { return }
+        #endif
+        // Keep "You're on the latest version" on screen while checking again.
+        if state != .upToDate { state = .checking }
         do {
             var request = URLRequest(url: URL(string: Self.apiURL)!)
             request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")

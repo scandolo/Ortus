@@ -67,6 +67,8 @@ struct SettingsView: View {
                         update
                     }
                     OrtusGroupDivider()
+                    feedbackRow
+                    OrtusGroupDivider()
                     aboutRow
                 }
             }
@@ -183,6 +185,22 @@ struct SettingsView: View {
         }
     }
 
+    private var feedbackRow: some View {
+        OrtusListRow(title: "Send feedback", subtitle: "Bugs and ideas go to support@ortusmode.com") {
+            Image(systemName: "bubble.left")
+        } trailing: {
+            Button("Email us") { NSWorkspace.shared.open(feedbackEmail) }.buttonStyle(OrtusRowButtonStyle())
+        }
+    }
+
+    /// A new email in the user's mail app, with the versions filled in for bug reports.
+    private var feedbackEmail: URL {
+        var email = URLComponents(string: "mailto:support@ortusmode.com")!
+        email.queryItems = [URLQueryItem(name: "subject", value: "Ortus feedback"),
+                            URLQueryItem(name: "body", value: "\n\n\n\(ClaudeCodeService.versionLine)")]
+        return email.url!
+    }
+
     private var updateRow: AnyView? {
         switch updateService.state {
         case let .available(version):
@@ -210,7 +228,11 @@ struct SettingsView: View {
             return AnyView(OrtusListRow(title: "Update failed", subtitle: message) {
                 Image(systemName: "exclamationmark.triangle").foregroundStyle(OrtusTheme.danger)
             } trailing: { EmptyView() })
-        case .idle, .checking, .upToDate:
+        case .upToDate:
+            return AnyView(OrtusListRow(title: "You're on the latest version") {
+                Image(systemName: "checkmark.circle")
+            } trailing: { EmptyView() })
+        case .idle, .checking:
             return nil
         }
     }
