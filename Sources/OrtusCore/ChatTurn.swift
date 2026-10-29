@@ -112,7 +112,7 @@ public struct ChatActivity: Equatable, Sendable {
         public let progress: String
         public var status: Status
         /// How the summary describes this step: Searched, Checked or Sent.
-        public let verb: String
+        let verb: String
     }
 
     public let startedAt: Date
