@@ -62,6 +62,32 @@ enum ChatFixtures {
                 ChatMessage(role: .assistant, content: "", kind: .activity(launchThread.activity)),
                 ChatMessage(role: .assistant, content: launchThread.answer),
             ]
+        case "chat-prose":
+            return [
+                ChatMessage(role: .user, content: "Anything urgent in my email?"),
+                ChatMessage(role: .assistant, content: """
+                Nothing in your email needs you today. No clients, people or deadlines are waiting on a reply.
+
+                The one thing worth a look is **Ortus CI**, which is failing:
+
+                - The Release workflow on main failed at 12:51.
+                - The Checks build on PR #53 ("Build every PR with the release toolchain") failed at 13:10.
+                - Vercel preview deployments for `pr-assets` have failed five times since 12:20.
+
+                To fix it:
+                1. Open the [Release run](https://github.com/scandolo/Ortus/actions) and read the log.
+                2. Rerun the *Checks* build once the release is green again.
+
+                > The Vercel failures started before the release one.
+
+                ```
+                swift build -c release
+                ```
+
+                I haven't opened the logs, so I don't know whether these share a cause.
+                The rest is notifications and newsletters.
+                """),
+            ]
         case "chat-email":
             return [
                 ChatMessage(role: .user, content: "did sara reply about the pilot?"),

@@ -10,8 +10,12 @@ struct ChatAnswerView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
-            ForEach(Array(ChatMarkdown.blocks(text).enumerated()), id: \.offset) { index, block in
-                blockView(block, id: "\(messageID)-\(index)")
+            ForEach(Array(Self.segments(ChatMarkdown.blocks(text)).enumerated()), id: \.offset) { _, segment in
+                if ProseText.draws(segment.blocks[0]) {
+                    ProseText(blocks: segment.blocks)
+                } else {
+                    blockView(segment.blocks[0], id: "\(messageID)-\(segment.index)")
+                }
             }
         }
         .font(OrtusTheme.Typo.body)
@@ -21,14 +25,25 @@ struct ChatAnswerView: View {
         .padding(.horizontal, 4)
     }
 
+    /// Runs of paragraphs and lists become one segment, so a selection can cross them;
+    /// every other block is a segment of its own. `index` is the first block's position,
+    /// which a draft card's id is built from.
+    private static func segments(_ blocks: [ChatBlock]) -> [(index: Int, blocks: [ChatBlock])] {
+        var segments: [(index: Int, blocks: [ChatBlock])] = []
+        for (index, block) in blocks.enumerated() {
+            if ProseText.draws(block), let last = segments.last?.blocks.last, ProseText.draws(last) {
+                segments[segments.count - 1].blocks.append(block)
+            } else {
+                segments.append((index, [block]))
+            }
+        }
+        return segments
+    }
+
     @ViewBuilder private func blockView(_ block: ChatBlock, id: String) -> some View {
         switch block {
-        case .paragraph(let text):
-            Text(Self.inline(text))
-        case .bullets(let items):
-            list(items.map { ("•", $0) })
-        case .numbered(let items):
-            list(items.enumerated().map { ("\($0.offset + 1).", $0.element) })
+        case .paragraph, .bullets, .numbered:
+            ProseText(blocks: [block])
         case .blockquote(let text):
             HStack(alignment: .top, spacing: 10) {
                 RoundedRectangle(cornerRadius: 1).fill(OrtusTheme.accent).frame(width: 2)
@@ -47,20 +62,137 @@ struct ChatAnswerView: View {
         }
     }
 
-    private func list(_ items: [(String, String)]) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(item.0).foregroundStyle(OrtusTheme.textMuted).monospacedDigit()
-                    Text(Self.inline(item.1))
-                }
-            }
-        }
-        .padding(.leading, 2)
-    }
-
     static func inline(_ text: String) -> AttributedString {
         (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
+    }
+}
+
+// MARK: - Prose
+
+/// Paragraphs and lists in a row, drawn by one AppKit text view so a selection can run
+/// across them: SwiftUI only selects within a single Text. Styled like the SwiftUI
+/// layout it replaced: 8pt between blocks, 3pt between list items, a muted marker and
+/// wrapped lines that line up with the item's text.
+private struct ProseText: NSViewRepresentable {
+    let blocks: [ChatBlock]
+
+    static func draws(_ block: ChatBlock) -> Bool {
+        switch block {
+        case .paragraph, .bullets, .numbered: true
+        default: false
+        }
+    }
+
+    final class Coordinator {
+        var blocks: [ChatBlock] = []
+        var scale: CGFloat = 0
+        /// Lays out the same text at the width SwiftUI asks about, without touching the
+        /// view on screen.
+        let measure = NSLayoutManager()
+        let container = NSTextContainer()
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeNSView(context: Context) -> NSTextView {
+        let view = NSTextView(usingTextLayoutManager: false)
+        view.isEditable = false
+        view.drawsBackground = false
+        view.textContainerInset = .zero
+        view.textContainer?.lineFragmentPadding = 0
+        // SwiftUI sets the frame; the view never resizes itself.
+        view.isVerticallyResizable = false
+        view.isHorizontallyResizable = false
+        view.linkTextAttributes = [.foregroundColor: NSColor(OrtusTheme.accentInk), .cursor: NSCursor.pointingHand]
+
+        let coordinator = context.coordinator
+        coordinator.container.lineFragmentPadding = 0
+        coordinator.measure.addTextContainer(coordinator.container)
+        view.textStorage?.addLayoutManager(coordinator.measure)
+        return view
+    }
+
+    func updateNSView(_ view: NSTextView, context: Context) {
+        // Only when the text changed, so a selection survives other updates.
+        let scale = context.environment.displayScale
+        guard context.coordinator.blocks != blocks || context.coordinator.scale != scale else { return }
+        context.coordinator.blocks = blocks
+        context.coordinator.scale = scale
+        view.textStorage?.setAttributedString(Self.text(blocks, scale: scale))
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSTextView, context: Context) -> CGSize? {
+        let width = proposal.width.flatMap { $0.isFinite ? $0 : nil }
+        let coordinator = context.coordinator
+        coordinator.container.size = NSSize(width: width ?? .greatestFiniteMagnitude, height: .greatestFiniteMagnitude)
+        coordinator.measure.ensureLayout(for: coordinator.container)
+        let used = coordinator.measure.usedRect(for: coordinator.container)
+        return CGSize(width: width ?? ceil(used.width), height: ceil(used.height))
+    }
+
+    /// `scale` is the display's: SwiftUI rounds a marker's width up to whole pixels, so
+    /// the item's text starts there.
+    static func text(_ blocks: [ChatBlock], scale: CGFloat) -> NSAttributedString {
+        let font = NSFont.systemFont(ofSize: 13)
+        let markerFont = NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .regular)
+        let text = NSMutableAttributedString()
+        for (blockIndex, block) in blocks.enumerated() {
+            let rows: [(marker: String?, text: String)]
+            switch block {
+            case .paragraph(let paragraph): rows = [(nil, paragraph)]
+            case .bullets(let items): rows = items.map { ("•", $0) }
+            case .numbered(let items): rows = items.enumerated().map { ("\($0.offset + 1).", $0.element) }
+            default: rows = []
+            }
+            for (rowIndex, row) in rows.enumerated() {
+                let start = text.length
+                let style = NSMutableParagraphStyle()
+                if rowIndex < rows.count - 1 {
+                    style.paragraphSpacing = 3
+                } else if blockIndex < blocks.count - 1 {
+                    style.paragraphSpacing = OrtusTheme.spacingSM
+                }
+                if let marker = row.marker {
+                    let width = (marker as NSString).size(withAttributes: [.font: markerFont]).width
+                    let indent = 2 + ceil(width * scale) / scale + 6
+                    style.firstLineHeadIndent = 2
+                    style.headIndent = indent
+                    style.tabStops = [NSTextTab(textAlignment: .left, location: indent)]
+                    text.append(NSAttributedString(string: marker + "\t", attributes: [
+                        .font: markerFont, .foregroundColor: NSColor(OrtusTheme.textMuted),
+                    ]))
+                }
+                text.append(inline(row.text, font: font))
+                if rowIndex < rows.count - 1 || blockIndex < blocks.count - 1 {
+                    text.append(NSAttributedString(string: "\n", attributes: [.font: font]))
+                }
+                text.addAttribute(.paragraphStyle, value: style, range: NSRange(location: start, length: text.length - start))
+            }
+        }
+        return text
+    }
+
+    /// Bold, italic, code, strikethrough and links from the inline markdown.
+    private static func inline(_ markdown: String, font: NSFont) -> NSAttributedString {
+        let text = NSMutableAttributedString()
+        let parsed = ChatAnswerView.inline(markdown)
+        for run in parsed.runs {
+            let intent = run.inlinePresentationIntent ?? []
+            var runFont = intent.contains(.code) ? NSFont.monospacedSystemFont(ofSize: font.pointSize, weight: .regular) : font
+            var traits: NSFontDescriptor.SymbolicTraits = []
+            if intent.contains(.stronglyEmphasized) { traits.insert(.bold) }
+            if intent.contains(.emphasized) { traits.insert(.italic) }
+            if !traits.isEmpty {
+                runFont = NSFont(descriptor: runFont.fontDescriptor.withSymbolicTraits(traits), size: font.pointSize) ?? runFont
+            }
+            var attributes: [NSAttributedString.Key: Any] = [.font: runFont, .foregroundColor: NSColor.labelColor]
+            if intent.contains(.strikethrough) { attributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue }
+            if let link = run.link { attributes[.link] = link }
+            // A line break inside a paragraph, not a new paragraph with its spacing.
+            let string = String(parsed[run.range].characters).replacingOccurrences(of: "\n", with: "\u{2028}")
+            text.append(NSAttributedString(string: string, attributes: attributes))
+        }
+        return text
     }
 }
 
