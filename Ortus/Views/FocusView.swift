@@ -14,10 +14,9 @@ struct FocusView: View {
         ScrollView {
             VStack(spacing: OrtusTheme.spacingLG) {
                 // Before a session, the setup problem sits on the mode it affects (idle state).
-                if focusManager.isInFocus, !focusManager.activeSelection.websites.isEmpty,
-                   focusManager.websites.connectedBrowsers.isEmpty {
-                    OrtusGroup { BrowserStatusRow(service: focusManager.websites) }
-                }
+                ClosingBrowserRow(service: focusManager.websites,
+                                  showSetupProblem: focusManager.isInFocus && !focusManager.activeSelection.websites.isEmpty
+                                      && focusManager.websites.connectedBrowsers.isEmpty)
                 if focusManager.isInFocus && focusManager.isInGracePeriod {
                     gracePeriodState
                 } else if focusManager.isInFocus {

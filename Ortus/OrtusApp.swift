@@ -133,7 +133,12 @@ struct OrtusApp: App {
 
     /// During focus, the icon plus a countdown, like the system Clock timer.
     @ViewBuilder private var menuBarIcon: some View {
-        if focusManager.isInFocus, let end = focusManager.focusEndTime {
+        if let closing = focusManager.websites.closingBrowser {
+            // Redrawn each second by menuBarClock, like the focus countdown.
+            let time = FocusView.formatDuration(max(0, closing.closesAt.timeIntervalSince(menuBarClock.now)))
+            Image(nsImage: Self.countdownImage("\(closing.name) \(time)", symbol: "exclamationmark.triangle.fill",
+                                               description: "\(closing.name) closes in \(time)"))
+        } else if focusManager.isInFocus, let end = focusManager.focusEndTime {
             Image(nsImage: Self.countdownImage(FocusView.formatDuration(max(0, end.timeIntervalSince(menuBarClock.now)))))
         } else {
             Image(systemName: focusManager.isInFocus ? "sunrise.fill" : "sunrise")
@@ -143,15 +148,15 @@ struct OrtusApp: App {
     /// The menu bar drops font modifiers from a label's Text, so proportional digits
     /// would nudge every item to its left each second. Render it as one template image
     /// instead (the label shows only its first Image) to keep monospaced digits.
-    private static func countdownImage(_ time: String) -> NSImage {
+    private static func countdownImage(_ time: String, symbol: String = "sunrise.fill", description: String? = nil) -> NSImage {
         let renderer = ImageRenderer(content: HStack(spacing: 4) {
-            Image(systemName: "sunrise.fill")
+            Image(systemName: symbol)
             Text(time).monospacedDigit()
         }.font(.system(size: NSFont.menuBarFont(ofSize: 0).pointSize)))
         renderer.scale = NSScreen.main?.backingScaleFactor ?? 2
         let image = renderer.nsImage ?? NSImage()
         image.isTemplate = true
-        image.accessibilityDescription = "Ortus, \(time) left"
+        image.accessibilityDescription = description ?? "Ortus, \(time) left"
         return image
     }
 

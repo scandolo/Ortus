@@ -43,8 +43,45 @@ public struct BrowserClient: Codable, Sendable {
     public var browser: String
     public var updatedAt: Double
     public var state: String?
-    public init(id: String, browser: String, updatedAt: Double, state: String = "connecting") {
+    /// The browser app that launched the bridge, and whether the extension may run in incognito.
+    public var bundleID: String?
+    public var incognito: Bool?
+    public init(id: String, browser: String, updatedAt: Double, state: String = "connecting", bundleID: String? = nil, incognito: Bool? = nil) {
         self.id = id; self.browser = browser; self.updatedAt = updatedAt; self.state = state
+        self.bundleID = bundleID; self.incognito = incognito
+    }
+}
+
+/// During a website session, a browser that has used Ortus must keep the extension on.
+/// Without it, the browser gets a warning, then a countdown, then it is closed.
+public struct BrowserGuard: Sendable {
+    /// Quiet time first: covers a browser launching and the helper restarting after an update.
+    public static let warnAfter: TimeInterval = 10
+    public static let countdown: TimeInterval = 60
+    public enum Step: Equatable, Sendable { case warn, close }
+    private var since: [Int32: Date] = [:]
+    private var warned: Set<Int32> = []
+    public init() {}
+
+    /// `unprotected` holds the browser processes running without a working extension.
+    /// A process that recovers or quits is forgotten, so a reopened browser starts over.
+    public mutating func update(unprotected: Set<Int32>, now: Date) -> [Int32: Step] {
+        since = since.filter { unprotected.contains($0.key) }
+        warned.formIntersection(unprotected)
+        var steps: [Int32: Step] = [:]
+        for pid in unprotected {
+            let start = since[pid] ?? now
+            since[pid] = start
+            if now >= start + Self.warnAfter + Self.countdown { steps[pid] = .close }
+            else if now >= start + Self.warnAfter, warned.insert(pid).inserted { steps[pid] = .warn }
+        }
+        return steps
+    }
+
+    /// When a warned browser will close.
+    public func closesAt(_ pid: Int32) -> Date? {
+        guard warned.contains(pid), let start = since[pid] else { return nil }
+        return start + Self.warnAfter + Self.countdown
     }
 }
 

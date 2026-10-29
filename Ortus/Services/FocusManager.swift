@@ -246,6 +246,7 @@ final class FocusManager: ObservableObject {
         } else {
             websites.refreshConnections(now: now)
         }
+        websites.guardBrowsers(active: isInFocus && !selection.websites.isEmpty, now: now)
     }
 
     private func applySlackStatusForFocus() {

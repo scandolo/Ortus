@@ -149,6 +149,22 @@ struct BlockingTests {
         expect(invalid.effective(at: now).rules.isEmpty)
     }
 
+    func browserWithoutExtensionIsWarnedThenClosedAndStartsOverWhenReopened() {
+        let now = date("2026-10-05T10:00:00Z")
+        var guardian = BrowserGuard()
+        expect(guardian.update(unprotected: [7], now: now).isEmpty)
+        expect(guardian.update(unprotected: [7], now: now + 9).isEmpty) // still launching
+        expect(guardian.update(unprotected: [7], now: now + 10) == [7: .warn])
+        expect(guardian.closesAt(7) == now + 70)
+        expect(guardian.update(unprotected: [7], now: now + 11).isEmpty) // warned once
+        expect(guardian.update(unprotected: [7], now: now + 70) == [7: .close])
+        expect(guardian.update(unprotected: [8], now: now + 71).isEmpty) // reopened: new process
+        expect(guardian.closesAt(7) == nil)
+        expect(guardian.update(unprotected: [], now: now + 75).isEmpty) // extension back on
+        expect(guardian.update(unprotected: [8], now: now + 80).isEmpty)
+        expect(guardian.update(unprotected: [8], now: now + 90) == [8: .warn])
+    }
+
     func selectionDeduplicatesAndKeepsEscapeToolsAvailable() {
         let selection = BlockSelection.union([.standard, .standard, .init(applications: [.init(bundleID: "com.ortus.preview", name: "Ortus Preview"), .init(bundleID: "com.ortusmode.app", name: "Ortus"), .init(bundleID: "com.apple.finder", name: "Finder")])])
         expect(selection == .standard)
@@ -237,6 +253,7 @@ struct CoreChecks {
         try checks.skippingGraceLocksManualSessionWithoutChangingFocus()
         try checks.restartAndEmergencySuppressionPreserveFocusState()
         checks.browserRulesUseLongestMatchingSessionAndCrashLease()
+        checks.browserWithoutExtensionIsWarnedThenClosedAndStartsOverWhenReopened()
         checks.selectionDeduplicatesAndKeepsEscapeToolsAvailable()
         checks.nativeFramingIsLittleEndianAndBounded()
         try checks.onlyOneAppCanOwnFocusAtATime()
@@ -250,6 +267,6 @@ struct CoreChecks {
         chat.hidesSavedResultReadsAndReportsFailures()
         chat.parsesAnswersIntoBlocksAndQuoteCards()
         chat.labelsTimesRelativeToNow()
-        print("PASS: 21 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, framing, modes, chat stream, chat blocks)")
+        print("PASS: 22 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, framing, modes, chat stream, chat blocks)")
     }
 }

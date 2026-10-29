@@ -58,10 +58,13 @@ other Google services stay available. Selected apps close when focus starts.
 
 **Browser.** Website blocking uses a small companion extension for Chrome, Arc, Edge
 or Brave. In Ortus, open **Settings → Website blocking → Set up** and follow the
-three steps (load the `/Applications/Ortus Browser` folder, or `Ortus Preview Browser`
-for a preview build, as an unpacked extension). Repeat for each browser profile;
+four steps (load the `/Applications/Ortus Browser` folder, or `Ortus Preview Browser`
+for a preview build, as an unpacked extension, then allow it in incognito). Repeat for each browser profile;
 Safari and Firefox are not covered.
 Reload the extension once after installing a new build.
+During a website session, a browser that has connected to Ortus before must keep the
+extension on and allowed in incognito. Otherwise Ortus opens a warning tab, counts down
+60 seconds in the menu bar and quits the browser (again on each reopen).
 
 **How it fits together.** `Sources/OrtusCore` holds the shared model (targets,
 schedules, sessions, browser policy). The app publishes a short-lived policy;

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Ortus extension is off</title>
+  <meta name="robots" content="noindex" />
+  <meta name="theme-color" content="#1A1A1C" />
+  <meta name="color-scheme" content="dark" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="nav" id="nav" aria-label="Ortus">
+    <div class="nav__bar">
+      <a class="nav__brand" href="/" aria-label="Ortus home">
+        <img class="nav__logo" src="/assets/favicon.svg" width="30" height="30" alt="Ortus" />
+      </a>
+    </div>
+  </header>
+
+  <!-- Opened by Ortus in a browser whose extension went off during a focus session:
+       /extension-off?browser=Arc&closes=<unix seconds> -->
+  <main class="doc">
+    <h1 id="title">Your browser closes soon</h1>
+    <p class="welcome__lede">The Ortus extension is off, removed or not allowed in incognito, so your blocked websites aren't fully blocked. Until focus ends, Ortus closes this browser. If you reopen it, the countdown starts again.</p>
+
+    <section class="doc__card" aria-labelledby="fix-title">
+      <h2 id="fix-title">Keep it open</h2>
+      <ol>
+        <li>Click the Ortus icon in your menu bar, then <strong>Fix</strong>.</li>
+        <li>Turn the Ortus extension back on, or add it again if you removed it.</li>
+        <li>Open its <strong>Details</strong> and turn on <strong>Allow in Incognito</strong>.</li>
+      </ol>
+      <p class="welcome__small">Is the extension already on? <a id="report" href="mailto:support@ortusmode.com?subject=Ortus%20closed%20my%20browser">Report a bug</a>.</p>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var browser = (params.get("browser") || "Your browser").slice(0, 40);
+      var closes = Number(params.get("closes")) * 1000;
+      var title = document.getElementById("title");
+      document.getElementById("report").href = "mailto:support@ortusmode.com?subject=" +
+        encodeURIComponent("Ortus closed " + browser + " but the extension was on");
+      var tick = function () {
+        var left = Math.max(0, Math.ceil((closes - Date.now()) / 1000));
+        if (!closes) { title.textContent = browser + " closes soon"; return; }
+        title.textContent = left ? browser + " closes in " + Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0") : "Closing " + browser;
+        if (left) setTimeout(tick, 250);
+      };
+      tick();
+    })();
+  </script>
+</body>
+</html>

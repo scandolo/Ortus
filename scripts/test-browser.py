@@ -83,6 +83,9 @@ try:
             else:
                 raise AssertionError('The native app never received the browser enforcement acknowledgement')
             print('PASS: companion connects to the actual Swift native host', flush=True)
+            # Incognito is off by default; Ortus treats that like a missing extension during focus.
+            assert json.loads(client_file.read_text()).get('incognito') is False
+            print('PASS: the companion reports its incognito access', flush=True)
             port = server.server_address[1]
             gmail = context.new_page()
             gmail.goto(f'http://mail.google.com:{port}/mail/inbox')

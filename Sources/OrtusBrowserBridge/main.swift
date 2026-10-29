@@ -7,7 +7,7 @@ import AppKit
 /// Apple Events, administrator helper, browsing history, or page content are involved.
 @main
 struct OrtusBrowserBridge {
-    struct Hello: Decodable { let type: String; let clientID: String; let browser: String }
+    struct Hello: Decodable { let type: String; let clientID: String; let browser: String; let incognito: Bool? }
 
     struct OpenRequest: Decodable { let type: String; let destination: String }
     struct Status: Decodable { let type: String; let state: String }
@@ -107,7 +107,7 @@ struct OrtusBrowserBridge {
                 let output = try encoder.encode(policy)
                 if output != previous || now.timeIntervalSince(lastHeartbeat) >= 5 {
                     try FileHandle.standardOutput.write(contentsOf: NativeMessage.frame(output))
-                    try BrowserPaths.write(BrowserClient(id: hello.clientID, browser: browser, updatedAt: now.timeIntervalSince1970, state: await acknowledgement.state), to: clientURL)
+                    try BrowserPaths.write(BrowserClient(id: hello.clientID, browser: browser, updatedAt: now.timeIntervalSince1970, state: await acknowledgement.state, bundleID: parent.isEmpty ? nil : parent, incognito: hello.incognito), to: clientURL)
                     previous = output; lastHeartbeat = now
                 }
                 try await Task.sleep(for: .milliseconds(500))
