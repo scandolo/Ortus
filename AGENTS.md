@@ -46,6 +46,22 @@ Use the Notion tools to read and update it.
   `ORTUS_SNAPSHOT_DIR=/path` (`Ortus/Debug/SnapshotHarness.swift`). Design rules
   live at the top of `Ortus/Views/OrtusTheme.swift`.
 
+## Pull requests: what the description covers
+
+Every PR description is built around the change:
+
+- **What changes**, in plain words.
+- **Why**: the problem it solves or the goal it serves.
+- **Who decided what.** For each meaningful choice, say whether a person (the
+  maintainer, or whoever asked for the change) decided it or the agent chose it on
+  its own, and why. Agent choices are the ones a reviewer most needs to check, so
+  make them easy to find.
+- **User experience impact, in its own section.** User experience is wider than the
+  UI: how the app behaves, how and when it interrupts, notifies, blocks or asks for
+  something, what it remembers, its defaults, timing and performance, and anything
+  else that changes how it fits into someone's day. List every such change, even
+  small ones, with who decided it and why. If nothing changes for users, say so.
+
 ## UI changes: show them in the PR
 
 - A PR that changes what people see or do (layout, styling, copy, states, flows)
