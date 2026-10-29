@@ -161,7 +161,7 @@ struct ChatView: View {
             .padding(.vertical, 6)
             .focused($isInputFocused)
             .onSubmit { sendMessage() }
-            .disabled(!claudeCodeService.isConfigured || claudeCodeService.isProcessing)
+            .disabled(!claudeCodeService.isConfigured)
     }
 
     private var newChatButton: some View {
