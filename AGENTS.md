@@ -40,6 +40,9 @@ Use the Notion tools to read and update it.
 ## Checks
 
 - Build: `swift build`, or `./build.sh` for a bundled `Ortus.app`
+- CI builds every PR that touches the app with the release toolchain (Xcode 16) and
+  runs the core checks (`.github/workflows/checks.yml`). Your local Swift may be newer
+  and more lenient, so wait for it to pass before merging.
 - Core checks: `swift run OrtusCoreChecks`
 - Extension tests: `cd BrowserExtension && npm test` (needs Node)
 - UI: debug builds render every panel state offscreen when launched with

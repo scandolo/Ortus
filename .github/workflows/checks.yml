@@ -1,0 +1,40 @@
+name: Checks
+
+# Builds every pull request with the same toolchain as the release (Xcode 16 on
+# macos-15), so an error the release would hit shows up before merging. Local
+# toolchains can be newer and more lenient (e.g. on main-actor isolation).
+
+on:
+  pull_request:
+    paths:
+      - "Ortus/**"
+      - "Sources/**"
+      - "Package.swift"
+      - "Package.resolved"
+      - "build.sh"
+      - ".github/workflows/checks.yml"
+
+# A new push to the same PR replaces the run in progress.
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 16 (Swift 6 toolchain)
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$XCODE" ]; then sudo xcode-select -s "$XCODE"; fi
+          swift --version
+
+      # Release configuration, like build.sh release (one architecture is enough
+      # to catch compile errors).
+      - name: Build
+        run: swift build -c release
+
+      - name: Core checks
+        run: swift run OrtusCoreChecks
