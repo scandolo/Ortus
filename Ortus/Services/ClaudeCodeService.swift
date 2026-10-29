@@ -412,8 +412,8 @@ final class ClaudeCodeService: ObservableObject {
         - Times are ISO 8601 with offset, copied from the tool result.
 
         Draft blocks use the same format with "draft" instead of "quote": source and place (the channel or \
-        the email subject) in the header, then one section with "to:" and the text. Write the text exactly \
-        as it will be sent, in the user's voice, without placeholders.
+        the email subject) in the header, then one section with "to:", "cc:" for anyone copied, and the \
+        text. Write the text exactly as it will be sent, in the user's voice, without placeholders.
 
         ```draft
         source: gmail

@@ -259,6 +259,9 @@ private struct DraftCard: View {
             if let recipient = message?.to ?? (draft.source == "gmail" ? nil : draft.place) {
                 Text("To \(recipient)").font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
             }
+            if let cc = message?.cc {
+                Text("Cc \(cc)").font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
+            }
 
             if let sent {
                 Text(sent).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
