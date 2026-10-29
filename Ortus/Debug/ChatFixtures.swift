@@ -94,6 +94,27 @@ enum ChatFixtures {
                 ChatMessage(role: .assistant, content: "", kind: .activity(pilotEmail.activity)),
                 ChatMessage(role: .assistant, content: pilotEmail.answer),
             ]
+        case "chat-feedback", "chat-feedback-copy":
+            // With Gmail connected the draft can be sent; without it, it's copied.
+            let gmail = state == "chat-feedback"
+            return [
+                ChatMessage(role: .user, content: "the schedule i set for 9am didn't start this morning, i had to start focus by hand"),
+                ChatMessage(role: .assistant, content: """
+                Sorry about that. It sounds like a bug, so it's worth telling the Ortus team. \
+                \(gmail ? "Here's an email you can send" : "You don't have email connected here, so copy this and send it to **support@ortusmode.com**").
+
+                ```draft
+                source: \(gmail ? "gmail" : "email")
+                place: Scheduled focus didn't start at 9:00
+                ---
+                to: support@ortusmode.com
+
+                Hi, my weekday schedule is set to start focus at 9:00, but this morning it didn't start and I had to start it by hand.
+
+                Ortus 1.1.3 on macOS 15.1
+                ```
+                """),
+            ]
         case "chat-working":
             return [
                 ChatMessage(role: .user, content: "did tom reach out today, slack or email?"),
