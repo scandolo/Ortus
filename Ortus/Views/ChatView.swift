@@ -437,7 +437,8 @@ private struct MessageRow: View {
         if message.role == .user {
             HStack(spacing: 0) {
                 Spacer(minLength: 36)
-                Text(renderMarkdown(message.content))
+                // Verbatim: an email or a web address you typed stays plain text, not a link.
+                Text(verbatim: message.content)
                     .font(OrtusTheme.Typo.body)
                     .textSelection(.enabled)
                     .foregroundStyle(OrtusTheme.onAccent)
@@ -486,10 +487,6 @@ private struct MessageRow: View {
                 .strokeBorder(OrtusTheme.danger.opacity(0.35), lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous))
-    }
-
-    private func renderMarkdown(_ text: String) -> AttributedString {
-        (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
     }
 }
 
