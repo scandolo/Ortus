@@ -5,11 +5,13 @@ import SwiftUI
 /// lists, quotes, code, and cards for messages Claude quoted from Slack, email or a post.
 struct ChatAnswerView: View {
     let text: String
+    /// The chat message this answer is, so a draft card can find out whether it was sent.
+    var messageID = UUID()
 
     var body: some View {
         VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
-            ForEach(Array(ChatMarkdown.blocks(text).enumerated()), id: \.offset) { _, block in
-                blockView(block)
+            ForEach(Array(ChatMarkdown.blocks(text).enumerated()), id: \.offset) { index, block in
+                blockView(block, id: "\(messageID)-\(index)")
             }
         }
         .font(OrtusTheme.Typo.body)
@@ -19,7 +21,7 @@ struct ChatAnswerView: View {
         .padding(.horizontal, 4)
     }
 
-    @ViewBuilder private func blockView(_ block: ChatBlock) -> some View {
+    @ViewBuilder private func blockView(_ block: ChatBlock, id: String) -> some View {
         switch block {
         case .paragraph(let text):
             Text(Self.inline(text)).fixedSize(horizontal: false, vertical: true)
@@ -40,6 +42,8 @@ struct ChatAnswerView: View {
                 .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous).fill(OrtusTheme.inputSurface))
         case .quote(let quote):
             QuoteCard(quote: quote)
+        case .draft(let draft):
+            DraftCard(draft: draft, id: id)
         }
     }
 
@@ -194,6 +198,116 @@ private struct QuoteCard: View {
     private static func sender(_ from: String) -> String {
         let name = from.replacingOccurrences(of: #"\s*[(<].*[)>]\s*$"#, with: "", options: .regularExpression)
         return name.isEmpty ? from : name
+    }
+}
+
+// MARK: - Draft card
+
+/// A message Claude wrote for the user to send. The text is editable in place;
+/// Send posts a normal chat message ("Send it.", with the edited text if it changed)
+/// and the card then follows that turn: sending, sent, or not sent.
+private struct DraftCard: View {
+    let draft: ChatQuote
+    let id: String
+    @EnvironmentObject private var claudeCodeService: ClaudeCodeService
+    @State private var text: String
+    @FocusState private var isEditing: Bool
+
+    init(draft: ChatQuote, id: String) {
+        self.draft = draft
+        self.id = id
+        _text = State(initialValue: draft.messages.first?.text ?? "")
+    }
+
+    private var message: ChatQuote.Message? { draft.messages.first }
+    private var sent: (text: String, activityID: UUID)? { claudeCodeService.sentDrafts[id] }
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                BrandGlyph(id: draft.source, size: 12)
+                if sent == nil {
+                    Text("Draft")
+                        .font(OrtusTheme.Typo.badge)
+                        .foregroundStyle(OrtusTheme.accentInk)
+                        .padding(.horizontal, 7).padding(.vertical, 2)
+                        .background(Capsule().fill(OrtusTheme.accentSoft))
+                }
+                Text(Self.appName(draft.source)).foregroundStyle(OrtusTheme.textMuted)
+            }
+            .font(OrtusTheme.Typo.caption)
+
+            if draft.source == "gmail", !draft.place.isEmpty {
+                Text(draft.place).font(OrtusTheme.Typo.bodyMedium.weight(.semibold))
+            }
+            if let recipient = message?.to ?? (draft.source == "gmail" ? nil : draft.place) {
+                Text("To \(recipient)").font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
+            }
+
+            if let sent {
+                Text(sent.text).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
+                Divider()
+                status(sent.activityID)
+            } else {
+                editor
+                Button("Send") { claudeCodeService.sendDraft(id: id, original: message?.text ?? "", edited: text) }
+                    .buttonStyle(OrtusPrimaryButtonStyle())
+                    .disabled(claudeCodeService.isProcessing || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(shape.fill(OrtusTheme.cardSurface))
+        .overlay(shape.strokeBorder(OrtusTheme.hairline, lineWidth: 1))
+        .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
+    }
+
+    /// A recessed field that grows with the text: the hidden copy sets the height.
+    private var editor: some View {
+        ZStack(alignment: .topLeading) {
+            Text(text + " ").padding(.horizontal, 5).opacity(0).accessibilityHidden(true)
+            TextEditor(text: $text)
+                .scrollContentBackground(.hidden)
+                .scrollDisabled(true)
+                .focused($isEditing)
+        }
+        .font(OrtusTheme.Typo.body)
+        .padding(6)
+        .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous).fill(OrtusTheme.inputSurface))
+        .overlay(
+            RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous)
+                .strokeBorder(isEditing ? OrtusTheme.accent.opacity(0.55) : OrtusTheme.hairline, lineWidth: 1)
+        )
+    }
+
+    /// Only claims "Sent" once the turn finished and a send step in this app succeeded.
+    /// A false "Not sent" is better than a false "Sent"; Claude's reply says what happened.
+    @ViewBuilder private func status(_ activityID: UUID) -> some View {
+        let activity = claudeCodeService.messages.first { $0.id == activityID }.flatMap { message -> ChatActivity? in
+            if case .activity(let activity) = message.kind { activity } else { nil }
+        }
+        if let activity, let finished = activity.finishedAt {
+            let succeeded = !activity.wasStopped && activity.toolSteps.contains {
+                $0.status == .done && $0.verb == "Sent" && ($0.source?.rawValue == draft.source || ChatActivity.Source(rawValue: draft.source) == nil)
+            }
+            if succeeded {
+                Label("Sent at \(finished.formatted(date: .omitted, time: .shortened))", systemImage: "checkmark")
+                    .foregroundStyle(OrtusTheme.success)
+            } else {
+                Label("Not sent. See the reply below.", systemImage: "exclamationmark.circle")
+                    .foregroundStyle(OrtusTheme.warning)
+            }
+        } else {
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                Text("Sending…").foregroundStyle(OrtusTheme.textMuted)
+            }
+        }
+    }
+
+    private static func appName(_ source: String) -> String {
+        ["gmail": "Gmail", "slack": "Slack", "linkedin": "LinkedIn", "x": "X"][source] ?? source.capitalized
     }
 }
 

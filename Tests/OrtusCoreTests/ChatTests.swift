@@ -87,6 +87,11 @@ struct ChatTests {
         ])
         expect(done.activity.toolSteps.map(\.title) == ["Opened the email", "Ran a command"])
         expect(done.activity.summary == "Checked Gmail · 2 steps")
+        let sent = turn([(0, toolUse("s", "mcp__claude_ai_Slack__slack_send_message", #"{"channel_id":"C1"}"#)), (1, result("s")), (1, end())])
+        expect(sent.activity.toolSteps.first?.title == "Sent a message in Slack")
+        expect(sent.activity.summary == "Sent with Slack · 1 step")
+        let notSent = turn([(0, toolUse("s", "mcp__claude_ai_Slack__slack_send_message")), (1, result("s", error: true)), (1, end())])
+        expect(notSent.activity.summary == "Checked Slack · 1 step" && notSent.activity.hasProblem)
 
         let failed = turn([(0, toolUse("w", "WebSearch", #"{"query":"ortus"}"#)), (1, result("w", error: true)),
                            (2, #"{"type":"result","is_error":true,"result":"Overloaded"}"#)])
@@ -142,6 +147,11 @@ struct ChatTests {
         expect(blocks[2] == .bullets(["one", "two"]) && blocks[3] == .numbered(["first"]))
         expect(blocks[4] == .blockquote("quoted") && blocks[5] == .paragraph("**Heading**"))
         expect(blocks[6] == .blockquote("not a card")) // a quote fence without messages stays readable
+
+        let draft = ChatMarkdown.blocks("Here's a reply.\n\n```draft\nsource: gmail\nplace: Re: Pilot\n---\nto: Sara Conti\n\nHi Sara,\n\n12 January works.\n```")
+        guard case .draft(let email) = draft.last else { return expect(false) }
+        expect(email.source == "gmail" && email.place == "Re: Pilot")
+        expect(email.messages.first?.to == "Sara Conti" && email.messages.first?.text == "Hi Sara,\n\n12 January works.")
     }
 
     func labelsTimesRelativeToNow() {

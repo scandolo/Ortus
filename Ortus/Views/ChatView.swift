@@ -29,9 +29,8 @@ struct ChatView: View {
             inputBar
         }
         .onAppear {
-            if let fixture = ChatFixtures.messages(for: snapshotState) {
-                claudeCodeService.messages = fixture
-            } else if snapshotState == "chat-draft" {
+            if ChatFixtures.apply(snapshotState, to: claudeCodeService) { return }
+            if snapshotState == "chat-draft" {
                 claudeCodeService.messages = [
                     ChatMessage(role: .user, content: "Anything urgent in my email?"),
                     ChatMessage(role: .assistant, content: "Two things: Haroun replied about the contract, and your Lisbon flight moved to 9:40."),
@@ -397,7 +396,7 @@ private struct ActivityRow: View {
                             .font(.system(size: 10))
                             .foregroundStyle(OrtusTheme.danger)
                     }
-                    Text(step.title)
+                    Text(step.status == .failed ? "\(step.progress) failed" : step.title)
                         .italic(step.kind != .tool)
                         .foregroundStyle(step.kind == .tool ? OrtusTheme.textMuted : OrtusTheme.textMuted.opacity(0.75))
                         .lineLimit(3)
@@ -451,7 +450,7 @@ private struct MessageRow: View {
             }
         } else {
             // Answers read as a document across the panel, not a bubble.
-            ChatAnswerView(text: message.content)
+            ChatAnswerView(text: message.content, messageID: message.id)
                 .help(message.timestamp.formatted(date: .omitted, time: .shortened))
         }
     }

@@ -21,6 +21,10 @@ final class ClaudeCodeService: ObservableObject {
     /// app once FocusManager exists; read again on every message.
     var focusContext: () -> String? = { nil }
 
+    /// Drafts sent from a draft card: the text that went out and the activity row of
+    /// the turn that sends it, which the card watches to show how it went.
+    @Published var sentDrafts: [String: (text: String, activityID: UUID)] = [:]
+
     @Published private(set) var canUndoClear = false
     private var clearedConversation: (messages: [ChatMessage], sessionID: String, started: Bool)?
     private var sessionID = UUID().uuidString
@@ -179,6 +183,15 @@ final class ClaudeCodeService: ObservableObject {
             self.currentProcess = nil
             self.currentTask = nil
         }
+    }
+
+    /// The draft card's Send button: a normal chat message, like typing it. Edits go
+    /// along in full so Claude sends the user's version.
+    func sendDraft(id: String, original: String, edited: String) {
+        guard !isProcessing else { return }
+        let text = edited.trimmingCharacters(in: .whitespacesAndNewlines)
+        sendMessage(text == original.trimmingCharacters(in: .whitespacesAndNewlines) ? "Send it." : "Send it, with my edits:\n\n\(text)")
+        if let activityID { sentDrafts[id] = (text, activityID) }
     }
 
     func stop() {
@@ -348,8 +361,10 @@ final class ClaudeCodeService: ObservableObject {
         - For "anything urgent?" questions, mention only what needs the user before their session ends or \
         today. Everything else is one short closing line at most, without names.
         - Resolve user IDs to display names before showing them.
-        - Before anything that changes something (sending a message or email, editing a document, accepting \
-        an invite), confirm the target and the content with the user first.
+        - Never send or change anything (a message, an email, a document, an invite) until the user says \
+        so. Write messages as a draft block (format below) and stop; the user can edit it and press Send, \
+        which replies "Send it." or "Send it, with my edits:" followed by their text. Then send exactly that \
+        text, to the recipient in the draft, and confirm in one short line.
 
         Formatting (the chat panel is narrow, about 50 characters per line):
         - Short paragraphs. A bullet list only for three or more parallel items. Bold sparingly, for names \
@@ -391,6 +406,19 @@ final class ClaudeCodeService: ObservableObject {
         replies you left out (don't explain the skipping in prose).
         - Emails may add "to:" under "from:". Posts may add "about:" with the author's headline.
         - Times are ISO 8601 with offset, copied from the tool result.
+
+        Draft blocks use the same format with "draft" instead of "quote": source and place (the channel or \
+        the email subject) in the header, then one section with "to:" and the text. Write the text exactly \
+        as it will be sent, in the user's voice, without placeholders.
+
+        ```draft
+        source: gmail
+        place: Re: Q1 pilot proposal
+        ---
+        to: Sara Conti
+
+        Hi Sara, 12 January works for us.
+        ```
         """
     }
 }

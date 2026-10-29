@@ -111,7 +111,8 @@ public struct ChatActivity: Equatable, Sendable {
         /// Present tense, for the live line: "Searching Slack".
         public let progress: String
         public var status: Status
-        let isSearch: Bool
+        /// How the summary describes this step: Searched, Checked or Sent.
+        public let verb: String
     }
 
     public let startedAt: Date
@@ -132,8 +133,9 @@ public struct ChatActivity: Equatable, Sendable {
         let tools = toolSteps
         guard !tools.isEmpty else { return nil }
         let names = Self.list(Self.sources(of: tools).map(\.name))
-        let verb = tools.contains(where: \.isSearch) ? "Searched" : "Checked"
-        let what = names.isEmpty ? "Worked on it" : "\(verb) \(names)"
+        // A failed send didn't send anything.
+        let verb = ["Sent", "Searched"].first { verb in tools.contains { $0.verb == verb && $0.status != .failed } } ?? "Checked"
+        let what = names.isEmpty ? "Worked on it" : verb == "Sent" ? "Sent with \(names)" : "\(verb) \(names)"
         return "\(what) · \(tools.count) step\(tools.count == 1 ? "" : "s")"
     }
 
@@ -164,11 +166,11 @@ public struct ChatActivity: Equatable, Sendable {
     }
 
     mutating func addThought(seconds: Int) {
-        steps.append(Step(id: "thought-\(steps.count)", kind: .thought, source: nil, title: "Thought for \(seconds)s", progress: "Thinking", status: .done, isSearch: false))
+        steps.append(Step(id: "thought-\(steps.count)", kind: .thought, source: nil, title: "Thought for \(seconds)s", progress: "Thinking", status: .done, verb: "Checked"))
     }
 
     mutating func addNote(_ text: String) {
-        steps.append(Step(id: "note-\(steps.count)", kind: .note, source: nil, title: text, progress: "Thinking", status: .done, isSearch: false))
+        steps.append(Step(id: "note-\(steps.count)", kind: .note, source: nil, title: text, progress: "Thinking", status: .done, verb: "Checked"))
     }
 
     mutating func finish(at date: Date, stopped: Bool) {
@@ -180,8 +182,8 @@ public struct ChatActivity: Equatable, Sendable {
 
     /// Plain-language names for a tool call, or nil for plumbing that isn't shown.
     static func describe(id: String, name: String, input: [String: Any]) -> Step? {
-        func step(_ source: Source?, _ title: String, _ progress: String, search: Bool = false) -> Step {
-            Step(id: id, kind: .tool, source: source, title: title, progress: progress, status: .running, isSearch: search)
+        func step(_ source: Source?, _ title: String, _ progress: String, verb: String = "Checked") -> Step {
+            Step(id: id, kind: .tool, source: source, title: title, progress: progress, status: .running, verb: verb)
         }
         let query = Self.query(in: input).map { " “\($0)”" } ?? ""
 
@@ -193,7 +195,7 @@ public struct ChatActivity: Equatable, Sendable {
             if "\(input)".contains("tool-results") { return nil }
             return step(nil, "Ran a command", "Running a command")
         case "WebSearch":
-            return step(.web, "Searched the web\(query)", "Searching the web", search: true)
+            return step(.web, "Searched the web\(query)", "Searching the web", verb: "Searched")
         case "WebFetch":
             let host = (input["url"] as? String).flatMap { URL(string: $0)?.host } ?? "a page"
             return step(.web, "Opened \(host)", "Opening \(host)")
@@ -210,24 +212,27 @@ public struct ChatActivity: Equatable, Sendable {
         let source = Self.source(in: server)
         let app = source?.name ?? server
 
-        let table: [(match: String, title: String, progress: String, search: Bool)] = [
-            ("search_users", "Looked up\(query)", "Looking up\(query)", true),
-            ("search_channels", "Found the channel", "Finding the channel", true),
-            ("search", "Searched \(app)\(query)", "Searching \(app)", true),
-            ("read_thread", "Read the thread", "Reading the thread", false),
-            ("read_channel", "Read the channel", "Reading the channel", false),
-            ("user_profile", "Read a profile", "Reading a profile", false),
-            ("list_user_channels", "Listed your channels", "Listing your channels", false),
-            ("get_thread", "Opened the email", "Opening the email", false),
-            ("get_message", "Opened the email", "Opening the email", false),
-            ("list_events", "Checked your calendar", "Checking your calendar", false),
-            ("get_event", "Checked your calendar", "Checking your calendar", false),
-            ("suggest_time", "Checked your calendar", "Checking your calendar", false),
-            ("read_file", "Opened a document", "Opening a document", false),
-            ("fetch", "Opened a page", "Opening a page", false),
+        let table: [(match: String, title: String, progress: String, verb: String)] = [
+            ("send", "Sent a message in \(app)", "Sending in \(app)", "Sent"),
+            ("reply", "Replied in \(app)", "Replying in \(app)", "Sent"),
+            ("post", "Posted in \(app)", "Posting in \(app)", "Sent"),
+            ("search_users", "Looked up\(query)", "Looking up\(query)", "Searched"),
+            ("search_channels", "Found the channel", "Finding the channel", "Searched"),
+            ("search", "Searched \(app)\(query)", "Searching \(app)", "Searched"),
+            ("read_thread", "Read the thread", "Reading the thread", "Checked"),
+            ("read_channel", "Read the channel", "Reading the channel", "Checked"),
+            ("user_profile", "Read a profile", "Reading a profile", "Checked"),
+            ("list_user_channels", "Listed your channels", "Listing your channels", "Checked"),
+            ("get_thread", "Opened the email", "Opening the email", "Checked"),
+            ("get_message", "Opened the email", "Opening the email", "Checked"),
+            ("list_events", "Checked your calendar", "Checking your calendar", "Checked"),
+            ("get_event", "Checked your calendar", "Checking your calendar", "Checked"),
+            ("suggest_time", "Checked your calendar", "Checking your calendar", "Checked"),
+            ("read_file", "Opened a document", "Opening a document", "Checked"),
+            ("fetch", "Opened a page", "Opening a page", "Checked"),
         ]
         if let row = table.first(where: { tool.contains($0.match) }) {
-            return step(source, row.title, row.progress, search: row.search)
+            return step(source, row.title, row.progress, verb: row.verb)
         }
         let words = tool.replacingOccurrences(of: "_", with: " ").replacingOccurrences(of: "-", with: " ")
         return step(source, "Used \(app): \(words)", "Using \(app)")

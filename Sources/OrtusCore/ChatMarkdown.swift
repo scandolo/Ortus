@@ -9,6 +9,9 @@ public enum ChatBlock: Equatable, Sendable {
     case blockquote(String)
     case code(String)
     case quote(ChatQuote)
+    /// A message Claude wrote for the user to send, in a fenced `draft` block with the
+    /// same format as `quote`. The user can edit it before sending.
+    case draft(ChatQuote)
 }
 
 /// Messages Claude quoted verbatim from Slack, email or a post, written in a
@@ -138,8 +141,10 @@ public enum ChatMarkdown {
                 index += 1
                 let body = take { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("```") }.joined(separator: "\n")
                 index += 1 // closing fence
-                if language == "quote" {
-                    blocks.append(ChatQuote.parse(body).map(ChatBlock.quote) ?? .blockquote(body))
+                if language == "quote" || language == "draft", let quote = ChatQuote.parse(body) {
+                    blocks.append(language == "quote" ? .quote(quote) : .draft(quote))
+                } else if language == "quote" || language == "draft" {
+                    blocks.append(.blockquote(body))
                 } else {
                     blocks.append(.code(body))
                 }
