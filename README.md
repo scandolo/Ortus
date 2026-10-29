@@ -145,7 +145,7 @@ Ortus/
 ├── landing/                   # The website (ortusmode.com), deployed by Vercel from main
 ├── BrowserExtension/          # Chromium companion: blocking rules, blocked page, popup
 ├── Sources/
-│   ├── OrtusCore/             # Shared model: targets, modes, schedules, sessions, browser policy
+│   ├── OrtusCore/             # Shared model: targets, modes, schedules, sessions, browser policy, chat stream and answer blocks
 │   └── OrtusBrowserBridge/    # Native Messaging host between the app and the extension
 ├── Tests/OrtusCoreTests/      # Core checks (run with Command Line Tools only)
 ├── scripts/                   # Preview installer, release notarization, extension packaging, integration tests
@@ -171,10 +171,12 @@ Ortus/
     │   ├── OrtusDurationSlider.swift   # The sunrise duration slider
     │   ├── BlockingTargetsEditor.swift # Mode picker, mode builder, browser setup
     │   ├── ScheduleView.swift # Recurring schedules with inline editing
-    │   ├── ChatView.swift     # Chat with Claude Code
+    │   ├── ChatView.swift     # Chat with Claude Code: messages, activity line, input bar
+    │   ├── ChatAnswerView.swift    # Answers as paragraphs, lists and cards for quoted messages
     │   └── SettingsView.swift # Connections, Slack status, general, Slack setup
     └── Debug/
-        └── SnapshotHarness.swift   # Debug-only offscreen renders of every panel state
+        ├── SnapshotHarness.swift   # Debug-only offscreen renders of every panel state
+        └── ChatFixtures.swift # Made-up chat turns for the snapshots, replayed through the stream parser
 ```
 
 ### Key design decisions
