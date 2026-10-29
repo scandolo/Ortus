@@ -78,7 +78,9 @@ struct ChatView: View {
     private var messageList: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
+                // Not lazy: a chat is short, and a lazy stack kept re-laying out its rows
+                // forever in 1.1.15 (selectable text and draft cards resize as they lay out).
+                VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
                     ForEach(claudeCodeService.messages) { message in
                         MessageRow(message: message)
                             .id(message.id)
@@ -161,7 +163,7 @@ struct ChatView: View {
             .padding(.vertical, 6)
             .focused($isInputFocused)
             .onSubmit { sendMessage() }
-            .disabled(!claudeCodeService.isConfigured || claudeCodeService.isProcessing)
+            .disabled(!claudeCodeService.isConfigured)
     }
 
     private var newChatButton: some View {
@@ -437,7 +439,8 @@ private struct MessageRow: View {
         if message.role == .user {
             HStack(spacing: 0) {
                 Spacer(minLength: 36)
-                Text(renderMarkdown(message.content))
+                // Verbatim: an email or a web address you typed stays plain text, not a link.
+                Text(verbatim: message.content)
                     .font(OrtusTheme.Typo.body)
                     .textSelection(.enabled)
                     .foregroundStyle(OrtusTheme.onAccent)
@@ -486,10 +489,6 @@ private struct MessageRow: View {
                 .strokeBorder(OrtusTheme.danger.opacity(0.35), lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous))
-    }
-
-    private func renderMarkdown(_ text: String) -> AttributedString {
-        (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
     }
 }
 

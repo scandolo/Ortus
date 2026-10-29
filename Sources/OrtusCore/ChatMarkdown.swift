@@ -32,6 +32,7 @@ public struct ChatQuote: Equatable, Sendable {
     public struct Message: Equatable, Sendable {
         public var from = ""
         public var to: String?
+        public var cc: String?
         public var about: String?
         public var time: Date?
         public var text = ""
@@ -69,6 +70,7 @@ public struct ChatQuote: Equatable, Sendable {
             var message = Message()
             message.from = head["from"] ?? ""
             message.to = head["to"]
+            message.cc = head["cc"]
             message.about = head["about"]
             message.time = head["time"].flatMap(Self.date)
             message.text = lines[blank...].joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)

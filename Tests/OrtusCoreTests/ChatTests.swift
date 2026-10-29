@@ -148,10 +148,10 @@ struct ChatTests {
         expect(blocks[4] == .blockquote("quoted") && blocks[5] == .paragraph("**Heading**"))
         expect(blocks[6] == .blockquote("not a card")) // a quote fence without messages stays readable
 
-        let draft = ChatMarkdown.blocks("Here's a reply.\n\n```draft\nsource: gmail\nplace: Re: Pilot\n---\nto: Sara Conti\n\nHi Sara,\n\n12 January works.\n```")
+        let draft = ChatMarkdown.blocks("Here's a reply.\n\n```draft\nsource: gmail\nplace: Re: Pilot\n---\nto: Sara Conti\ncc: Tom Price\n\nHi Sara,\n\n12 January works.\n```")
         guard case .draft(let email) = draft.last else { return expect(false) }
         expect(email.source == "gmail" && email.place == "Re: Pilot")
-        expect(email.messages.first?.to == "Sara Conti" && email.messages.first?.text == "Hi Sara,\n\n12 January works.")
+        expect(email.messages.first?.to == "Sara Conti" && email.messages.first?.cc == "Tom Price" && email.messages.first?.text == "Hi Sara,\n\n12 January works.")
     }
 
     func labelsTimesRelativeToNow() {

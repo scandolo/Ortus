@@ -29,7 +29,7 @@ enum ChatFixtures {
         source: \(email ? "gmail" : "slack")
         place: \(email ? "Re: Q1 pilot proposal" : "#launch")
         ---
-        to: \(email ? "Sara Conti" : "Maya Chen, in the thread")
+        to: \(email ? "Sara Conti\ncc: Tom Price" : "Maya Chen, in the thread")
 
         \(draft)
         ```
