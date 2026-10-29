@@ -34,9 +34,11 @@ jobs:
         run: |
           OUT="$RUNNER_TEMP/snapshots"
           mkdir -p "$OUT"
+          # macOS has no `timeout`; perl's alarm stops a hung harness after five minutes.
           ORTUS_SNAPSHOT_DIR="$OUT" ORTUS_SNAPSHOT_SESSION=1 \
-            timeout 300 ./Ortus.app/Contents/MacOS/Ortus || echo "harness exited with $?"
+            perl -e 'alarm shift; exec @ARGV' 300 ./Ortus.app/Contents/MacOS/Ortus || echo "harness exited with $?"
           ls -la "$OUT"
+          test -n "$(ls "$OUT"/*.png 2>/dev/null)"
 
       - uses: actions/upload-artifact@v4
         with:
