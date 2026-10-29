@@ -18,7 +18,7 @@ final class WebsiteBlockingService: ObservableObject {
             .filter { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0.id) != nil }
     }
     /// The next browser Ortus will close because its extension is off.
-    struct ClosingBrowser: Equatable { let name: String; let bundleID: String; let closesAt: Date }
+    struct ClosingBrowser: Equatable { let name: String; let closesAt: Date }
     @Published private(set) var closingBrowser: ClosingBrowser?
     private var browserGuard = BrowserGuard()
     /// Browsers with a working extension right now, by bundle ID.
@@ -103,7 +103,7 @@ final class WebsiteBlockingService: ObservableObject {
             case .close: app.terminate()
             case nil: break
             }
-            if next.map({ closesAt < $0.closesAt }) ?? true { next = ClosingBrowser(name: name, bundleID: app.bundleIdentifier ?? "", closesAt: closesAt) }
+            if next.map({ closesAt < $0.closesAt }) ?? true { next = ClosingBrowser(name: name, closesAt: closesAt) }
         }
         if closingBrowser != next { closingBrowser = next }
     }

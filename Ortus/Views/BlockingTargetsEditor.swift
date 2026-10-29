@@ -290,29 +290,34 @@ struct BrowserStatusRow: View {
     }
 }
 
-/// Shown while Ortus counts down to closing a browser whose extension is off.
+/// During focus, one browser problem at a time: the countdown to closing a browser whose
+/// extension is off replaces "not set up", which says the same thing less precisely.
 struct ClosingBrowserRow: View {
     @ObservedObject var service: WebsiteBlockingService
+    let showSetupProblem: Bool
+    @EnvironmentObject var router: PanelRouter
     @Environment(\.snapshotState) private var snapshotState
 
     var body: some View {
-        if let closing = service.closingBrowser ?? (snapshotState == "closing-browser" ? .init(name: "Arc", bundleID: "", closesAt: .now + 42) : nil) {
+        if let closing = service.closingBrowser ?? (snapshotState == "closing-browser" ? .init(name: "Arc", closesAt: .now + 42) : nil) {
             OrtusGroup {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     OrtusListRow(title: "\(closing.name) closes in \(FocusView.formatDuration(max(0, closing.closesAt.timeIntervalSince(context.date))))",
-                                 subtitle: "Turn the Ortus extension back on and allow it in incognito.") {
+                                 subtitle: "The Ortus extension is off, removed or not allowed in incognito.") {
                         Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(OrtusTheme.warning)
                     } trailing: {
-                        Button("Fix") { service.openExtensionsPage(browserID: closing.bundleID) }
+                        Button("Fix") { router.modal = .browserSetup }
                             .buttonStyle(OrtusRowButtonStyle())
                     }
                 }
             }
+        } else if showSetupProblem {
+            OrtusGroup { BrowserStatusRow(service: service) }
         }
     }
 }
 
-/// The three setup steps, shown in a modal.
+/// The setup steps, shown in a modal.
 struct BrowserSetupModal: View {
     @ObservedObject var service: WebsiteBlockingService
     @EnvironmentObject var router: PanelRouter
@@ -335,6 +340,9 @@ struct BrowserSetupModal: View {
                     OrtusStepRow(number: 3, title: "Choose the “\(service.extensionDirectory?.lastPathComponent ?? "Ortus Browser")” folder") {
                         Button("Show folder") { service.revealCompanion() }.buttonStyle(OrtusRowButtonStyle())
                     }
+                    OrtusGroupDivider()
+                    // Without it, blocked sites stay open in private windows, and Ortus closes the browser during focus.
+                    OrtusStepRow(number: 4, title: "Open the extension’s Details and turn on Allow in Incognito") { EmptyView() }
                 }
                 if let error = service.setupError ?? service.error ?? service.enforcementError {
                     Text(error).font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.danger)
