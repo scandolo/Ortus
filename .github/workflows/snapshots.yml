@@ -1,0 +1,59 @@
+name: Snapshots
+
+# Renders every panel state with the debug snapshot harness (Ortus/Debug/SnapshotHarness.swift)
+# on a macOS runner and commits the PNGs to the pr-assets branch, in a folder named after
+# the branch. Never runs on main, so it never releases.
+
+on:
+  push:
+    branches: ["claude/**"]
+    paths:
+      - ".github/workflows/snapshots.yml"
+      - "Ortus/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  snapshots:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 16 (Swift 6 toolchain)
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$XCODE" ]; then sudo xcode-select -s "$XCODE"; fi
+          swift --version
+
+      - name: Build debug app
+        run: ./build.sh debug
+
+      - name: Render light and dark panel states
+        run: |
+          OUT="$RUNNER_TEMP/snapshots"
+          mkdir -p "$OUT"
+          ORTUS_SNAPSHOT_DIR="$OUT" ORTUS_SNAPSHOT_SESSION=1 \
+            timeout 300 ./Ortus.app/Contents/MacOS/Ortus || echo "harness exited with $?"
+          ls -la "$OUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: snapshots
+          path: ${{ runner.temp }}/snapshots
+
+      - name: Commit to pr-assets
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin pr-assets
+          git worktree add "$RUNNER_TEMP/assets" origin/pr-assets
+          cd "$RUNNER_TEMP/assets"
+          mkdir -p "$BRANCH/snapshots"
+          cp "$RUNNER_TEMP"/snapshots/*.png "$BRANCH/snapshots/"
+          git add "$BRANCH/snapshots"
+          git commit -m "Snapshots for $BRANCH at ${GITHUB_SHA::7}" || exit 0
+          git push origin HEAD:pr-assets
