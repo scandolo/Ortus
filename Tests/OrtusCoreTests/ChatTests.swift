@@ -96,6 +96,10 @@ struct ChatTests {
         expect(done.activity.toolSteps.map(\.title) == ["Opened the email", "Listed your channels"])
         expect(done.activity.toolSteps.last?.status == .needsPermission)
         expect(!done.activity.hasProblem)
+        expect(done.activity.summary == "Checked Gmail · 1 step") // the refused call never ran
+        let onlyRefused = turn([(0, toolUse("g", "mcp__claude_ai_Gmail__search_threads")),
+                                (0, #"{"type":"system","subtype":"permission_denied","tool_name":"mcp__claude_ai_Gmail__search_threads","tool_use_id":"g"}"#), (1, end())])
+        expect(onlyRefused.activity.summary == "Needs your OK for Gmail")
 
         let failed = turn([(0, toolUse("w", "WebSearch", #"{"query":"ortus"}"#)), (1, result("w", error: true)),
                            (2, #"{"type":"result","is_error":true,"result":"Overloaded"}"#)])

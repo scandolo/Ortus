@@ -141,21 +141,25 @@ public struct ChatActivity: Equatable, Sendable {
     public var hasProblem: Bool { toolSteps.contains { $0.status == .failed } }
 
     /// "Searched Slack and Gmail · 3 steps", or nil when Claude used no tools.
+    /// Calls waiting for the user's OK didn't run, so they don't count.
     public var summary: String? {
         let tools = toolSteps
         guard !tools.isEmpty else { return nil }
-        var sources: [Source] = []
-        for source in tools.compactMap(\.source) where !sources.contains(source) { sources.append(source) }
-        let verb = tools.contains(where: \.isSearch) ? "Searched" : "Checked"
-        let what = sources.isEmpty ? "Worked on it" : "\(verb) \(Self.list(sources.map(\.name)))"
-        return "\(what) · \(tools.count) step\(tools.count == 1 ? "" : "s")"
+        let ran = tools.filter { $0.status != .needsPermission }
+        if ran.isEmpty {
+            let names = Self.list(Self.sources(of: tools).map(\.name))
+            return names.isEmpty ? "Needs your OK" : "Needs your OK for \(names)"
+        }
+        let names = Self.list(Self.sources(of: ran).map(\.name))
+        let verb = ran.contains(where: \.isSearch) ? "Searched" : "Checked"
+        let what = names.isEmpty ? "Worked on it" : "\(verb) \(names)"
+        return "\(what) · \(ran.count) step\(ran.count == 1 ? "" : "s")"
     }
 
     /// What the live line says while Claude works, without the trailing ellipsis.
     public var progress: String {
         let running = toolSteps.filter { $0.status == .running }
-        var runningSources: [Source] = []
-        for source in running.compactMap(\.source) where !runningSources.contains(source) { runningSources.append(source) }
+        let runningSources = Self.sources(of: running)
         // Parallel calls in different apps: one stable label instead of flicker.
         if runningSources.count > 1 { return "Searching \(Self.list(runningSources.map(\.name)))" }
         if let first = running.first { return first.progress }
@@ -262,6 +266,13 @@ public struct ChatActivity: Equatable, Sendable {
         text = text.replacingOccurrences(of: #"<@\w+>"#, with: "", options: .regularExpression).trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else { return nil }
         return text.count > 36 ? String(text.prefix(36)) + "…" : text
+    }
+
+    /// The apps these steps touched, in order, once each.
+    static func sources(of steps: [Step]) -> [Source] {
+        var sources: [Source] = []
+        for source in steps.compactMap(\.source) where !sources.contains(source) { sources.append(source) }
+        return sources
     }
 
     static func source(in text: String) -> Source? {
