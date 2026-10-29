@@ -115,13 +115,8 @@ private struct QuoteCard: View {
                 if case .skipped(let n) = entry { total + n } else { total + 1 }
             }
             entryView(entries[0])
-            Button("\(count) more \(count == 1 ? "reply" : "replies")") {
-                withAnimation(.easeOut(duration: 0.18)) { showsAllReplies = true }
-            }
-            .buttonStyle(.plain)
-            .font(OrtusTheme.Typo.caption.weight(.semibold))
-            .foregroundStyle(OrtusTheme.accentInk)
-            .padding(.leading, 29)
+            ExpandButton(title: "\(count) more \(count == 1 ? "reply" : "replies")") { showsAllReplies = true }
+                .padding(.leading, 29)
             ForEach(Array(entries.suffix(2).enumerated()), id: \.offset) { _, entry in entryView(entry) }
         } else {
             ForEach(Array(entries.enumerated()), id: \.offset) { _, entry in entryView(entry) }
@@ -131,8 +126,9 @@ private struct QuoteCard: View {
     @ViewBuilder private func entryView(_ entry: ChatQuote.Entry) -> some View {
         switch entry {
         case .skipped(let count):
-            Text("··· \(count) more \(count == 1 ? "reply" : "replies")")
-                .font(OrtusTheme.Typo.caption)
+            // Claude left these out, so there is nothing to open: plain text, not a control.
+            Text("\(count) \(count == 1 ? "reply" : "replies") left out")
+                .font(OrtusTheme.Typo.caption.italic())
                 .foregroundStyle(OrtusTheme.textMuted)
                 .padding(.leading, 29)
         case .message(let message):
@@ -188,10 +184,7 @@ private struct QuoteCard: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 2)
                 if last.text.count > 240 && !showsFullEmail {
-                    Button("Show more") { withAnimation(.easeOut(duration: 0.18)) { showsFullEmail = true } }
-                        .buttonStyle(.plain)
-                        .font(OrtusTheme.Typo.caption.weight(.semibold))
-                        .foregroundStyle(OrtusTheme.accentInk)
+                    ExpandButton(title: "Show more") { showsFullEmail = true }
                 }
             }
         }
@@ -201,5 +194,36 @@ private struct QuoteCard: View {
     private static func sender(_ from: String) -> String {
         let name = from.replacingOccurrences(of: #"\s*[(<].*[)>]\s*$"#, with: "", options: .regularExpression)
         return name.isEmpty ? from : name
+    }
+}
+
+/// Opens more of a card in place. A small capsule with a chevron, so it reads as a
+/// control rather than coloured text; the pointer turns into a hand over it.
+private struct ExpandButton: View {
+    let title: String
+    let action: () -> Void
+    @State private var isHovering = false
+
+    var body: some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.18)) { action() }
+        } label: {
+            HStack(spacing: 4) {
+                Text(title)
+                Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold))
+            }
+            .font(OrtusTheme.Typo.caption.weight(.semibold))
+            .foregroundStyle(OrtusTheme.accentInk)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(Capsule().fill(OrtusTheme.accentSoft.opacity(isHovering ? 1 : 0.6)))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            isHovering = hovering
+            if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+        }
+        .animation(.easeOut(duration: 0.15), value: isHovering)
     }
 }
