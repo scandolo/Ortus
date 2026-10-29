@@ -1,3 +1,4 @@
+import OrtusCore
 import SwiftUI
 
 struct ChatView: View {
@@ -31,7 +32,7 @@ struct ChatView: View {
             if snapshotState == "chat-permission" {
                 claudeCodeService.messages = [
                     ChatMessage(role: .user, content: "Did Haroun reply to my email from yesterday?"),
-                    ChatMessage(role: .assistant, content: "Gmail · search_threads: from:haroun newer_than:3d", kind: .toolUse(toolName: "mcp__claude_ai_Gmail__search_threads")),
+                    ChatMessage(role: .assistant, content: "", kind: .activity(ChatFixtures.refusedGmailSearch)),
                     ChatMessage(role: .assistant, content: "I need your OK to search Gmail. Allow it below and I'll check."),
                     ChatMessage(role: .assistant, content: "Gmail · search_threads", kind: .permissionRequest(toolName: "mcp__claude_ai_Gmail__search_threads")),
                 ]
@@ -92,25 +93,16 @@ struct ChatView: View {
                                 removal: .opacity
                             ))
                     }
-
-                    if claudeCodeService.isProcessing {
-                        ThinkingPill()
-                            .id("loading")
-                    }
                 }
                 .padding(OrtusTheme.spacingMD)
                 .animation(.easeOut(duration: 0.22), value: claudeCodeService.messages.count)
             }
-            .onChange(of: claudeCodeService.messages.count) {
+            // Also follows the activity row and the answer as they grow in place.
+            .onChange(of: claudeCodeService.messages.last) {
                 withAnimation(.easeOut(duration: 0.22)) {
                     if let last = claudeCodeService.messages.last {
                         proxy.scrollTo(last.id, anchor: .bottom)
                     }
-                }
-            }
-            .onChange(of: claudeCodeService.isProcessing) {
-                if claudeCodeService.isProcessing {
-                    withAnimation { proxy.scrollTo("loading", anchor: .bottom) }
                 }
             }
         }
@@ -332,12 +324,54 @@ private struct ChatStopButton: View {
     }
 }
 
-// MARK: - Thinking Pill
+// MARK: - Activity
 
-private struct ThinkingPill: View {
+/// Claude's work for one answer as a single quiet line. While it works, the line
+/// names the current step; once done it settles into a summary ("Searched Slack ·
+/// 2 steps") that opens into the list of steps. It opens by itself when a step failed.
+private struct ActivityRow: View {
+    let activity: ChatActivity
+    @State private var isOpen = false
+
     var body: some View {
+        Group {
+            if activity.finishedAt == nil {
+                liveLine
+            } else if let summary = activity.summary {
+                VStack(alignment: .leading, spacing: 6) {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.18)) { isOpen.toggle() }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 9, weight: .semibold))
+                                .rotationEffect(.degrees(isOpen ? 90 : 0))
+                            Text(summary)
+                            if activity.hasProblem {
+                                Image(systemName: "exclamationmark.circle.fill").foregroundStyle(OrtusTheme.danger)
+                            }
+                        }
+                        .font(OrtusTheme.Typo.caption)
+                        .foregroundStyle(OrtusTheme.textMuted)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help(isOpen ? "Hide steps" : "Show steps")
+
+                    if isOpen { stepList.transition(.opacity) }
+                }
+            }
+        }
+        .padding(.leading, 4)
+        .onChange(of: activity.hasProblem, initial: true) {
+            if activity.hasProblem { isOpen = true }
+        }
+    }
+
+    private var liveLine: some View {
         TimelineView(.periodic(from: .now, by: 0.35)) { context in
             let phase = Int(context.date.timeIntervalSinceReferenceDate / 0.35) % 3
+            let elapsed = Int(context.date.timeIntervalSince(activity.startedAt))
             HStack(spacing: 8) {
                 HStack(spacing: 3) {
                     ForEach(0..<3) { i in
@@ -347,17 +381,47 @@ private struct ThinkingPill: View {
                             .opacity(phase == i ? 1.0 : 0.3)
                     }
                 }
-                Text("Thinking…")
-                    .font(OrtusTheme.Typo.caption)
+                Text(activity.progress + "…")
                     .foregroundStyle(OrtusTheme.textMuted)
+                // A count after a few seconds shows it hasn't stalled.
+                if elapsed >= 3 {
+                    Text("\(elapsed)s").foregroundStyle(OrtusTheme.textMuted.opacity(0.7)).monospacedDigit()
+                }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(.thinMaterial, in: Capsule())
-            .overlay(Capsule().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
-            .clipShape(Capsule())
-            .padding(.leading, 4)
+            .font(OrtusTheme.Typo.caption)
         }
+    }
+
+    private var stepList: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            ForEach(activity.steps) { step in
+                HStack(alignment: .firstTextBaseline, spacing: 5) {
+                    if step.status == .failed || step.status == .needsPermission {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(step.status == .failed ? OrtusTheme.danger : OrtusTheme.warning)
+                    }
+                    Text(step.title)
+                        .italic(step.kind != .tool)
+                        .foregroundStyle(step.kind == .tool ? OrtusTheme.textMuted : OrtusTheme.textMuted.opacity(0.75))
+                        .lineLimit(3)
+                    if step.status == .needsPermission {
+                        Text("needs your OK").foregroundStyle(OrtusTheme.textMuted.opacity(0.7))
+                    }
+                }
+            }
+            if let finished = activity.finishedAt {
+                let seconds = max(1, Int(finished.timeIntervalSince(activity.startedAt).rounded()))
+                Text(activity.wasStopped ? "Stopped after \(seconds)s" : "Done in \(seconds)s")
+                    .foregroundStyle(OrtusTheme.textMuted.opacity(0.7))
+            }
+        }
+        .font(OrtusTheme.Typo.caption)
+        .padding(.leading, 12)
+        .overlay(alignment: .leading) {
+            Rectangle().fill(OrtusTheme.textMuted.opacity(0.3)).frame(width: 1)
+        }
+        .padding(.leading, 4)
     }
 }
 
@@ -371,8 +435,8 @@ private struct MessageRow: View {
         switch message.kind {
         case .text:
             textBubble
-        case .toolUse:
-            toolChip
+        case .activity(let activity):
+            ActivityRow(activity: activity)
         case .error:
             errorBubble
         case .permissionRequest(let toolName):
@@ -428,26 +492,6 @@ private struct MessageRow: View {
                 RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous)
                     .strokeBorder(OrtusTheme.innerHighlight, lineWidth: 1)
             )
-    }
-
-    private var toolChip: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "wrench.adjustable")
-                .font(.system(size: 10))
-                .foregroundStyle(OrtusTheme.accent)
-            Text(message.content)
-                .font(OrtusTheme.Typo.meta)
-                .foregroundStyle(OrtusTheme.textMuted)
-                .lineLimit(2)
-                .truncationMode(.tail)
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .background(Capsule().fill(OrtusTheme.cardSurface))
-        .overlay(Capsule().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
-        .clipShape(Capsule())
-        .padding(.leading, 6)
     }
 
     @ViewBuilder

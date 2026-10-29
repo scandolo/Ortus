@@ -1,4 +1,5 @@
 import Foundation
+import OrtusCore
 import SwiftUI
 
 /// Drives the in-app chat by spawning the user's locally-installed `claude` CLI
@@ -56,6 +57,10 @@ final class ClaudeCodeService: ObservableObject {
     private var hasStartedSession = false
     private var currentProcess: Process?
     private var currentTask: Task<Void, Never>?
+    /// The answer being streamed, and the chat rows that show it.
+    private var turn: ChatTurn?
+    private var activityID: UUID?
+    private var answerID: UUID?
 
     /// `claude` resolved from the user's login-shell PATH. Filled in asynchronously
     /// by `detectIfNeeded()` so we catch installs that aren't in `defaultBinaryPaths`
@@ -183,6 +188,10 @@ final class ClaudeCodeService: ObservableObject {
 
         clearedConversation = nil; canUndoClear = false
         if !isRetry { messages.append(ChatMessage(role: .user, content: trimmed)) }
+        let newTurn = ChatTurn(startedAt: Date())
+        let activity = ChatMessage(role: .assistant, content: "", kind: .activity(newTurn.activity))
+        messages.append(activity)
+        turn = newTurn; activityID = activity.id; answerID = nil
         isProcessing = true
         error = nil
         errorDetails = nil
@@ -194,6 +203,7 @@ final class ClaudeCodeService: ObservableObject {
 
         currentTask = Task { @MainActor in
             await runClaude(binary: binary, prompt: trimmed, sessionID: session, isFirstTurn: isFirstTurn)
+            self.updateTurn { $0.finish(at: Date(), stopped: Task.isCancelled) }
             if self.error != nil { self.failedPrompt = trimmed }
             self.isProcessing = false
             self.currentProcess = nil
@@ -224,6 +234,7 @@ final class ClaudeCodeService: ObservableObject {
         stop()
         Analytics.capture("chat_cleared", ["message_count": messages.count])
         messages.removeAll()
+        turn = nil; activityID = nil; answerID = nil
         sessionID = UUID().uuidString
         hasStartedSession = false
         error = nil
@@ -311,75 +322,46 @@ final class ClaudeCodeService: ObservableObject {
     // MARK: - Stream parsing
 
     private func handleStreamLine(_ line: String) {
-        guard !line.isEmpty,
-              let data = line.data(using: .utf8),
-              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let type = obj["type"] as? String else { return }
+        guard !line.isEmpty else { return }
+        updateTurn { $0.consume(line, at: Date()) }
+    }
 
-        switch type {
-        case "system":
-            if obj["subtype"] as? String == "init" { hasStartedSession = true }
-        case "assistant":
-            guard let message = obj["message"] as? [String: Any],
-                  let content = message["content"] as? [[String: Any]] else { return }
-            handleAssistantContent(content)
-        case "result":
-            if let isError = obj["is_error"] as? Bool, isError,
-               let result = obj["result"] as? String, !result.isEmpty {
-                recordFailure("Claude Code could not finish this request. Check assistant setup or retry.", details: result)
-            }
-            // One "Allow" button per refused tool, even if Claude tried it several times.
-            let denied = (obj["permission_denials"] as? [[String: Any]] ?? []).compactMap { $0["tool_name"] as? String }
-            var seen = Set<String>()
-            for name in denied where seen.insert(name).inserted && !allowedTools.contains(name) {
-                messages.append(ChatMessage(role: .assistant, content: Self.displayName(for: name), kind: .permissionRequest(toolName: name)))
-            }
-        default:
+    /// Applies a change to the current answer and mirrors it into the chat rows:
+    /// the activity row updates in place, the answer appears under it (and leaves
+    /// again if it turns out to be narration before a tool call), and refusals and
+    /// errors are added once the answer is finished.
+    private func updateTurn(_ change: (inout ChatTurn) -> Void) {
+        guard var current = turn else { return }
+        let wasFinished = current.isFinished
+        change(&current)
+        turn = current
+        if current.didStartSession { hasStartedSession = true }
+
+        guard let activityIndex = messages.firstIndex(where: { $0.id == activityID }) else { return }
+        messages[activityIndex].kind = .activity(current.activity)
+
+        let answerIndex = messages.firstIndex { $0.id == answerID }
+        switch (answerIndex, current.answer.isEmpty) {
+        case (nil, false):
+            let answer = ChatMessage(role: .assistant, content: current.answer)
+            messages.insert(answer, at: activityIndex + 1)
+            answerID = answer.id
+        case (let index?, false):
+            if messages[index].content != current.answer { messages[index].content = current.answer }
+        case (let index?, true):
+            messages.remove(at: index)
+            answerID = nil
+        case (nil, true):
             break
         }
-    }
 
-    private func handleAssistantContent(_ content: [[String: Any]]) {
-        var textParts: [String] = []
-        var toolUses: [(name: String, summary: String)] = []
-
-        for block in content {
-            guard let blockType = block["type"] as? String else { continue }
-            if blockType == "text", let text = block["text"] as? String, !text.isEmpty {
-                textParts.append(text)
-            } else if blockType == "tool_use", let name = block["name"] as? String {
-                let summary = summarizeTool(name: name, input: block["input"] as? [String: Any])
-                toolUses.append((name: name, summary: summary))
-            }
+        guard current.isFinished, !wasFinished else { return }
+        if let failure = current.failure {
+            recordFailure("Claude Code could not finish this request. Check assistant setup or retry.", details: failure)
         }
-
-        if !textParts.isEmpty {
-            messages.append(ChatMessage(
-                role: .assistant,
-                content: textParts.joined(separator: "\n\n"),
-                kind: .text
-            ))
+        for name in current.deniedTools where !allowedTools.contains(name) {
+            messages.append(ChatMessage(role: .assistant, content: Self.displayName(for: name), kind: .permissionRequest(toolName: name)))
         }
-        for tu in toolUses {
-            messages.append(ChatMessage(
-                role: .assistant,
-                content: tu.summary,
-                kind: .toolUse(toolName: tu.name)
-            ))
-        }
-    }
-
-    private func summarizeTool(name: String, input: [String: Any]?) -> String {
-        let display = Self.displayName(for: name)
-        if let input, !input.isEmpty {
-            for key in ["query", "channel", "channel_id", "user", "user_id", "text", "name"] {
-                if let value = input[key] as? String, !value.isEmpty {
-                    let trimmed = value.count > 60 ? String(value.prefix(60)) + "…" : value
-                    return "\(display): \(trimmed)"
-                }
-            }
-        }
-        return display
     }
 
     /// Make tool names human-readable: mcp__claude_ai_Slack__slack_search_public → "Slack · slack_search_public"
