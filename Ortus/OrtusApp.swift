@@ -82,6 +82,16 @@ struct OrtusApp: App {
         Self.migrateLegacyPreferences()
         // FocusManager sets this on its first run, and migration copies it from older builds.
         AppDelegate.isFreshInstall = UserDefaults.standard.object(forKey: "focusModesMigrated") == nil
+        Self.skipFocusIntroForExistingUsers()
+    }
+
+    /// People who used Ortus before the first-session explainer already know the lock.
+    /// Runs once, so a fresh install still sees it on its first Start, even after relaunching.
+    private static func skipFocusIntroForExistingUsers() {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: "checkedFocusIntro") else { return }
+        defaults.set(true, forKey: "checkedFocusIntro")
+        if !AppDelegate.isFreshInstall { defaults.set(true, forKey: "didStartFocusSession") }
     }
 
     /// Bundle IDs moved from com.ortus.* to com.ortusmode.* before the public launch.
