@@ -48,6 +48,10 @@ struct ContentView: View {
             claudeCodeService.detectIfNeeded()
             Task { await updateService.checkForUpdates() }
         }
+        .onReceive(router.$requestedTab.compactMap { $0 }) { tab in
+            selectedTab = tab
+            router.requestedTab = nil
+        }
     }
 
     @ViewBuilder private var modal: some View {

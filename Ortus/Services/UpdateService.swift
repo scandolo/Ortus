@@ -30,6 +30,11 @@ final class UpdateService: ObservableObject {
     /// How long to stay out of focus before a scheduled update restarts Ortus, so a
     /// user who starts another session right away isn't interrupted.
     static let delayAfterFocus: TimeInterval = 60 * 60
+    /// Opening the panel also checks; this catches releases while it stays closed.
+    static let checkInterval: TimeInterval = 60 * 60
+    nonisolated static let notificationID = "update-available"
+    private var checkTimer: Timer?
+    private var notifyWatch: AnyCancellable?
 
     static let repo = "scandolo/Ortus"
     private static let apiURL = "https://api.github.com/repos/\(repo)/releases/latest"
@@ -74,6 +79,27 @@ final class UpdateService: ObservableObject {
         } catch {
             state = .idle
         }
+    }
+
+    /// Check every `checkInterval` and send one notification per new version, held
+    /// until focus is over. Skipped once the user chose "Update after session".
+    func startBackgroundChecks(_ focusManager: FocusManager) {
+        guard checkTimer == nil else { return }
+        notifyWatch = $state.combineLatest(focusManager.$isInFocus.removeDuplicates())
+            .sink { [weak self, weak focusManager] state, inFocus in
+                guard let self, let focusManager, case let .available(version) = state,
+                      !inFocus, !self.installsAfterFocus else { return }
+                let key = "notifiedUpdateVersion"
+                guard UserDefaults.standard.string(forKey: key) != version else { return }
+                UserDefaults.standard.set(version, forKey: key)
+                focusManager.sendNotification(title: "Ortus \(version) is ready",
+                                              body: "Open Settings to restart and update.",
+                                              identifier: Self.notificationID)
+            }
+        checkTimer = Timer.scheduledTimer(withTimeInterval: Self.checkInterval, repeats: true) { [weak self] _ in
+            Task { @MainActor in await self?.checkForUpdates() }
+        }
+        Task { await checkForUpdates() }
     }
 
     // MARK: - Install

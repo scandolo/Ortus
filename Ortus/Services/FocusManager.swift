@@ -270,7 +270,7 @@ final class FocusManager: ObservableObject {
             if dnd { try? await slackService.endSnooze() }
         }
     }
-    private func sendNotification(title: String, body: String) {
+    func sendNotification(title: String, body: String, identifier: String = UUID().uuidString) {
         guard showNotifications, Bundle.main.bundleIdentifier != nil else { return }
         Task {
             // Never interrupt a scheduled session with an unexpected permission prompt.
@@ -278,7 +278,7 @@ final class FocusManager: ObservableObject {
             guard settings.authorizationStatus == .authorized else { return }
             let content = UNMutableNotificationContent()
             content.title = title; content.body = body; content.sound = .default
-            try? await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
+            try? await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: identifier, content: content, trigger: nil))
         }
     }
 }
