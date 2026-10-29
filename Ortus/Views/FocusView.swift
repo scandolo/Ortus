@@ -323,7 +323,7 @@ struct FocusView: View {
 // MARK: - First session
 
 /// Shown before the first session: what this session will do, and that there's no
-/// way out once it starts, using the user's own targets and duration.
+/// way out once it starts, drawn from the user's own targets and duration.
 struct FocusIntroModal: View {
     @EnvironmentObject var router: PanelRouter
     let selection: BlockSelection
@@ -333,49 +333,50 @@ struct FocusIntroModal: View {
     var body: some View {
         let items = BlockedItem.all(in: selection)
         let until = Date().addingTimeInterval(minutes * 60).formatted(date: .omitted, time: .shortened)
-        OrtusModal(title: "Before you start", onClose: { router.modal = nil }) {
-            VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
-                // What will happen: their own apps and websites, their own duration.
-                HStack(spacing: 12) {
-                    BlockedFacepile(items: items, limit: 4, ring: OrtusTheme.cardSurface)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(Self.names(items)).font(OrtusTheme.Typo.bodyMedium).lineLimit(2)
-                        Text("Blocked for \(Int(minutes)) min, until \(until)")
-                            .font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
+        OrtusModal(title: "No end button", onClose: { router.modal = nil }) {
+            VStack(spacing: OrtusTheme.spacingLG) {
+                // What gets blocked: their own apps and websites, names on hover.
+                HStack(spacing: OrtusTheme.spacingSM) {
+                    BlockedFacepile(items: items, limit: 5, size: 34, ring: OrtusTheme.cardSurface)
+                    if items.count > 5 {
+                        Text("+\(items.count - 5)").font(OrtusTheme.Typo.badge).foregroundStyle(OrtusTheme.textMuted)
                     }
                 }
-                .padding(.horizontal, 4)
-                OrtusGroup {
-                    OrtusListRow(title: "There's no end button", subtitle: "Once it starts, the session runs until \(until).") {
-                        Image(systemName: "lock")
-                    } trailing: { EmptyView() }
-                    OrtusGroupDivider()
-                    OrtusListRow(title: "30 seconds to change your mind", subtitle: "Forgot something? You can still go back right after you start.") {
-                        Image(systemName: "arrow.uturn.backward")
-                    } trailing: { EmptyView() }
-                    OrtusGroupDivider()
-                    OrtusListRow(title: "One emergency end a week", subtitle: "For real emergencies, in Settings.") {
-                        Image(systemName: "exclamationmark.octagon")
-                    } trailing: { EmptyView() }
-                }
-                HStack {
-                    Spacer()
-                    Button("Understood, start") {
-                        router.modal = nil
-                        onConfirm()
-                    }
-                    .buttonStyle(OrtusPrimaryButtonStyle())
-                    .keyboardShortcut(.defaultAction)
-                }
-            }
-        }
-    }
+                .help(items.map(\.name).joined(separator: ", "))
 
-    /// "Gmail, Slack and X", or "Facebook, Instagram and 3 more".
-    private static func names(_ items: [BlockedItem]) -> String {
-        let names = items.map(\.name)
-        guard names.count > 3 else { return names.formatted(.list(type: .and)) }
-        return names.prefix(2).joined(separator: ", ") + " and \(names.count - 2) more"
+                // How it goes: a short window to undo, then locked until the end.
+                VStack(spacing: 6) {
+                    HStack(spacing: 4) {
+                        // Open while you can still undo, solid once locked.
+                        Capsule().strokeBorder(OrtusTheme.accent.opacity(0.6), style: StrokeStyle(lineWidth: 1.5, dash: [4, 3])).frame(width: 64)
+                            .overlay(Image(systemName: "arrow.uturn.backward").font(.system(size: 11, weight: .bold)).foregroundStyle(OrtusTheme.accentInk))
+                        Capsule().fill(OrtusTheme.accentSoft)
+                            .overlay(Label("\(Int(minutes)) min", systemImage: "lock.fill").font(OrtusTheme.Typo.badge).foregroundStyle(OrtusTheme.accentInk))
+                    }
+                    .frame(height: 28)
+                    HStack {
+                        Text("30 s to undo")
+                        Spacer()
+                        Text("Ends \(until)")
+                    }
+                    .font(OrtusTheme.Typo.meta).foregroundStyle(OrtusTheme.textMuted)
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("30 seconds to undo, then locked for \(Int(minutes)) minutes, until \(until)")
+
+                Text("For real emergencies, one early end a week in Settings.")
+                    .font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
+                    .multilineTextAlignment(.center)
+
+                Button("Understood, start") {
+                    router.modal = nil
+                    onConfirm()
+                }
+                .buttonStyle(OrtusPrimaryButtonStyle())
+                .keyboardShortcut(.defaultAction)
+            }
+            .frame(maxWidth: .infinity)
+        }
     }
 }
 
@@ -407,14 +408,15 @@ private struct BlockedFacepile: View {
     let items: [BlockedItem]
     /// Marks shown; the rest are left to a count or the names next to it.
     var limit = 6
+    var size: CGFloat = 24
     /// The gap between marks: the colour of whatever they sit on.
     var ring = OrtusTheme.canvas
 
     var body: some View {
-        HStack(spacing: -7) {
+        HStack(spacing: -size * 0.3) {
             ForEach(Array(items.prefix(limit).enumerated()), id: \.element.id) { index, item in
                 glyph(item).opacity(0.85)
-                    .frame(width: 24, height: 24)
+                    .frame(width: size, height: size)
                     .background(Circle().fill(OrtusTheme.cardSurface))
                     .overlay(Circle().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
                     .padding(2)
@@ -426,9 +428,9 @@ private struct BlockedFacepile: View {
 
     @ViewBuilder private func glyph(_ item: BlockedItem) -> some View {
         if item.glyph.isEmpty && item.isApp {
-            Image(systemName: "app").resizable().scaledToFit().frame(width: 12, height: 12).foregroundStyle(OrtusTheme.ink)
+            Image(systemName: "app").resizable().scaledToFit().frame(width: size / 2, height: size / 2).foregroundStyle(OrtusTheme.ink)
         } else {
-            BrandGlyph(id: item.glyph, size: 12)
+            BrandGlyph(id: item.glyph, size: size / 2)
         }
     }
 }
