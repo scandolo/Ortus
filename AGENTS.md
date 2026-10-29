@@ -62,6 +62,27 @@ Use the Notion tools to read and update it.
   after the PR branch, and link them as
   `https://raw.githubusercontent.com/scandolo/Ortus/pr-assets/<pr-branch>/<name>.png`.
 
+## Teaching and problems in the UI
+
+How Ortus explains itself. Five rules for anything that teaches, warns or asks for
+a commitment:
+
+1. **One surface, one job.** First decide if a message teaches, reports a problem or
+   confirms a commitment. Never mix them in one view.
+2. **Teach in the moment, with the user's own stuff.** Once, when it first matters,
+   as visual as possible: their apps, their minutes, their end time, not generic
+   copy. Then let the product repeat the lesson (the grace countdown) and keep it
+   findable later.
+3. **Problems live where they bite.** Next to what they break, until fixed, saying
+   the consequence, with one verb + noun fix. Take over the main action only if the
+   problem would spoil it. Say it once. Problems come before teaching.
+4. **Honest commitments.** Before a lock, say what's blocked, for how long, and the
+   one way out. Prefer undo (the grace window) to more confirmations; buttons name
+   the outcome.
+5. **Close the loop.** When someone fixes something, Ortus notices and moves on by
+   itself. Activation is a first session that really blocks something, not a
+   finished tour.
+
 ## Marketing and distribution
 
 - For marketing and distribution work (positioning, landing page copy, SEO, launch
