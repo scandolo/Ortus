@@ -13,7 +13,8 @@ struct FocusView: View {
         VStack(spacing: 0) {
         ScrollView {
             VStack(spacing: OrtusTheme.spacingLG) {
-                if !(focusManager.isInFocus ? focusManager.activeSelection : focusManager.manualSelection).websites.isEmpty,
+                // Before a session, the setup problem sits on the mode it affects (idle state).
+                if focusManager.isInFocus, !focusManager.activeSelection.websites.isEmpty,
                    focusManager.websites.connectedBrowsers.isEmpty {
                     OrtusGroup { BrowserStatusRow(service: focusManager.websites) }
                 }
@@ -36,20 +37,14 @@ struct FocusView: View {
                             Text("Set up website blocking").frame(maxWidth: .infinity)
                         }
                         .buttonStyle(OrtusPrimaryButtonStyle())
-                        Button("Start anyway") { startSession() }
+                        Button("Start anyway") { requestStart() }
                             .buttonStyle(OrtusGhostButtonStyle())
                     } else {
-                        Button { startSession() } label: {
+                        Button { requestStart() } label: {
                             Text(startLabel).frame(maxWidth: .infinity)
                         }
                         .buttonStyle(OrtusPrimaryButtonStyle())
                         .disabled(focusManager.manualSelection.isEmpty)
-                        if !didStartFocusSession {
-                            Text("Once it starts, there's no end button. You'll have 30 seconds to change your mind.")
-                                .font(OrtusTheme.Typo.caption)
-                                .foregroundStyle(OrtusTheme.textMuted)
-                                .multilineTextAlignment(.center)
-                        }
                     }
                 }
                 .padding(.horizontal, OrtusTheme.spacingMD)
@@ -58,11 +53,24 @@ struct FocusView: View {
         }
     }
 
+    /// The chosen mode blocks websites, but no browser is connected to block them.
+    private var needsBrowser: Bool {
+        let connected = !focusManager.websites.connectedBrowsers.isEmpty && !(snapshotState?.hasPrefix("no-browser") ?? false)
+        return !focusManager.manualSelection.websites.isEmpty && !connected
+    }
+
     /// A websites-only mode blocks nothing until a browser is connected.
     private var blocksNothing: Bool {
-        let selection = focusManager.manualSelection
-        let connected = !focusManager.websites.connectedBrowsers.isEmpty && snapshotState != "no-browser"
-        return selection.applications.isEmpty && !selection.websites.isEmpty && !connected
+        needsBrowser && focusManager.manualSelection.applications.isEmpty
+    }
+
+    /// The first session explains the lock before it starts.
+    private func requestStart() {
+        guard didStartFocusSession else {
+            router.modal = .focusIntro(selection: focusManager.manualSelection, minutes: manualDuration) { startSession() }
+            return
+        }
+        startSession()
     }
 
     private func startSession() {
@@ -277,10 +285,23 @@ struct FocusView: View {
                 )
                 Rectangle().fill(OrtusTheme.hairline).frame(height: 1)
                 ModePicker(selection: $focusManager.manualSelection, boxed: false)
+                    // On the corner of the mode's 46pt icon cluster: the things that won't be blocked.
+                    .overlay(alignment: .topLeading) {
+                        if needsBrowser {
+                            ProblemBadge(message: problemMessage, action: { router.modal = .browserSetup },
+                                         showsHint: snapshotState == "no-browser-hint")
+                                .offset(x: 30, y: -6)
+                        }
+                    }
             }
             .ortusCard()
 
         }
+    }
+
+    private var problemMessage: String {
+        blocksNothing ? "Blocks nothing until your browser is connected."
+            : "Websites stay open until your browser is connected."
     }
 
     // MARK: - Helpers
@@ -296,51 +317,132 @@ struct FocusView: View {
     }
 }
 
+// MARK: - First session
+
+/// Shown before the first session: what this session will do, and that there's no
+/// way out once it starts, drawn from the user's own targets and duration.
+struct FocusIntroModal: View {
+    @EnvironmentObject var router: PanelRouter
+    let selection: BlockSelection
+    let minutes: Double
+    let onConfirm: () -> Void
+
+    var body: some View {
+        let items = BlockedItem.all(in: selection)
+        let until = Date().addingTimeInterval(minutes * 60).formatted(date: .omitted, time: .shortened)
+        OrtusModal(title: "No end button", onClose: { router.modal = nil }) {
+            VStack(spacing: OrtusTheme.spacingLG) {
+                // What gets blocked: their own apps and websites, names on hover.
+                HStack(spacing: OrtusTheme.spacingSM) {
+                    BlockedFacepile(items: items, limit: 5, size: 34, ring: OrtusTheme.cardSurface)
+                    if items.count > 5 {
+                        Text("+\(items.count - 5)").font(OrtusTheme.Typo.badge).foregroundStyle(OrtusTheme.textMuted)
+                    }
+                }
+                .help(items.map(\.name).joined(separator: ", "))
+
+                // How it goes: a short window to undo, then locked until the end.
+                VStack(spacing: 6) {
+                    HStack(spacing: 4) {
+                        // Open while you can still undo, solid once locked.
+                        Capsule().strokeBorder(OrtusTheme.accent.opacity(0.6), style: StrokeStyle(lineWidth: 1.5, dash: [4, 3])).frame(width: 64)
+                            .overlay(Image(systemName: "arrow.uturn.backward").font(.system(size: 11, weight: .bold)).foregroundStyle(OrtusTheme.accentInk))
+                        Capsule().fill(OrtusTheme.accentSoft)
+                            .overlay(Label("\(Int(minutes)) min", systemImage: "lock.fill").font(OrtusTheme.Typo.badge).foregroundStyle(OrtusTheme.accentInk))
+                    }
+                    .frame(height: 28)
+                    HStack {
+                        Text("30 s to undo")
+                        Spacer()
+                        Text("Ends \(until)")
+                    }
+                    .font(OrtusTheme.Typo.meta).foregroundStyle(OrtusTheme.textMuted)
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("30 seconds to undo, then locked for \(Int(minutes)) minutes, until \(until)")
+
+                Text("For real emergencies, one early end a week in Settings.")
+                    .font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
+                    .multilineTextAlignment(.center)
+
+                Button("Understood, start") {
+                    router.modal = nil
+                    onConfirm()
+                }
+                .buttonStyle(OrtusPrimaryButtonStyle())
+                .keyboardShortcut(.defaultAction)
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+}
+
 // MARK: - Blocked tags
+
+/// One mark per preset the selection touches (Gmail, Slack), then one per other website or app.
+private struct BlockedItem: Identifiable {
+    let id: String; let glyph: String; let name: String; let isApp: Bool
+
+    static func all(in selection: BlockSelection) -> [BlockedItem] {
+        var items: [BlockedItem] = []
+        var websites = selection.websites
+        var apps = selection.applications
+        for preset in BlockingPreset.all where selection.contains(preset) {
+            let name = preset.id == "slack" && !selection.fullyContains(preset)
+                ? (selection.blocksSlack ? "Slack app" : "Slack website") : preset.title
+            items.append(BlockedItem(id: preset.id, glyph: preset.id, name: name, isApp: false))
+            websites.removeAll { preset.selection.websites.contains($0) }
+            apps.removeAll { app in preset.selection.applications.contains { $0.id == app.id } }
+        }
+        items += websites.map { BlockedItem(id: $0, glyph: BrandGlyph.websiteID(for: $0) ?? "", name: $0, isApp: false) }
+        items += apps.map { BlockedItem(id: $0.id, glyph: BrandGlyph.applicationID(for: $0) ?? "", name: $0.name, isApp: true) }
+        return items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+}
+
+/// Overlapping brand marks.
+private struct BlockedFacepile: View {
+    let items: [BlockedItem]
+    /// Marks shown; the rest are left to a count or the names next to it.
+    var limit = 6
+    var size: CGFloat = 24
+    /// The gap between marks: the colour of whatever they sit on.
+    var ring = OrtusTheme.canvas
+
+    var body: some View {
+        HStack(spacing: -size * 0.3) {
+            ForEach(Array(items.prefix(limit).enumerated()), id: \.element.id) { index, item in
+                glyph(item).opacity(0.85)
+                    .frame(width: size, height: size)
+                    .background(Circle().fill(OrtusTheme.cardSurface))
+                    .overlay(Circle().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
+                    .padding(2)
+                    .background(Circle().fill(ring))
+                    .zIndex(Double(-index))
+            }
+        }
+    }
+
+    @ViewBuilder private func glyph(_ item: BlockedItem) -> some View {
+        if item.glyph.isEmpty && item.isApp {
+            Image(systemName: "app").resizable().scaledToFit().frame(width: size / 2, height: size / 2).foregroundStyle(OrtusTheme.ink)
+        } else {
+            BrandGlyph(id: item.glyph, size: size / 2)
+        }
+    }
+}
 
 /// What a focus session is blocking: overlapping brand marks plus a count, on one
 /// line however long the list. Names show on hover.
 private struct BlockedTags: View {
     let selection: BlockSelection
 
-    private struct Item: Identifiable { let id: String; let glyph: String; let name: String; let isApp: Bool }
-
-    /// Marks shown before the count takes over.
-    private static let visibleLimit = 6
-
-    /// One tag per preset the selection touches (Gmail, Slack), then one per other website or app.
-    private var items: [Item] {
-        var items: [Item] = []
-        var websites = selection.websites
-        var apps = selection.applications
-        for preset in BlockingPreset.all where selection.contains(preset) {
-            let name = preset.id == "slack" && !selection.fullyContains(preset)
-                ? (selection.blocksSlack ? "Slack app" : "Slack website") : preset.title
-            items.append(Item(id: preset.id, glyph: preset.id, name: name, isApp: false))
-            websites.removeAll { preset.selection.websites.contains($0) }
-            apps.removeAll { app in preset.selection.applications.contains { $0.id == app.id } }
-        }
-        items += websites.map { Item(id: $0, glyph: BrandGlyph.websiteID(for: $0) ?? "", name: $0, isApp: false) }
-        items += apps.map { Item(id: $0.id, glyph: BrandGlyph.applicationID(for: $0) ?? "", name: $0.name, isApp: true) }
-        return items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-    }
-
     var body: some View {
-        let items = items
+        let items = BlockedItem.all(in: selection)
         let names = items.map(\.name).joined(separator: ", ")
         if !items.isEmpty {
             HStack(spacing: OrtusTheme.spacingSM) {
-                HStack(spacing: -7) {
-                    ForEach(Array(items.prefix(Self.visibleLimit).enumerated()), id: \.element.id) { index, item in
-                        glyph(item).opacity(0.85)
-                            .frame(width: 24, height: 24)
-                            .background(Circle().fill(OrtusTheme.cardSurface))
-                            .overlay(Circle().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
-                            .padding(2)
-                            .background(Circle().fill(OrtusTheme.canvas))
-                            .zIndex(Double(-index))
-                    }
-                }
+                BlockedFacepile(items: items)
                 Text(items.count == 1 ? items[0].name : "\(items.count) blocked")
                     .font(OrtusTheme.Typo.caption)
                     .foregroundStyle(OrtusTheme.textMuted)
@@ -348,14 +450,6 @@ private struct BlockedTags: View {
             .help(names)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Blocked: " + names)
-        }
-    }
-
-    @ViewBuilder private func glyph(_ item: Item) -> some View {
-        if item.glyph.isEmpty && item.isApp {
-            Image(systemName: "app").resizable().scaledToFit().frame(width: 12, height: 12).foregroundStyle(OrtusTheme.ink)
-        } else {
-            BrandGlyph(id: item.glyph, size: 12)
         }
     }
 }

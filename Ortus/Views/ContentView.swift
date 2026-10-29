@@ -56,6 +56,8 @@ struct ContentView: View {
         case .slackSetup: SlackSetupModal()
         case .chatSetup: ChatSetupModal()
         case .chatIntro: ChatIntroModal()
+        case let .focusIntro(selection, minutes, onConfirm):
+            FocusIntroModal(selection: selection, minutes: minutes, onConfirm: onConfirm)
         case let .modeEditor(mode, onSave): ModeEditor(mode: mode, onSave: onSave)
         case nil: EmptyView()
         }
