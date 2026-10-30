@@ -14,10 +14,13 @@ URL_SCHEME=ortus
 IS_PREVIEW=false
 case "$MODE" in
     release) CONFIG=release ;;
-    preview) CONFIG=release; APP_NAME="Ortus Preview.app"; BUNDLE_ID=com.ortusmode.preview; URL_SCHEME=ortus-preview; IS_PREVIEW=true ;;
-    debug) ;;
+    preview) CONFIG=release; IS_PREVIEW=true ;;
+    # Debug builds are previews too. With the release identity they shared settings,
+    # login item, session lock and browser rules with the installed app.
+    debug) IS_PREVIEW=true ;;
     *) echo "Usage: ./build.sh [debug|release|preview]" >&2; exit 1 ;;
 esac
+if [[ "$IS_PREVIEW" == true ]]; then APP_NAME="Ortus Preview.app"; BUNDLE_ID=com.ortusmode.preview; URL_SCHEME=ortus-preview; fi
 
 STAGING=$(mktemp -d)
 trap 'rm -rf "$STAGING"' EXIT
@@ -48,8 +51,11 @@ done
 if [[ "$IS_PREVIEW" == true ]]; then
     /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" "$APP/Contents/Info.plist"
     /usr/libexec/PlistBuddy -c "Set :CFBundleName ${APP_NAME%.app}" "$APP/Contents/Info.plist"
-    # Settings shows this, so a preview says which commit it was built from and when.
-    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString preview $(git rev-parse --short HEAD) · $(date '+%b %-d %H:%M')" "$APP/Contents/Info.plist"
+    # Settings shows this ("Ortus Preview · <branch> · <commit>"), so you can tell which
+    # branch a running preview was built from.
+    BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    [[ "$BRANCH" == HEAD ]] && BRANCH=detached
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString Preview · ${BRANCH##*/} · $(git rev-parse --short HEAD)" "$APP/Contents/Info.plist"
     /usr/libexec/PlistBuddy -c 'Add :OrtusPreviewBuild bool true' "$APP/Contents/Info.plist"
     /usr/libexec/PlistBuddy -c "Add :OrtusSourceCommit string $(git rev-parse --short HEAD)" "$APP/Contents/Info.plist"
     printf "export const NATIVE_HOST = 'com.ortus.browser.preview';\n" > "$APP/Contents/Resources/BrowserExtension/config.js"

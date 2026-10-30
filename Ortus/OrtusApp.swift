@@ -183,6 +183,8 @@ struct OrtusApp: App {
                                                description: "\(closing.name) closes in \(time)"))
         } else if focusManager.isInFocus, let end = focusManager.focusEndTime {
             Image(nsImage: Self.countdownImage(FocusView.formatDuration(max(0, end.timeIntervalSince(menuBarClock.now)))))
+        } else if BuildProfile.isPreview {
+            Image(nsImage: Self.countdownImage(nil, symbol: focusManager.isInFocus ? "sunrise.fill" : "sunrise", description: "Ortus Preview"))
         } else {
             Image(systemName: focusManager.isInFocus ? "sunrise.fill" : "sunrise")
         }
@@ -191,15 +193,17 @@ struct OrtusApp: App {
     /// The menu bar drops font modifiers from a label's Text, so proportional digits
     /// would nudge every item to its left each second. Render it as one template image
     /// instead (the label shows only its first Image) to keep monospaced digits.
-    private static func countdownImage(_ time: String, symbol: String = "sunrise.fill", description: String? = nil) -> NSImage {
+    private static func countdownImage(_ time: String?, symbol: String = "sunrise.fill", description: String? = nil) -> NSImage {
         let renderer = ImageRenderer(content: HStack(spacing: 4) {
             Image(systemName: symbol)
-            Text(time).monospacedDigit()
+            if let time { Text(time).monospacedDigit() }
+            // A preview is marked so it can't be mistaken for the installed release.
+            if BuildProfile.isPreview { Text("P").fontWeight(.bold) }
         }.font(.system(size: NSFont.menuBarFont(ofSize: 0).pointSize)))
         renderer.scale = NSScreen.main?.backingScaleFactor ?? 2
         let image = renderer.nsImage ?? NSImage()
         image.isTemplate = true
-        image.accessibilityDescription = description ?? "Ortus, \(time) left"
+        image.accessibilityDescription = description ?? "\(BuildProfile.name), \(time ?? "") left"
         return image
     }
 
@@ -207,6 +211,13 @@ struct OrtusApp: App {
     /// Screenshot harness: launch with ORTUS_DEBUG_WINDOW=1 to also show the panel
     /// in a regular window that UI scripting and screencapture can reach.
     private func openDebugWindowIfRequested() {
+        // The panel snapshots don't include the menu bar icon, so save it separately.
+        if let directory = ProcessInfo.processInfo.environment["ORTUS_SNAPSHOT_DIR"] {
+            for (name, image) in [("menubar-idle", Self.countdownImage(nil, symbol: "sunrise")), ("menubar-focus", Self.countdownImage("47:25"))] {
+                guard let tiff = image.tiffRepresentation, let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) else { continue }
+                try? png.write(to: URL(fileURLWithPath: directory).appendingPathComponent(name + ".png"))
+            }
+        }
         SnapshotHarness.runIfRequested(focusManager: focusManager) { tab, height, state in
             let modal: PanelModal? = switch state {
             case "browser-setup": .browserSetup
@@ -215,6 +226,7 @@ struct OrtusApp: App {
             case "chat-intro": .chatIntro
             case "focus-intro": .focusIntro(selection: focusManager.manualSelection, minutes: 90) {}
             case "mode-editor": .modeEditor(FocusMode(name: focusManager.nextCustomModeName, blocked: focusManager.manualSelection)) { _ in }
+            case "end-focus-early": .endFocusEarly
             default: nil
             }
             return AnyView(panel(tab: tab, height: height, state: state, router: PanelRouter(modal: modal)))

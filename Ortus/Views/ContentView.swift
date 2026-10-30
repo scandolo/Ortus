@@ -63,6 +63,12 @@ struct ContentView: View {
         case let .focusIntro(selection, minutes, onConfirm):
             FocusIntroModal(selection: selection, minutes: minutes, onConfirm: onConfirm)
         case let .modeEditor(mode, onSave): ModeEditor(mode: mode, onSave: onSave)
+        case .endFocusEarly:
+            OrtusAlert(title: "End focus early?", message: "Everything unlocks now. You can do this once a week.",
+                       confirm: "End focus", onCancel: { router.modal = nil }) {
+                router.modal = nil
+                focusManager.emergencyEndFocusSession()
+            }
         case nil: EmptyView()
         }
     }
