@@ -104,7 +104,7 @@ This downloads the latest release into `/Applications` and launches it.
 ```bash
 git clone https://github.com/scandolo/Ortus.git
 cd Ortus
-./build.sh        # kills running instances, builds, and creates Ortus.app
+./build.sh release   # builds Ortus.app; plain ./build.sh makes a preview instead
 open Ortus.app
 ```
 
@@ -144,14 +144,14 @@ a `MenuBarExtra` with `.window` style (a popover panel) and no dock icon
 Ortus/
 ├── Package.swift              # SPM config, macOS 14+: app, OrtusCore, bridge, core checks
 ├── AGENTS.md                  # Release process and checks for coding agents (CLAUDE.md links here)
-├── build.sh                   # Builds and bundles Ortus.app (debug, release, preview)
+├── build.sh                   # Builds Ortus.app (release) or Ortus Preview.app (debug, preview)
 ├── landing/                   # The website (ortusmode.com), deployed by Vercel from main
 ├── BrowserExtension/          # Chromium companion: blocking rules, blocked page, popup
 ├── Sources/
 │   ├── OrtusCore/             # Shared model: targets, modes, schedules, sessions, browser policy, chat stream and answer blocks
 │   └── OrtusBrowserBridge/    # Native Messaging host between the app and the extension
 ├── Tests/OrtusCoreTests/      # Core checks (run with Command Line Tools only)
-├── scripts/                   # Preview installer, release notarization, extension packaging, integration tests
+├── scripts/                   # Preview installer, panel snapshots, release notarization, extension packaging, integration tests
 └── Ortus/
     ├── OrtusApp.swift         # @main entry, MenuBarExtra scene, quit-blocking AppDelegate
     ├── Models/                # ChatMessage, emoji catalog, Slack API types

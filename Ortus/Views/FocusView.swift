@@ -17,7 +17,7 @@ struct FocusView: View {
                 // Before a session, the setup problem sits on the mode it affects (idle state).
                 ClosingBrowserRow(service: focusManager.websites,
                                   showSetupProblem: focusManager.isInFocus && !focusManager.activeSelection.websites.isEmpty
-                                      && focusManager.websites.connectedBrowsers.isEmpty)
+                                      && focusManager.websites.connectedBrowsers.isEmpty && snapshotState != "browser-connected")
                 if inGracePeriod {
                     gracePeriodState
                 } else if focusManager.isInFocus {
@@ -28,7 +28,7 @@ struct FocusView: View {
             }
             .padding(OrtusTheme.spacingMD)
             // The grace countdown sits in the middle of the panel, not at the top.
-            .frame(maxWidth: inGracePeriod ? .infinity : nil, minHeight: inGracePeriod ? proxy.size.height : nil)
+            .frame(maxWidth: .infinity, minHeight: inGracePeriod ? proxy.size.height : nil)
         }
         }
             // The primary action stays pinned and visible, like "Add schedule".

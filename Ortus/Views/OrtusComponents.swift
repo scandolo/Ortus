@@ -12,6 +12,7 @@ enum PanelModal {
     case chatIntro
     case focusIntro(selection: BlockSelection, minutes: Double, onConfirm: () -> Void)
     case modeEditor(FocusMode, onSave: (FocusMode) -> Void)
+    case endFocusEarly
 }
 
 @MainActor
@@ -58,6 +59,39 @@ struct OrtusModal<Content: View>: View {
                 .shadow(color: .black.opacity(0.22), radius: 24, y: 8))
             .overlay(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).strokeBorder(OrtusTheme.hairline, lineWidth: 1))
             .padding(OrtusTheme.spacingMD)
+        }
+    }
+}
+
+/// A short confirmation shaped like a macOS alert: title, one line, Cancel and a
+/// button that names the outcome.
+struct OrtusAlert: View {
+    let title: String
+    let message: String
+    let confirm: String
+    let onCancel: () -> Void
+    let onConfirm: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.28).ignoresSafeArea().onTapGesture(perform: onCancel)
+            VStack(spacing: OrtusTheme.spacingSM) {
+                Text(title).font(OrtusTheme.Typo.headline)
+                Text(message).font(OrtusTheme.Typo.body).foregroundStyle(OrtusTheme.textMuted)
+                    .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: OrtusTheme.spacingSM) {
+                    Button(action: onCancel) { Text("Cancel").frame(maxWidth: .infinity) }
+                        .keyboardShortcut(.cancelAction)
+                    Button(action: onConfirm) { Text(confirm).foregroundStyle(OrtusTheme.danger).frame(maxWidth: .infinity) }
+                }
+                .buttonStyle(OrtusSecondaryButtonStyle())
+                .padding(.top, OrtusTheme.spacingSM)
+            }
+            .padding(OrtusTheme.spacingMD)
+            .frame(width: 280)
+            .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).fill(OrtusTheme.cardSurface)
+                .shadow(color: .black.opacity(0.22), radius: 24, y: 8))
+            .overlay(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).strokeBorder(OrtusTheme.hairline, lineWidth: 1))
         }
     }
 }

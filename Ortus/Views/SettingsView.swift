@@ -13,7 +13,6 @@ struct SettingsView: View {
 
     @State private var launchAtLogin = false
     @State private var versionTapCount = 0
-    @State private var showEmergencyConfirm = false
     @State private var showSlackPreview = false
     @State private var taglineIndex = 0
     @AppStorage("genZMode") private var genZ = false
@@ -146,20 +145,12 @@ struct SettingsView: View {
     private var emergencyRow: some View {
         OrtusListRow(title: "End focus early",
                      subtitle: focusManager.canUseEmergencyEnd
-                        ? (showEmergencyConfirm ? "Unlocks everything now. Once per week." : "For real emergencies, once per week")
+                        ? "For real emergencies, once per week"
                         : "Available again \(focusManager.nextEmergencyAvailableDate?.formatted(date: .abbreviated, time: .shortened) ?? "next week")") {
             Image(systemName: "exclamationmark.octagon")
         } trailing: {
             if focusManager.canUseEmergencyEnd {
-                if showEmergencyConfirm {
-                    HStack(spacing: 6) {
-                        Button("Cancel") { showEmergencyConfirm = false }.buttonStyle(OrtusRowButtonStyle())
-                        Button("End now") { focusManager.emergencyEndFocusSession(); showEmergencyConfirm = false }
-                            .buttonStyle(OrtusRowButtonStyle(role: .destructive))
-                    }
-                } else {
-                    Button("End early") { showEmergencyConfirm = true }.buttonStyle(OrtusRowButtonStyle(role: .destructive))
-                }
+                Button("End early") { router.modal = .endFocusEarly }.buttonStyle(OrtusRowButtonStyle(role: .destructive))
             }
         }
     }
