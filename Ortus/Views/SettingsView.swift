@@ -9,6 +9,7 @@ struct SettingsView: View {
     @EnvironmentObject var claudeCodeService: ClaudeCodeService
     @EnvironmentObject var updateService: UpdateService
     @EnvironmentObject var router: PanelRouter
+    @Environment(\.snapshotState) private var snapshotState
 
     @State private var launchAtLogin = false
     @State private var versionTapCount = 0
@@ -62,7 +63,8 @@ struct SettingsView: View {
                     } trailing: {
                         toggle($genZ)
                     }
-                    if !BuildProfile.isPreview, let update = updateRow {
+                    // Previews never check for updates; snapshots pin a state to show the rows.
+                    if !BuildProfile.isPreview || snapshotState != nil, let update = updateRow {
                         OrtusGroupDivider()
                         update
                     }
