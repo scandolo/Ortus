@@ -337,6 +337,15 @@ private extension View {
             .overlay(shape.strokeBorder(OrtusTheme.hairline, lineWidth: 1))
             .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
     }
+
+    /// The filled capsule for a draft card's one action.
+    func draftButton() -> some View {
+        buttonStyle(.plain)
+            .font(OrtusTheme.Typo.button)
+            .foregroundStyle(OrtusTheme.onAccent)
+            .padding(.horizontal, 16).padding(.vertical, 6)
+            .background(Capsule().fill(OrtusTheme.accentInk))
+    }
 }
 
 // MARK: - Draft card
@@ -344,13 +353,15 @@ private extension View {
 /// A message Claude wrote for the user to send. The text reads like the rest of the
 /// card and is editable in place. Send posts a normal chat message ("Send it.", with
 /// the edited text if it changed); the card then keeps what was sent, read-only, and
-/// the activity line and Claude's reply below say how it went.
+/// the activity line and Claude's reply below say how it went. An "email" draft is one
+/// Claude can't send (no email connected): it gets Copy instead of Send.
 private struct DraftCard: View {
     let draft: ChatQuote
     let id: String
     @EnvironmentObject private var claudeCodeService: ClaudeCodeService
     @State private var text: String
     @State private var isHovering = false
+    @State private var copied = false
     @FocusState private var isEditing: Bool
 
     init(draft: ChatQuote, id: String) {
@@ -360,12 +371,17 @@ private struct DraftCard: View {
     }
 
     private var message: ChatQuote.Message? { draft.messages.first }
+    private var isEmail: Bool { draft.source == "gmail" || draft.source == "email" }
 
     var body: some View {
         let sent = claudeCodeService.sentDrafts[id]
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                BrandGlyph(id: draft.source, size: 12)
+                if draft.source == "email" {
+                    Image(systemName: "envelope").font(.system(size: 10)).foregroundStyle(OrtusTheme.textMuted)
+                } else {
+                    BrandGlyph(id: draft.source, size: 12)
+                }
                 if sent == nil {
                     Text("DRAFT")
                         .font(OrtusTheme.Typo.section).tracking(0.6)
@@ -384,10 +400,10 @@ private struct DraftCard: View {
             }
             .font(OrtusTheme.Typo.caption)
 
-            if draft.source == "gmail", !draft.place.isEmpty {
+            if isEmail, !draft.place.isEmpty {
                 Text(draft.place).font(OrtusTheme.Typo.bodyMedium.weight(.semibold))
             }
-            if let recipient = message?.to ?? (draft.source == "gmail" ? nil : draft.place) {
+            if let recipient = message?.to ?? (isEmail ? nil : draft.place) {
                 Text("To \(recipient)").font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
             }
             if let cc = message?.cc {
@@ -399,7 +415,7 @@ private struct DraftCard: View {
             } else {
                 editor
                 Divider().padding(.top, 4)
-                sendButton
+                if draft.source == "email" { copyButton } else { sendButton }
             }
         }
         .chatCard()
@@ -428,13 +444,21 @@ private struct DraftCard: View {
 
     private var sendButton: some View {
         Button("Send") { claudeCodeService.sendDraft(id: id, original: message?.text ?? "", edited: text) }
-            .buttonStyle(.plain)
-            .font(OrtusTheme.Typo.button)
-            .foregroundStyle(OrtusTheme.onAccent)
-            .padding(.horizontal, 16).padding(.vertical, 6)
-            .background(Capsule().fill(OrtusTheme.accentInk))
+            .draftButton()
             .opacity(claudeCodeService.isProcessing ? 0.45 : 1)
             .disabled(claudeCodeService.isProcessing || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    }
+
+    /// Copies the text as edited; the address is in the To line and in Claude's reply.
+    private var copyButton: some View {
+        Button(copied ? "Copied" : "Copy") {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(text, forType: .string)
+            copied = true
+            Task { try? await Task.sleep(for: .seconds(2)); copied = false }
+        }
+        .draftButton()
+        .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     }
 }
 

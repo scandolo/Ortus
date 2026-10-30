@@ -238,7 +238,7 @@ final class ClaudeCodeService: ObservableObject {
             "--verbose",
             "--model", "claude-sonnet-5-5",
             "--effort", "low",
-            "--append-system-prompt", Self.systemPrompt(now: Date(), focus: focusContext()),
+            "--append-system-prompt", Self.systemPrompt(now: Date(), focus: focusContext(), version: Self.versionLine),
             // Every tool is on, like Claude Code in the user's terminal. The prompt has it
             // draft anything that sends or changes something and wait for the user's OK.
             "--permission-mode", "bypassPermissions",
@@ -335,9 +335,16 @@ final class ClaudeCodeService: ObservableObject {
 
     // MARK: - System prompt
 
+    /// "Ortus 1.1.3 on macOS 15.1", so feedback emails say which build had the problem.
+    static var versionLine: String {
+        let app = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+        let os = ProcessInfo.processInfo.operatingSystemVersion
+        return "Ortus \(app) on macOS \(os.majorVersion).\(os.minorVersion).\(os.patchVersion)"
+    }
+
     /// Rebuilt for every message: each one starts a new `claude` process (resuming the
     /// same session), so the time and the focus state are always current.
-    static func systemPrompt(now: Date, focus: String?) -> String {
+    static func systemPrompt(now: Date, focus: String?, version: String) -> String {
         let clock = DateFormatter()
         clock.locale = Locale(identifier: "en_US_POSIX")
         clock.dateFormat = "EEEE d MMMM yyyy, HH:mm"
@@ -350,6 +357,7 @@ final class ClaudeCodeService: ObservableObject {
 
         \(today)
         \(focus ?? "")
+        This is \(version).
 
         Guidelines:
         - Use whatever connected tools fit the request: Slack, email, calendar, documents, the web.
@@ -369,6 +377,12 @@ final class ClaudeCodeService: ObservableObject {
         it or what to say (no 'Say "Send it."'). Send replies "Send it." or \
         "Send it, with my edits:" followed by their text. Then send exactly that text, to the recipients in \
         the draft, and confirm in one short line.
+        - When the user reports a bug or a problem with Ortus, or has feedback or an idea for it, offer to \
+        email the Ortus team at support@ortusmode.com and draft it in the same reply: a short subject, what \
+        happened or what they'd like, in their words, and the Ortus and macOS versions. If you can send email \
+        (a Gmail tool, for example), it's a normal draft block to support@ortusmode.com. If you can't, write \
+        the address in plain text and use "source: email" in the draft block: Ortus then shows a Copy button \
+        instead of Send.
 
         Formatting (the chat panel is narrow, about 50 characters per line):
         - Short paragraphs. A bullet list only for three or more parallel items. Bold sparingly, for names \
