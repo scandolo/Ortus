@@ -63,6 +63,9 @@ for browser in ['Google/Chrome', 'Arc/User Data', 'Microsoft Edge', 'BraveSoftwa
 registrar = Path('/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister')
 if registrar.is_file():
     subprocess.run([str(registrar), '-f', str(destination)], check=True)
+version = subprocess.run(['/usr/libexec/PlistBuddy', '-c', 'Print :CFBundleShortVersionString', str(destination / 'Contents/Info.plist')],
+                         capture_output=True, text=True).stdout.strip()
+print(f'Installed: Ortus {version}')
 print(f'App: {destination}')
 print(f'Load unpacked from: {extension}')
 print('Website blocking stays inactive until the browser companion connects.')
