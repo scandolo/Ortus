@@ -39,15 +39,22 @@ Use the Notion tools to read and update it.
 
 ## Checks
 
-- Build: `swift build`, or `./build.sh` for a bundled `Ortus.app`
+- Build: `swift build`, or `./build.sh` for a bundled `Ortus Preview.app`. Every local
+  build except `./build.sh release` is a preview: its own bundle ID, settings, session
+  lock and browser companion, so it never touches the installed release. Don't run a
+  `release` build next to the installed app.
+- Try a change by hand: `./build.sh preview && python3 scripts/install-preview.py`,
+  then open `/Applications/Ortus Preview.app`. It runs next to the release.
 - CI builds every PR that touches the app with the release toolchain (Xcode 16) and
   runs the core checks (`.github/workflows/checks.yml`). Your local Swift may be newer
   and more lenient, so wait for it to pass before merging.
 - Core checks: `swift run OrtusCoreChecks`
 - Extension tests: `cd BrowserExtension && npm test` (needs Node)
-- UI: debug builds render every panel state offscreen when launched with
-  `ORTUS_SNAPSHOT_DIR=/path` (`Ortus/Debug/SnapshotHarness.swift`). Design rules
-  live at the top of `Ortus/Views/OrtusTheme.swift`.
+- UI: `scripts/snapshot.sh <dir> [--session]` renders every panel state to PNGs from a
+  throwaway debug copy (`Ortus/Debug/SnapshotHarness.swift`). `--session` adds the
+  session states; it starts a real session that blocks only the Socials websites, in
+  the preview's browser companion. Design rules live at the top of
+  `Ortus/Views/OrtusTheme.swift`.
 
 ## Pull requests: what the description covers
 

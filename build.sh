@@ -14,10 +14,13 @@ URL_SCHEME=ortus
 IS_PREVIEW=false
 case "$MODE" in
     release) CONFIG=release ;;
-    preview) CONFIG=release; APP_NAME="Ortus Preview.app"; BUNDLE_ID=com.ortusmode.preview; URL_SCHEME=ortus-preview; IS_PREVIEW=true ;;
-    debug) ;;
+    preview) CONFIG=release; IS_PREVIEW=true ;;
+    # Debug builds are previews too. With the release identity they shared settings,
+    # login item, session lock and browser rules with the installed app.
+    debug) IS_PREVIEW=true ;;
     *) echo "Usage: ./build.sh [debug|release|preview]" >&2; exit 1 ;;
 esac
+if [[ "$IS_PREVIEW" == true ]]; then APP_NAME="Ortus Preview.app"; BUNDLE_ID=com.ortusmode.preview; URL_SCHEME=ortus-preview; fi
 
 STAGING=$(mktemp -d)
 trap 'rm -rf "$STAGING"' EXIT
