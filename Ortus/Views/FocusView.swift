@@ -17,7 +17,7 @@ struct FocusView: View {
                 // Before a session, the setup problem sits on the mode it affects (idle state).
                 ClosingBrowserRow(service: focusManager.websites,
                                   showSetupProblem: focusManager.isInFocus && !focusManager.activeSelection.websites.isEmpty
-                                      && focusManager.websites.connectedBrowsers.isEmpty)
+                                      && focusManager.websites.connectedBrowsers.isEmpty && snapshotState != "browser-connected")
                 if inGracePeriod {
                     gracePeriodState
                 } else if focusManager.isInFocus {
