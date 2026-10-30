@@ -215,6 +215,7 @@ struct OrtusApp: App {
             case "chat-intro": .chatIntro
             case "focus-intro": .focusIntro(selection: focusManager.manualSelection, minutes: 90) {}
             case "mode-editor": .modeEditor(FocusMode(name: focusManager.nextCustomModeName, blocked: focusManager.manualSelection)) { _ in }
+            case "end-focus-early": .endFocusEarly
             default: nil
             }
             return AnyView(panel(tab: tab, height: height, state: state, router: PanelRouter(modal: modal)))
