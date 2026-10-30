@@ -211,6 +211,13 @@ struct OrtusApp: App {
     /// Screenshot harness: launch with ORTUS_DEBUG_WINDOW=1 to also show the panel
     /// in a regular window that UI scripting and screencapture can reach.
     private func openDebugWindowIfRequested() {
+        // The panel snapshots don't include the menu bar icon, so save it separately.
+        if let directory = ProcessInfo.processInfo.environment["ORTUS_SNAPSHOT_DIR"] {
+            for (name, image) in [("menubar-idle", Self.countdownImage(nil, symbol: "sunrise")), ("menubar-focus", Self.countdownImage("47:25"))] {
+                guard let tiff = image.tiffRepresentation, let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) else { continue }
+                try? png.write(to: URL(fileURLWithPath: directory).appendingPathComponent(name + ".png"))
+            }
+        }
         SnapshotHarness.runIfRequested(focusManager: focusManager) { tab, height, state in
             let modal: PanelModal? = switch state {
             case "browser-setup": .browserSetup
