@@ -22,7 +22,7 @@ struct BlockingTests {
     }
 
     func newAndMigratedDefaults() throws {
-        let key = "Ortus.tests." + UUID().uuidString
+        let key = "Ortus.tests" // one fixed name: each run would otherwise leave an empty plist behind
         let defaults = UserDefaults(suiteName: key)!
         defer { defaults.removePersistentDomain(forName: key) }
         let firstLoad = ScheduleStore.load(defaults: defaults)
@@ -50,7 +50,7 @@ struct BlockingTests {
     }
 
     func recoversDefaultScheduleIdentityFromEarlyPreview() throws {
-        let key = "Ortus.tests." + UUID().uuidString
+        let key = "Ortus.tests" // one fixed name: each run would otherwise leave an empty plist behind
         let defaults = UserDefaults(suiteName: key)!
         defer { defaults.removePersistentDomain(forName: key) }
         let now = date("2026-10-05T10:00:00Z")

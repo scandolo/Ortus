@@ -25,8 +25,13 @@ for d in "Google/Chrome" "Arc/User Data" "Microsoft Edge" "BraveSoftware/Brave-B
     f="$HOME/Library/Application Support/$d/NativeMessagingHosts/com.ortus.browser.preview.json"
     [[ -f "$f" ]] && mkdir -p "$HOSTS/$d" && cp "$f" "$HOSTS/$d/"
 done
-restore_hosts() { (cd "$HOSTS" && find . -name '*.json' | while read -r f; do cp "$f" "$HOME/Library/Application Support/$(dirname "${f#./}")/NativeMessagingHosts/"; done); rm -rf "$HOSTS"; }
-trap restore_hosts EXIT
+# Leave nothing behind: the browser files go back and the throwaway settings go away.
+clean_up() {
+    (cd "$HOSTS" && find . -name '*.json' | while read -r f; do cp "$f" "$HOME/Library/Application Support/$(dirname "${f#./}")/NativeMessagingHosts/"; done); rm -rf "$HOSTS"
+    pkill -9 -f "^$APP/Contents/MacOS/Ortus$" 2>/dev/null || true
+    defaults delete $ID 2>/dev/null || true
+}
+trap clean_up EXIT
 open --env "ORTUS_SNAPSHOT_DIR=$OUT" ${SESSION:+--env ORTUS_SNAPSHOT_SESSION=1} "$APP"
 running() { pgrep -f "^$APP/Contents/MacOS/Ortus$" >/dev/null; }
 for _ in $(seq 1 30); do running && break; sleep 1; done
