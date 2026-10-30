@@ -39,22 +39,53 @@ Use the Notion tools to read and update it.
 
 ## Checks
 
-- Build: `swift build`, or `./build.sh` for a bundled `Ortus Preview.app`. Every local
-  build except `./build.sh release` is a preview: its own bundle ID, settings, session
-  lock and browser companion, so it never touches the installed release. Don't run a
-  `release` build next to the installed app.
-- Try a change by hand: `./build.sh preview && python3 scripts/install-preview.py`,
-  then open `/Applications/Ortus Preview.app`. It runs next to the release.
+- Build: `swift build`, or `./build.sh` for a bundled `Ortus Preview.app`.
 - CI builds every PR that touches the app with the release toolchain (Xcode 16) and
   runs the core checks (`.github/workflows/checks.yml`). Your local Swift may be newer
   and more lenient, so wait for it to pass before merging.
 - Core checks: `swift run OrtusCoreChecks`
 - Extension tests: `cd BrowserExtension && npm test` (needs Node)
-- UI: `scripts/snapshot.sh <dir> [--session]` renders every panel state to PNGs from a
-  throwaway debug copy (`Ortus/Debug/SnapshotHarness.swift`). `--session` adds the
-  session states; it starts a real session that blocks only the Socials websites, in
-  the preview's browser companion. Design rules live at the top of
-  `Ortus/Views/OrtusTheme.swift`.
+- UI: `scripts/snapshot.sh <dir> [--session]` (see below). Design rules live at the top
+  of `Ortus/Views/OrtusTheme.swift`.
+
+## Testing changes locally
+
+The maintainer uses the installed release every day, often mid-session. Nothing you
+build or run may touch it.
+
+**Two identities.** Only CI's `./build.sh release` builds the release (`Ortus`,
+`com.ortusmode.app`). Every local build, `./build.sh` and `./build.sh preview`, is
+**Ortus Preview** (`com.ortusmode.preview`) with its own settings, session lock,
+browser companion and login item. A preview session never ends, blocks or changes the
+release's. Never run a release-identity build on the maintainer's Mac.
+
+**Telling them apart.** A preview shows a **P** next to the sunrise in the menu bar,
+and Settings names it "Ortus Preview · <branch> · <commit>". The release shows a plain
+version ("Ortus 1.1.22").
+
+**One preview at a time.** There is one preview slot, `/Applications/Ortus Preview.app`.
+Branches in different workspaces take turns: installing one replaces the other.
+
+- **You check visuals** with `scripts/snapshot.sh <dir> [--session]`. It renders every
+  panel state from a throwaway copy and cleans up after itself. `--session` also renders
+  session states by starting a real session that blocks only the Socials websites, in
+  the preview's browser companion. Add a snapshot state for any new UI.
+- **The maintainer tries changes by hand:** `./build.sh preview && python3
+  scripts/install-preview.py` (it prints the branch it installed), then open
+  `/Applications/Ortus Preview.app`. Tell them which branch is installed. Previews never
+  check for updates, so update flows can only be tried after a release.
+
+**Leave nothing behind.**
+- Quit anything you launch when you're done with it. Once your PR is merged, quit the
+  preview: `osascript -e 'quit app "Ortus Preview"'`.
+- Check what's running with `pgrep -fl "MacOS/Ortus$"`. Expect at most
+  `/Applications/Ortus.app` and `/Applications/Ortus Preview.app`. A copy running from
+  a workspace folder is a stray: tell the maintainer and quit it once no session holds
+  it. Never kill a copy during a session.
+- Throwaway runs use throwaway settings (`defaults delete <bundle id>` afterwards), and
+  tests must not leave files in `~/Library`.
+- If you find leftovers from other agents (stray copies, old builds, throwaway settings
+  in `~/Library/Preferences`), list them for the maintainer instead of ignoring them.
 
 ## Pull requests: what the description covers
 
