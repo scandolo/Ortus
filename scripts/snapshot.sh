@@ -30,6 +30,7 @@ clean_up() {
     (cd "$HOSTS" && find . -name '*.json' | while read -r f; do cp "$f" "$HOME/Library/Application Support/$(dirname "${f#./}")/NativeMessagingHosts/"; done); rm -rf "$HOSTS"
     pkill -9 -f "^$APP/Contents/MacOS/Ortus$" 2>/dev/null || true
     defaults delete $ID 2>/dev/null || true
+    rm -f "$HOME/Library/Preferences/$ID.plist" # defaults delete leaves an empty file behind
 }
 trap clean_up EXIT
 open --env "ORTUS_SNAPSHOT_DIR=$OUT" ${SESSION:+--env ORTUS_SNAPSHOT_SESSION=1} "$APP"
