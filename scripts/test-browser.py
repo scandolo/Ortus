@@ -67,6 +67,11 @@ try:
                       '--host-resolver-rules=MAP * 127.0.0.1', '--no-proxy-server'],
                 viewport={'width': 1100, 'height': 780})
             worker = context.service_workers[0] if context.service_workers else context.wait_for_event('serviceworker')
+            # Loading an unpacked extension needs Developer mode; without it, Chrome disables the extension on reload.
+            extensions = context.new_page()
+            extensions.goto('chrome://extensions')
+            extensions.evaluate('chrome.developerPrivate.updateProfileConfiguration({ inDeveloperMode: true })')
+            extensions.close()
             for _ in range(60):
                 connection = worker.evaluate("async () => (await chrome.storage.local.get('connection')).connection")
                 if connection and connection.get('connected'):
@@ -87,6 +92,44 @@ try:
             assert json.loads(client_file.read_text()).get('incognito') is False
             print('PASS: the companion reports its incognito access', flush=True)
             port = server.server_address[1]
+
+            # Ortus rewrites the extension folder on update, but Chrome keeps running the code it
+            # loaded. The extension must reload itself once, reconnect and enforce the session again.
+            publish(['reload.example'])
+            for _ in range(60):
+                if worker.evaluate('() => chrome.declarativeNetRequest.getSessionRules()'):
+                    break
+                context.pages[0].wait_for_timeout(100)
+            workers = []
+            context.on('serviceworker', lambda worker: workers.append(worker))
+            with (extension / 'core.js').open('a') as file:
+                file.write('// Updated by Ortus\n')
+            for attempt in range(200):
+                if workers:
+                    break
+                if attempt % 25 == 0:
+                    publish(['reload.example'])  # the app renews its heartbeat while it runs
+                context.pages[0].wait_for_timeout(200)
+            else:
+                raise AssertionError('The extension kept running its old code after its files changed')
+            worker = workers[-1]
+            publish(['reload.example'])
+            for _ in range(60):
+                if worker.evaluate('() => chrome.declarativeNetRequest.getSessionRules()'):
+                    break
+                context.pages[0].wait_for_timeout(100)
+            else:
+                raise AssertionError('The reloaded extension did not apply the session again')
+            page = context.new_page()
+            page.goto(f'http://reload.example:{port}/', wait_until='domcontentloaded')
+            page.wait_for_url(lambda url: url.startswith(f'chrome-extension://{EXTENSION_ID}/blocked.html'))
+            page.close()
+            # Session storage is cleared on every reload, so a marker that survives means it reloaded once.
+            worker.evaluate('() => chrome.storage.session.set({ reloadMarker: true })')
+            context.pages[0].wait_for_timeout(35000)
+            assert worker.evaluate("async () => (await chrome.storage.session.get('reloadMarker')).reloadMarker") is True
+            publish([])
+            print('PASS: an updated extension reloads once and keeps blocking', flush=True)
             gmail = context.new_page()
             gmail.goto(f'http://mail.google.com:{port}/mail/inbox')
             assert gmail.title() == 'Local fixture'
