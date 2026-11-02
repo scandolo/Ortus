@@ -28,6 +28,17 @@ async function closeWarningTabs() {
   if (stale.length) await chrome.tabs.remove(stale.map(tab => tab.id));
 }
 
+// Chrome keeps running the background code it loaded, even after Ortus updates this folder,
+// so fixed rules never reach the browser until it restarts. Reload once the files change.
+async function reloadIfUpdated() {
+  const files = ['manifest.json', 'background.js', 'core.js', 'config.js'];
+  const code = (await Promise.all(files.map(file => fetch(file, { cache: 'no-store' }).then(response => response.text())))).join('\n');
+  // Session storage starts empty on every load, so the first copy is the code that's running.
+  const { loadedCode } = await chrome.storage.session.get('loadedCode');
+  if (!loadedCode) await chrome.storage.session.set({ loadedCode: code });
+  else if (loadedCode !== code) chrome.runtime.reload();
+}
+
 function apply(nextPolicy, connected, error = null) {
   // Serialize rule replacement, storage, and tab redirects. Rapid start/end messages
   // must never leave a stale start applied after a newer stop.
@@ -101,7 +112,7 @@ chrome.tabs.onUpdated.addListener((_id, change) => {
 });
 chrome.alarms.onAlarm.addListener(alarm => {
   if (alarm.name === 'expire') apply(policy, Boolean(port));
-  if (alarm.name === 'reconnect') connect();
+  if (alarm.name === 'reconnect') { connect(); reloadIfUpdated().catch(() => {}); }
 });
 chrome.runtime.onMessage.addListener((message, _sender, reply) => {
   if (message?.type === 'open-ortus') {
@@ -123,6 +134,7 @@ chrome.runtime.onInstalled.addListener(() => ready.then(connect));
 async function boot() {
   const saved = await chrome.storage.session.get('policy');
   await apply(saved.policy || null, false);
+  await reloadIfUpdated().catch(() => {});
   await chrome.alarms.create('reconnect', { periodInMinutes: 0.5 });
   await connect();
 }
