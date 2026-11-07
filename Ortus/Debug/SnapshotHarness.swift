@@ -59,6 +59,8 @@ enum SnapshotHarness {
             await render("chat-steps",tab: 2, height: 760, state: "chat-steps")
             await render("chat-email", tab: 2, state: "chat-email")
             await render("chat-email-dark", tab: 2, state: "chat-email", dark: true)
+            await render("chat-code", tab: 2, state: "chat-code")
+            await render("chat-code-dark", tab: 2, state: "chat-code", dark: true)
             await render("chat-working", tab: 2, state: "chat-working")
             await render("chat-compose", tab: 2, state: "chat-compose")
             await render("chat-compose-dark", tab: 2, state: "chat-compose", dark: true)

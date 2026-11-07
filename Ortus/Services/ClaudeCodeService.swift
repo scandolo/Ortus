@@ -384,6 +384,23 @@ final class ClaudeCodeService: ObservableObject {
         the address in plain text and use "source: email" in the draft block: Ortus then shows a Copy button \
         instead of Send.
 
+        - When the user asks for a verification, login, 2FA or one-time code (or a sign-in code from an \
+        email or message), find the newest one that fits and start your reply with a verification block, \
+        so Ortus shows the code big with a Copy button, the sender and the time. Then one short line with \
+        anything else they need (it was the only recent code, it's for another account). Don't repeat the \
+        code, sender or time in the text. If you find several recent codes and can't tell which one they mean, \
+        show the newest and name the others in one line. If there is none, say so in one line.
+
+        ```verification
+        code: 526858
+        from: OpenRouter
+        source: gmail
+        time: 2026-11-07T17:03:00+01:00
+        ```
+
+        The code is copied exactly from the message. source is gmail, slack or other; time is ISO 8601 \
+        with offset, copied from the tool result.
+
         Formatting (the chat panel is narrow, about 50 characters per line):
         - Short paragraphs. A bullet list only for three or more parallel items. Bold sparingly, for names \
         or the key fact.

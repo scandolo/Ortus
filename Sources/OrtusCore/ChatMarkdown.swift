@@ -12,6 +12,33 @@ public enum ChatBlock: Equatable, Sendable {
     /// A message Claude wrote for the user to send, in a fenced `draft` block with the
     /// same format as `quote`. The user can edit it before sending.
     case draft(ChatQuote)
+    /// A one-time code (2FA, login, verification) Claude found for the user, in a
+    /// fenced `verification` block. Shown big with a Copy button.
+    case verification(ChatCode)
+}
+
+/// A one-time code from a fenced `verification` block:
+///
+///     ```verification
+///     code: 526858
+///     from: OpenRouter
+///     source: gmail
+///     time: 2026-11-07T17:03:00+01:00
+///     ```
+public struct ChatCode: Equatable, Sendable {
+    public var code: String
+    /// Who sent it: the service the code is for.
+    public var from: String
+    /// gmail, slack or other: where Claude found it.
+    public var source: String
+    public var time: Date?
+
+    /// Nil when the block has no code in it, so the caller can show it as text.
+    static func parse(_ body: String) -> ChatCode? {
+        let fields = ChatQuote.fields(body.components(separatedBy: "\n"))
+        guard let code = fields["code"]?.trimmingCharacters(in: CharacterSet(charactersIn: "`*")), !code.isEmpty else { return nil }
+        return ChatCode(code: code, from: fields["from"] ?? "", source: fields["source"]?.lowercased() ?? "other", time: fields["time"].flatMap(ChatQuote.date))
+    }
 }
 
 /// Messages Claude quoted verbatim from Slack, email or a post, written in a
@@ -81,7 +108,7 @@ public struct ChatQuote: Equatable, Sendable {
         return ChatQuote(source: fields["source"]?.lowercased() ?? "other", place: fields["place"] ?? "", entries: entries)
     }
 
-    private static func fields<S: Sequence>(_ lines: S) -> [String: String] where S.Element == String {
+    static func fields<S: Sequence>(_ lines: S) -> [String: String] where S.Element == String {
         var fields: [String: String] = [:]
         for line in lines {
             guard let colon = line.firstIndex(of: ":") else { continue }
@@ -143,7 +170,9 @@ public enum ChatMarkdown {
                 index += 1
                 let body = take { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("```") }.joined(separator: "\n")
                 index += 1 // closing fence
-                if language == "quote" || language == "draft", let quote = ChatQuote.parse(body) {
+                if language == "verification" {
+                    blocks.append(ChatCode.parse(body).map(ChatBlock.verification) ?? .code(body))
+                } else if language == "quote" || language == "draft", let quote = ChatQuote.parse(body) {
                     blocks.append(language == "quote" ? .quote(quote) : .draft(quote))
                 } else if language == "quote" || language == "draft" {
                     blocks.append(.blockquote(body))

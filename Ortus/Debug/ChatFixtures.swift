@@ -115,6 +115,24 @@ enum ChatFixtures {
                 ```
                 """),
             ]
+        case "chat-code":
+            return [
+                ChatMessage(role: .user, content: "give me the 2fa from gmail"),
+                ChatMessage(role: .assistant, content: "", kind: .activity(replay([
+                    (0, tool("t1", "mcp__claude_ai_Gmail__search_threads", #"{"query":"verification code newer_than:1d"}"#)),
+                    (2, result("t1")), (3, end),
+                ]).activity)),
+                ChatMessage(role: .assistant, content: """
+                ```verification
+                code: 526858
+                from: OpenRouter
+                source: gmail
+                time: \(iso(daysAgo: 0, 17, 3))
+                ```
+
+                It was the only verification code in your last day of email.
+                """),
+            ]
         case "chat-working":
             return [
                 ChatMessage(role: .user, content: "did tom reach out today, slack or email?"),

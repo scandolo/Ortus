@@ -152,6 +152,13 @@ struct ChatTests {
         guard case .draft(let email) = draft.last else { return expect(false) }
         expect(email.source == "gmail" && email.place == "Re: Pilot")
         expect(email.messages.first?.to == "Sara Conti" && email.messages.first?.cc == "Tom Price" && email.messages.first?.text == "Hi Sara,\n\n12 January works.")
+
+        let code = ChatMarkdown.blocks("```verification\ncode: 526858\nfrom: OpenRouter\nsource: Gmail\ntime: 2026-11-07T17:03:00+01:00\n```\n\nFrom OpenRouter at 17:03.")
+        expect(code.count == 2 && code[1] == .paragraph("From OpenRouter at 17:03."))
+        guard case .verification(let otp) = code.first else { return expect(false) }
+        expect(otp.code == "526858" && otp.from == "OpenRouter" && otp.source == "gmail")
+        expect(otp.time == ISO8601DateFormatter().date(from: "2026-11-07T16:03:00Z"))
+        expect(ChatMarkdown.blocks("```verification\nfrom: OpenRouter\n```") == [.code("from: OpenRouter")]) // no code: stays readable
     }
 
     func labelsTimesRelativeToNow() {
