@@ -59,6 +59,8 @@ struct ChatAnswerView: View {
             QuoteCard(quote: quote)
         case .draft(let draft):
             DraftCard(draft: draft, id: id)
+        case .verification(let code):
+            VerificationCodeCard(code: code)
         }
     }
 
@@ -459,6 +461,53 @@ private struct DraftCard: View {
         }
         .draftButton()
         .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    }
+}
+
+// MARK: - Verification code card
+
+/// A one-time code Claude found, big enough to read at a glance, with one Copy
+/// button: the user is usually halfway through logging in somewhere else.
+private struct VerificationCodeCard: View {
+    let code: ChatCode
+    @State private var copied = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                if ["gmail", "slack"].contains(code.source) {
+                    BrandGlyph(id: code.source, size: 12)
+                } else {
+                    Image(systemName: "key").font(.system(size: 10))
+                }
+                Text(code.from.isEmpty ? "Verification code" : code.from).lineLimit(1)
+                Spacer(minLength: 0)
+                if let time = code.time { Text(ChatQuote.timeLabel(time, now: Date())) }
+            }
+            .font(OrtusTheme.Typo.caption)
+            .foregroundStyle(OrtusTheme.textMuted)
+
+            HStack(alignment: .center, spacing: OrtusTheme.spacingSM) {
+                Text(code.code)
+                    .font(OrtusTheme.Typo.display.monospacedDigit())
+                    .tracking(4)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .textSelection(.enabled)
+                Spacer(minLength: 0)
+                Button {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(code.code, forType: .string)
+                    copied = true
+                    Task { try? await Task.sleep(for: .seconds(2)); copied = false }
+                } label: {
+                    Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
+                }
+                .draftButton()
+                .help("Copy the code")
+            }
+        }
+        .chatCard()
     }
 }
 
