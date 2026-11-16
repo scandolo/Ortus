@@ -10,6 +10,16 @@
       "source": "/download/Ortus.dmg",
       "destination": "https://github.com/scandolo/Ortus/releases/latest/download/Ortus.dmg",
       "permanent": false
+    },
+    {
+      "source": "/download/Ortus-macOS.zip",
+      "destination": "https://github.com/scandolo/Ortus/releases/latest/download/Ortus-macOS.zip",
+      "permanent": false
+    },
+    {
+      "source": "/update/latest.json",
+      "destination": "https://github.com/scandolo/Ortus/releases/latest/download/latest.json",
+      "permanent": false
     }
   ]
 }

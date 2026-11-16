@@ -124,6 +124,15 @@ jobs:
         run: |
           ASSETS=(Ortus-macOS.zip)
           if [ -f Ortus.dmg ]; then ASSETS+=(Ortus.dmg); fi
+          # The update feed (ortusmode.com/update/latest.json redirects here). Only
+          # signed releases get one: the app refuses updates that aren't signed with
+          # our Developer ID, so offering an ad-hoc release would only fail.
+          # Older apps ignore it and keep using the GitHub API and Ortus-macOS.zip.
+          if [ "$SIGNED" = true ]; then
+            jq -n --arg v "${{ steps.ver.outputs.version }}" \
+              '{version: $v, zip: "https://ortusmode.com/download/Ortus-macOS.zip"}' > latest.json
+            ASSETS+=(latest.json)
+          fi
           gh release create "v${{ steps.ver.outputs.version }}" \
             "${ASSETS[@]}" \
             --title "Ortus ${{ steps.ver.outputs.version }}" \

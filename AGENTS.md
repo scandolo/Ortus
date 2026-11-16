@@ -34,6 +34,12 @@ Use the Notion tools to read and update it.
   listed in `release.yml` are set, CI signs with the hardened runtime, notarizes with
   `scripts/notarize.sh` and also publishes `Ortus.dmg`; without them it falls back to
   an ad-hoc signed zip.
+- The app finds updates at `ortusmode.com/update/latest.json`, which `landing/vercel.json`
+  redirects to the `latest.json` CI publishes with signed releases only. Before
+  installing, the app checks the new bundle is signed by our Developer ID
+  (`UpdateVerifier`) and newer than itself, so an ad-hoc release is never offered.
+  To move hosting off GitHub, repoint those redirects. Older apps (before the signed-update change) still read
+  the GitHub API and `Ortus-macOS.zip`, so keep publishing those.
 - Bundle IDs are `com.ortusmode.app` and `com.ortusmode.preview`. Older builds used
   `com.ortus.*`; `OrtusApp` copies their preferences over once on first launch.
 
