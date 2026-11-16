@@ -1,17 +1,18 @@
 import Foundation
 import AppKit
 import Combine
+import OrtusCore
 
-/// Lightweight in-app updater. Mirrors the `install.sh` flow: ask the GitHub
-/// releases API for the latest version, and if it's newer than the running
-/// build, download the release zip, swap the app bundle in place via a small
-/// detached helper script, and relaunch.
+/// Lightweight in-app updater. Reads the feed on ortusmode.com (`UpdateFeed`),
+/// and if it names a newer version, downloads that zip, checks the new bundle is
+/// signed with our Developer ID and is newer than the running build
+/// (`UpdateVerifier`), then swaps the app bundle in place via a small detached
+/// helper script and relaunches.
 ///
-/// Ortus isn't notarized and ships via `curl | bash`, so there's no Sparkle/
-/// appcast infrastructure to lean on — this stays deliberately small and uses
-/// the same GitHub release artifact the installer already consumes. (A future
-/// move to Sparkle would add cryptographic update signing, which this lacks; we
-/// trust the HTTPS GitHub release, the same trust model as the installer.)
+/// Releases are Developer ID signed and notarized, so the code signature is the
+/// update signature: a download that isn't ours is deleted, never installed.
+/// The feed lives on our domain (it redirects to the GitHub release today), so
+/// where releases are hosted can change without shipping a new app.
 @MainActor
 final class UpdateService: ObservableObject {
     enum UpdateState: Equatable {
@@ -36,9 +37,9 @@ final class UpdateService: ObservableObject {
     private var checkTimer: Timer?
     private var notifyWatch: AnyCancellable?
 
-    static let repo = "scandolo/Ortus"
-    private static let apiURL = "https://api.github.com/repos/\(repo)/releases/latest"
-    private static let zipURL = "https://github.com/\(repo)/releases/latest/download/Ortus-macOS.zip"
+    /// Where the latest version's zip is, from the last check.
+    private var latestZip: URL?
+    nonisolated static let unverifiedMessage = "The update couldn't be verified, so it wasn't installed."
 
     var currentVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
@@ -73,17 +74,16 @@ final class UpdateService: ObservableObject {
         // Keep "You're on the latest version" on screen while checking again.
         if state != .upToDate { state = .checking }
         do {
-            var request = URLRequest(url: URL(string: Self.apiURL)!)
-            request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+            let request = URLRequest(url: UpdateFeed.url, cachePolicy: .reloadIgnoringLocalCacheData)
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse, http.statusCode == 200,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let tag = json["tag_name"] as? String else {
+                  let entry = UpdateFeed.parse(data) else {
                 state = .idle
                 return
             }
-            let latest = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
-            if Self.isVersion(latest, newerThan: currentVersion) {
+            let latest = entry.version
+            if UpdateFeed.isVersion(latest, newerThan: currentVersion) {
+                latestZip = entry.zip
                 state = .available(version: latest)
                 Analytics.capture("update_available", ["from": currentVersion, "to": latest])
             } else {
@@ -122,7 +122,7 @@ final class UpdateService: ObservableObject {
     /// trapped then, and the helper would wait forever for us to exit.
     func downloadAndInstall(isInFocus: Bool) async {
         guard Bundle.main.object(forInfoDictionaryKey: "OrtusPreviewBuild") as? Bool != true else { return }
-        guard case .available = state else { return }
+        guard case .available = state, let zip = latestZip else { return }
         guard !isInFocus else {
             state = .failed("Finish your focus session before updating.")
             return
@@ -131,13 +131,16 @@ final class UpdateService: ObservableObject {
         focusEndWatch = nil
         state = .downloading
         Analytics.capture("update_install_started", ["to": availableVersion ?? "unknown"])
-        let zip = Self.zipURL
         let bundlePath = Bundle.main.bundlePath
+        let running = currentVersion
         do {
-            let newApp = try await Task.detached(priority: .userInitiated) {
-                try Self.fetchAndExtract(zipURLString: zip)
+            let download = try await Task.detached(priority: .userInitiated) {
+                try Self.fetchExtractAndVerify(zip: zip, newerThan: running)
             }.value
-            try launchUpdaterAndQuit(newApp: newApp, targetBundle: bundlePath)
+            try launchUpdaterAndQuit(download, targetBundle: bundlePath)
+        } catch UpdateError.unverified {
+            state = .failed(UpdateError.unverified.localizedDescription)
+            Analytics.capture("update_verification_failed", ["to": availableVersion ?? "unknown"])
         } catch {
             state = .failed(error.localizedDescription)
         }
@@ -170,26 +173,45 @@ final class UpdateService: ObservableObject {
     // MARK: - Helpers
 
     private enum UpdateError: LocalizedError {
-        case badURL, extractFailed, appNotFound
+        case extractFailed, appNotFound, unverified
         var errorDescription: String? {
             switch self {
-            case .badURL: return "Couldn't build the download URL."
+            case .unverified: return UpdateService.unverifiedMessage
             case .extractFailed: return "Couldn't unpack the update."
             case .appNotFound: return "The downloaded update didn't contain Ortus.app."
             }
         }
     }
 
-    /// Download the release zip and extract it into a temp dir. Runs off the main
-    /// thread (synchronous network + disk) so the UI stays responsive.
-    nonisolated private static func fetchAndExtract(zipURLString: String) throws -> URL {
-        guard let url = URL(string: zipURLString) else { throw UpdateError.badURL }
-        let data = try Data(contentsOf: url)
+    /// The extracted, verified app and the temp folder holding the whole download.
+    private struct Download: Sendable {
+        let app: URL
+        let folder: URL
+    }
 
+    /// Download the release zip, extract it into a temp dir and verify the app
+    /// inside. Runs off the main thread (synchronous network + disk) so the UI
+    /// stays responsive. Any failure deletes the download.
+    nonisolated private static func fetchExtractAndVerify(zip url: URL, newerThan running: String) throws -> Download {
         let tmpDir = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("ortus-update-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
+        do {
+            let data = try Data(contentsOf: url)
+            try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
+            let app = try extract(data, into: tmpDir)
+            do {
+                try UpdateVerifier.verify(appAt: app, newerThan: running)
+            } catch {
+                throw UpdateError.unverified
+            }
+            return Download(app: app, folder: tmpDir)
+        } catch {
+            try? FileManager.default.removeItem(at: tmpDir)
+            throw error
+        }
+    }
 
+    nonisolated private static func extract(_ data: Data, into tmpDir: URL) throws -> URL {
         let zipPath = tmpDir.appendingPathComponent("Ortus-macOS.zip")
         try data.write(to: zipPath)
 
@@ -220,26 +242,27 @@ final class UpdateService: ObservableObject {
     /// relaunches — then spawn it detached and quit. The script self-aborts if we
     /// don't exit within ~60s (e.g. a focus session traps the quit) so it can't
     /// hang around or swap the bundle out from under a still-running app.
-    private func launchUpdaterAndQuit(newApp: URL, targetBundle: String) throws {
+    private func launchUpdaterAndQuit(_ download: Download, targetBundle: String) throws {
         let pid = ProcessInfo.processInfo.processIdentifier
         let script = """
         #!/bin/bash
         TARGET="\(targetBundle)"
-        SRC="\(newApp.path)"
+        SRC="\(download.app.path)"
+        WORK="\(download.folder.path)"
         for _ in $(seq 1 300); do
             kill -0 \(pid) 2>/dev/null || break
             sleep 0.2
         done
         # If Ortus is still running, the quit was blocked — abort without touching it.
         if kill -0 \(pid) 2>/dev/null; then
-            rm -rf "$(dirname "$SRC")"
+            rm -rf "$WORK"
             exit 0
         fi
         rm -rf "$TARGET"
         mv "$SRC" "$TARGET"
         xattr -dr com.apple.quarantine "$TARGET" 2>/dev/null || true
         open "$TARGET"
-        rm -rf "$(dirname "$SRC")"
+        rm -rf "$WORK"
         """
         let scriptURL = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("ortus-update-\(UUID().uuidString).sh")
@@ -251,17 +274,5 @@ final class UpdateService: ObservableObject {
         try runner.run()
 
         NSApplication.shared.terminate(nil)
-    }
-
-    /// Compare dot-separated version strings numerically (e.g. "1.0.10" > "1.0.9").
-    nonisolated static func isVersion(_ a: String, newerThan b: String) -> Bool {
-        let pa = a.split(separator: ".").map { Int($0) ?? 0 }
-        let pb = b.split(separator: ".").map { Int($0) ?? 0 }
-        for i in 0..<max(pa.count, pb.count) {
-            let x = i < pa.count ? pa[i] : 0
-            let y = i < pb.count ? pb[i] : 0
-            if x != y { return x > y }
-        }
-        return false
     }
 }
