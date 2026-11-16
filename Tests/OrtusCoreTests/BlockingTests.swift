@@ -267,6 +267,10 @@ struct CoreChecks {
         chat.hidesSavedResultReadsAndReportsFailures()
         chat.parsesAnswersIntoBlocksAndQuoteCards()
         chat.labelsTimesRelativeToNow()
-        print("PASS: 22 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, framing, modes, chat stream, chat blocks)")
+        let update = UpdateTests()
+        update.feedOnlyPointsAtOurHosts()
+        update.versionsCompareNumerically()
+        try update.verifierRejectsCodeThatIsntOurRelease()
+        print("PASS: 25 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, framing, modes, chat stream, chat blocks, update feed, update verification)")
     }
 }
