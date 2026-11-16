@@ -70,10 +70,11 @@ Branches in different workspaces take turns: installing one replaces the other.
   panel state from a throwaway copy and cleans up after itself. `--session` also renders
   session states by starting a real session that blocks only the Socials websites, in
   the preview's browser companion. Add a snapshot state for any new UI.
-- **The maintainer tries changes by hand:** `./build.sh preview && python3
-  scripts/install-preview.py` (it prints the branch it installed), then open
-  `/Applications/Ortus Preview.app`. Tell them which branch is installed. Previews never
-  check for updates, so update flows can only be tried after a release.
+- **The maintainer tries changes by hand.** Before asking to merge, install a preview of
+  your branch: `./build.sh preview && python3 scripts/install-preview.py` (it prints the
+  branch it installed), then open `/Applications/Ortus Preview.app`. Tell them which
+  branch is installed and wait for their OK. Previews never check for updates, so update
+  flows can only be tried after a release.
 
 **Leave nothing behind.**
 - Quit anything you launch when you're done with it. Once your PR is merged, quit the
