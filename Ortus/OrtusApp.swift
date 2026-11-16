@@ -232,6 +232,7 @@ struct OrtusApp: App {
             switch state {
             case "up-to-date": updateService.pinForSnapshot(.upToDate)
             case "update-available": updateService.pinForSnapshot(.available(version: "1.2.0"))
+            case "update-unverified": updateService.pinForSnapshot(.failed(UpdateService.unverifiedMessage))
             default: break
             }
             return AnyView(panel(tab: tab, height: height, state: state, router: PanelRouter(modal: modal)))
