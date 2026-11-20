@@ -220,7 +220,7 @@ struct OrtusApp: App {
         }
         SnapshotHarness.runIfRequested(focusManager: focusManager) { tab, height, state in
             let modal: PanelModal? = switch state {
-            case "browser-setup": .browserSetup
+            case "browser-setup", "browser-setup-folder": .browserSetup
             case "slack-setup": .slackSetup
             case "chat-setup": .chatSetup
             case "chat-intro": .chatIntro

@@ -35,7 +35,8 @@ bundled = destination / 'Contents/Resources/BrowserExtension'
 extension = destination.parent / 'Ortus Preview Browser'
 if not (bundled / 'manifest.json').is_file():
     raise SystemExit('The installed preview is missing its browser companion. Rebuild and install it first.')
-identity = json.loads((bundled / 'identity.json').read_text())['id']
+identity_doc = json.loads((bundled / 'identity.json').read_text())
+identity = identity_doc['id']
 if extension.exists() and any(extension.iterdir()):
     existing = extension / 'identity.json'
     if not existing.is_file() or json.loads(existing.read_text()).get('id') != identity:
@@ -53,9 +54,15 @@ for item in bundled.iterdir():
     temporary = extension / ('.' + item.name + '.installing')
     temporary.write_bytes(data)
     temporary.replace(target)
+# Same origins the app writes: the unpacked id, plus the Chrome Web Store id.
+# The published extension calls com.ortus.browser, so it connects to Ortus. This host belongs to the preview.
+store_id = identity_doc.get('storeID') or ''
+origins = [f'chrome-extension://{identity}/']
+if store_id and store_id != identity:
+    origins.append(f'chrome-extension://{store_id}/')
 manifest = {'name': 'com.ortus.browser.preview', 'description': 'Ortus Preview focus rules',
             'path': str(destination / 'Contents/MacOS/OrtusBrowserBridge'), 'type': 'stdio',
-            'allowed_origins': [f'chrome-extension://{identity}/']}
+            'allowed_origins': origins}
 for browser in ['Google/Chrome', 'Arc/User Data', 'Microsoft Edge', 'BraveSoftware/Brave-Browser', 'Chromium']:
     folder = Path.home() / 'Library/Application Support' / browser / 'NativeMessagingHosts'
     folder.mkdir(parents=True, exist_ok=True)
