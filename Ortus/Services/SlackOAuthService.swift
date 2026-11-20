@@ -20,10 +20,9 @@ final class SlackOAuthService: ObservableObject {
     nonisolated static let callbackPort: UInt16 = 53124
     nonisolated static var callbackURL: String { "http://127.0.0.1:\(callbackPort)/callback" }
 
-    /// Non-secret connection state cached in UserDefaults. Reading these on launch
-    /// instead of the keychain means the app doesn't trigger a keychain prompt every
-    /// time it starts up — the actual token still lives in the keychain and is only
-    /// fetched lazily when we need to make a Slack API call.
+    /// Non-secret connection state cached in UserDefaults so launch can show
+    /// "Connected" without reading the token. The token itself stays in the keychain
+    /// and is fetched lazily when we make a Slack API call.
     private static let isConnectedKey = "ortus.slack.isConnected"
     private static let teamNameKey = "ortus.slack.teamName"
 
@@ -33,11 +32,10 @@ final class SlackOAuthService: ObservableObject {
         teamName = defaults.string(forKey: Self.teamNameKey)
     }
 
-    /// In-memory caches for the OAuth client credentials. These getters are
-    /// called twice during the OAuth flow (and historically on every Settings
-    /// open), so reading the keychain each time was firing the password prompt
-    /// repeatedly. After the first read per process, subsequent accesses are
-    /// served from memory.
+    /// In-memory caches for the OAuth client credentials. The authorize step
+    /// reads them more than once; after the first read, later accesses in this
+    /// process are served from memory. `invalidateCredentialsCache` drops that
+    /// after a new secret is saved.
     private var cachedClientId: String?
     private var cachedClientSecret: String?
 

@@ -95,8 +95,8 @@ detection.
 
 ## Privacy
 
-There are no Ortus accounts. If you connect Slack, the token is stored in
-`~/Library/Application Support/Ortus/credentials.json`, readable only by your user.
+There are no Ortus accounts. If you connect Slack, the token is stored in the
+macOS login keychain and is not synced to iCloud.
 Ortus sends that token only to Slack. Chat uses Claude Code's existing authentication.
 If you opt in (on the welcome page or in Settings), Ortus sends anonymous usage
 events via PostHog. The browser extension talks only to the Ortus app on your Mac.
@@ -162,7 +162,7 @@ Ortus/
     │   ├── ClaudeCodeService.swift     # Chat via the local Claude Code CLI
     │   ├── SlackService.swift # Slack Web API client
     │   ├── SlackOAuthService.swift # OAuth flow via a loopback HTTP server
-    │   ├── KeychainService.swift   # Local credential file for the Slack token
+    │   ├── KeychainService.swift   # Slack token in the macOS login keychain
     │   ├── UpdateService.swift     # Release updates
     │   └── Analytics.swift    # Thin PostHog wrapper (anonymous usage events)
     ├── Views/

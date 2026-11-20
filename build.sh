@@ -74,7 +74,16 @@ SIGN=(codesign --force --sign "$SIGNING_IDENTITY")
 # be timestamped, and local builds don't need either.
 if [[ "$SIGNING_IDENTITY" != "-" ]]; then SIGN+=(--options runtime --timestamp); fi
 "${SIGN[@]}" "$APP/Contents/MacOS/OrtusBrowserBridge"
-"${SIGN[@]}" --entitlements Ortus/Ortus.entitlements "$APP"
+APP_SIGN=("${SIGN[@]}")
+# Ad-hoc signatures otherwise get a designated requirement that includes the cdhash,
+# which changes every rebuild, so the login keychain would ask permission again.
+# Pinning it to the bundle id keeps a preview's keychain items readable across builds.
+# Developer ID builds keep the default requirement: it already pins the team, and
+# replacing it would weaken the release item.
+if [[ "$SIGNING_IDENTITY" == "-" ]]; then
+    APP_SIGN+=(--identifier "$BUNDLE_ID" -r "designated => identifier \"$BUNDLE_ID\"")
+fi
+"${APP_SIGN[@]}" --entitlements Ortus/Ortus.entitlements "$APP"
 codesign --verify --deep --strict "$APP"
 # Building does not quit or replace a running installed app.
 if [[ -d "$APP_NAME" ]]; then mv "$APP_NAME" "$STAGING/previous.app"; fi
