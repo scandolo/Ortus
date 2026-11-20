@@ -58,12 +58,18 @@ struct CredentialTests {
         expect(!adHocRemoved)
         expect(FileManager.default.fileExists(atPath: url.path))
 
-        // A failed write leaves the file alone, including keys already copied.
+        // A failed write leaves the file alone. This keychain is empty, so the
+        // write is actually attempted. The shared file above already has every
+        // key in `stored`, and a migration with nothing to write would succeed.
+        let blocked = dir.appendingPathComponent("blocked.json")
+        let blockedBytes = Data(#"{"slack_token":"t"}"#.utf8)
+        try blockedBytes.write(to: blocked)
         let failed = LegacyCredentialFile.migrate(
-            fileAt: url, bundleIdentifier: LegacyCredentialFile.releaseBundleID, teamSigned: true,
-            load: { stored[$0] }, store: { _, _ in throw TestError.failed }
+            fileAt: blocked, bundleIdentifier: LegacyCredentialFile.releaseBundleID, teamSigned: true,
+            load: { _ in nil }, store: { _, _ in throw TestError.failed }
         )
         expect(!failed)
+        expect(try Data(contentsOf: blocked) == blockedBytes)
         expect(try Data(contentsOf: url) == original)
 
         // A read-back that does not match leaves the file alone.

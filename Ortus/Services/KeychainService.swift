@@ -1,4 +1,5 @@
 import Foundation
+import LocalAuthentication
 import OrtusCore
 import Security
 
@@ -20,9 +21,9 @@ import Security
 ///
 /// Ad-hoc preview builds still have no team. `build.sh` pins their designated
 /// requirement to the bundle identifier so a rebuild matches the ACL. Queries
-/// pass `kSecUseAuthenticationUIFail`, so a mismatch returns an error instead of
-/// a dialog. The service name is the bundle id: `com.ortusmode.app` and
-/// `com.ortusmode.preview` do not see each other's items.
+/// pass a context with interaction disallowed, so a mismatch returns an error
+/// instead of a dialog. The service name is the bundle id: `com.ortusmode.app`
+/// and `com.ortusmode.preview` do not see each other's items.
 ///
 /// `load`, `save` and `delete` are unchanged.
 enum KeychainService {
@@ -161,13 +162,16 @@ enum KeychainService {
     }
 
     private static func query(account: String) -> [String: Any] {
-        [
+        // A dialog here would be the bug we are avoiding. Failure leaves the
+        // file in place, and `load` keeps reading it. The context has to live
+        // as long as the query dictionary that holds it.
+        let context = LAContext()
+        context.interactionNotAllowed = true
+        return [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
-            // A dialog here would be the bug we are avoiding. Failure leaves
-            // the file in place, and `load` keeps reading it.
-            kSecUseAuthenticationUI as String: kSecUseAuthenticationUIFail as String,
+            kSecUseAuthenticationContext as String: context,
         ]
     }
 
