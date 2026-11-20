@@ -5,26 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Privacy policy · Ortus</title>
   <meta name="description" content="What Ortus, its browser extension and ortusmode.com do with your data." />
-  <meta name="theme-color" content="#1A1A1C" />
+  <meta name="theme-color" content="#120e0b" />
   <meta name="color-scheme" content="dark" />
   <link rel="canonical" href="https://ortusmode.com/privacy" />
-  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="icon" href="/assets/mark.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@1,6..72,500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/dawn.css" />
 </head>
-<body>
-  <header class="nav" id="nav" aria-label="Ortus">
-    <div class="nav__bar">
-      <a class="nav__brand" href="/" aria-label="Ortus home">
-        <img class="nav__logo" src="/assets/favicon.svg" width="30" height="30" alt="Ortus" />
+<body class="page-doc">
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="bar">
+    <div class="wrap bar__inner">
+      <a class="brand" href="/">
+        <img src="/assets/mark.svg" width="28" height="28" alt="" />
+        Ortus
       </a>
+      <a class="btn btn--primary btn--small" href="/download/Ortus.dmg" style="margin-left:auto">Download</a>
     </div>
   </header>
 
-  <main class="doc">
+  <main class="doc" id="content">
     <h1>Privacy policy</h1>
-    <p class="doc__updated">Last updated 16 November 2026</p>
+    <p class="doc__updated">Last updated 20 November 2026</p>
 
-    <div class="doc__card">
+    <div class="card">
       <h2>The short version</h2>
       <ul>
         <li>Ortus has no accounts. It runs on your Mac, and your settings stay there.</li>
@@ -42,10 +48,10 @@
     <h3>Stored only on your Mac</h3>
     <ul>
       <li>Your settings, modes, schedules and the state of your current session, in your macOS preferences.</li>
-      <li>If you connect Slack: your Slack sign-in, in a file in <code>~/Library/Application Support/Ortus</code> that only your Mac user account can read.</li>
+      <li>If you connect Slack: your Slack sign-in. The signed release stores it in the macOS login keychain and does not sync it to iCloud. Unsigned builds keep it in a file in <code>~/Library/Application Support/Ortus</code> that only your Mac user account can read.</li>
       <li>The list of websites to block during a session, which the browser extension reads.</li>
     </ul>
-    <p>To remove all of it, delete Ortus, the <code>~/Library/Application Support/Ortus</code> folder, and <code>~/Library/Preferences/com.ortusmode.app.plist</code>.</p>
+    <p>To remove all of it, delete Ortus, the <code>~/Library/Application Support/Ortus</code> folder, and <code>~/Library/Preferences/com.ortusmode.app.plist</code>. A signed app's Slack sign-in is a login-keychain item under the service <code>com.ortusmode.app</code>. Deleting the app does not always remove keychain items, so delete that item in Keychain Access if you want it gone.</p>
 
     <h3>Anonymous usage events</h3>
     <p>If you opt in, on the welcome page after installing or in Ortus → Settings → Share anonymous usage, the app sends short events to PostHog, our analytics provider, which stores them in the United States. Examples: the app opened, a focus session started, a schedule was added, the weekly emergency end was used, an update was installed, a chat message was sent, Slack was connected.</p>
@@ -92,26 +98,21 @@
   </main>
 
   <footer class="footer">
-    <div class="footer__inner">
-      <div class="footer__brand">
-        <div>
-          <p class="footer__word">Ortus</p>
-          <p class="footer__tag">Block distractions. Do the work.</p>
-        </div>
+    <div class="wrap">
+      <div class="footer__row">
+        <p class="footer__latin">Carpe lucem.</p>
+        <nav aria-label="Footer">
+          <a href="/#download">Download</a>
+          <a href="/privacy">Privacy</a>
+          <a href="mailto:support@ortusmode.com">Support</a>
+          <a href="https://github.com/scandolo/Ortus">GitHub</a>
+        </nav>
       </div>
-      <nav class="footer__links" aria-label="Footer">
-        <a href="/#download">Download</a>
-        <a href="/privacy">Privacy</a>
-        <a href="mailto:support@ortusmode.com">Support</a>
-        <a href="https://github.com/scandolo/Ortus" target="_blank" rel="noopener">GitHub</a>
-      </nav>
-    </div>
-    <div class="footer__base">
-      <p class="footer__latin">Carpe lucem.</p>
-      <p class="footer__copy">© 2026 Ortus · Free &amp; open source</p>
+      <div class="footer__base">
+        <p>Ortus. Latin for sunrise.</p>
+        <p>© 2026 Ortus · Free and open source</p>
+      </div>
     </div>
   </footer>
-
-  <script src="/script.js" defer></script>
 </body>
 </html>
