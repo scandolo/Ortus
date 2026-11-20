@@ -317,32 +317,108 @@ struct ClosingBrowserRow: View {
     }
 }
 
-/// The setup steps, shown in a modal.
+/// The setup steps, shown in a modal. The Chrome Web Store is the install path.
+/// Ortus Preview also shows "Install from a folder" (Load unpacked), the only way it connects.
 struct BrowserSetupModal: View {
     @ObservedObject var service: WebsiteBlockingService
     @EnvironmentObject var router: PanelRouter
+    @Environment(\.snapshotState) private var snapshotState
+    @State private var showFolderInstall = false
+
+    private var storeDetail: String? {
+        if service.availableBrowsers.isEmpty { return "Safari and Firefox aren't supported." }
+        if service.availableBrowsers.count > 1 { return "Opens the Chrome Web Store in that browser." }
+        return nil
+    }
 
     var body: some View {
         OrtusModal(title: "Block websites in your browser", onClose: { router.modal = nil }) {
             VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
-                Text("A one-time setup for each browser profile. Works with Arc, Chrome, Edge and Brave.")
+                Text("A one-time setup for each browser profile. Chrome, Arc, Edge and Brave install it from the Chrome Web Store.")
                     .font(OrtusTheme.Typo.body).foregroundStyle(OrtusTheme.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
                 OrtusGroup {
-                    OrtusStepRow(number: 1, title: "Open the extensions page") {
-                        ForEach(service.availableBrowsers) { browser in
-                            Button(browser.name) { service.openExtensionsPage(browserID: browser.id) }.buttonStyle(OrtusRowButtonStyle())
+                    VStack(alignment: .leading, spacing: 0) {
+                        OrtusStepRow(number: 1, title: "Add the Ortus extension", detail: storeDetail) {
+                            if service.availableBrowsers.count == 1, let browser = service.availableBrowsers.first {
+                                Button("Add to \(browser.name)") { service.openStoreListing(browserID: browser.id) }
+                                    .buttonStyle(OrtusRowButtonStyle())
+                            } else if service.availableBrowsers.isEmpty {
+                                Button("Open store") { service.openStoreListing(browserID: nil) }
+                                    .buttonStyle(OrtusRowButtonStyle())
+                            }
+                        }
+                        if service.availableBrowsers.count > 1 {
+                            FlowLayout {
+                                ForEach(service.availableBrowsers) { browser in
+                                    Button("Add to \(browser.name)") { service.openStoreListing(browserID: browser.id) }
+                                        .buttonStyle(OrtusRowButtonStyle())
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.leading, 50)
+                            .padding(.trailing, OrtusTheme.spacingMD)
+                            .padding(.bottom, 12)
                         }
                     }
                     OrtusGroupDivider()
-                    OrtusStepRow(number: 2, title: "Turn on Developer mode, then click Load unpacked") { EmptyView() }
-                    OrtusGroupDivider()
-                    OrtusStepRow(number: 3, title: "Choose the “\(service.extensionDirectory?.lastPathComponent ?? "Ortus Browser")” folder") {
-                        Button("Show folder") { service.revealCompanion() }.buttonStyle(OrtusRowButtonStyle())
-                    }
-                    OrtusGroupDivider()
                     // Without it, blocked sites stay open in private windows, and Ortus closes the browser during focus.
-                    OrtusStepRow(number: 4, title: "Open the extension’s Details and turn on Allow in Incognito") { EmptyView() }
+                    OrtusStepRow(number: 2, title: "Turn on Allow in Incognito", detail: "In the extension’s Details, so private windows are covered.") { EmptyView() }
+                }
+                // Load unpacked is only for the preview: it connects to its own folder, not the store build.
+                if service.preview {
+                    VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
+                        Button { withAnimation(.easeOut(duration: 0.18)) { showFolderInstall.toggle() } } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .rotationEffect(.degrees(showFolderInstall ? 90 : 0))
+                                    .foregroundStyle(OrtusTheme.textMuted)
+                                    .frame(width: 12)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Install from a folder").font(OrtusTheme.Typo.bodyMedium)
+                                    Text("This preview connects only to the extension in this folder. The store extension connects to Ortus.")
+                                        .font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                Spacer(minLength: 0)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(OrtusPressableStyle(inset: 4))
+                        .accessibilityLabel("Install from a folder")
+                        .accessibilityValue(showFolderInstall ? "Expanded" : "Collapsed")
+                        if showFolderInstall {
+                            OrtusGroup {
+                                VStack(alignment: .leading, spacing: 0) {
+                                    OrtusStepRow(number: 1, title: "Open the extensions page") {
+                                        if service.availableBrowsers.count == 1, let browser = service.availableBrowsers.first {
+                                            Button(browser.name) { service.openExtensionsPage(browserID: browser.id) }
+                                                .buttonStyle(OrtusRowButtonStyle())
+                                        }
+                                    }
+                                    if service.availableBrowsers.count > 1 {
+                                        FlowLayout {
+                                            ForEach(service.availableBrowsers) { browser in
+                                                Button(browser.name) { service.openExtensionsPage(browserID: browser.id) }
+                                                    .buttonStyle(OrtusRowButtonStyle())
+                                            }
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.leading, 50)
+                                        .padding(.trailing, OrtusTheme.spacingMD)
+                                        .padding(.bottom, 12)
+                                    }
+                                }
+                                OrtusGroupDivider()
+                                OrtusStepRow(number: 2, title: "Turn on Developer mode, then click Load unpacked") { EmptyView() }
+                                OrtusGroupDivider()
+                                OrtusStepRow(number: 3, title: "Choose the “\(service.extensionDirectory?.lastPathComponent ?? "Ortus Browser")” folder") {
+                                    Button("Show folder") { service.revealCompanion() }.buttonStyle(OrtusRowButtonStyle())
+                                }
+                            }
+                        }
+                    }
                 }
                 if let error = service.setupError ?? service.error ?? service.enforcementError {
                     Text(error).font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.danger)
@@ -358,6 +434,6 @@ struct BrowserSetupModal: View {
                 }
             }
         }
+        .onAppear { if snapshotState == "browser-setup-folder" { showFolderInstall = true } }
     }
-
 }

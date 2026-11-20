@@ -98,6 +98,27 @@ public enum BrowserPaths {
     }
 }
 
+/// How the Mac app recognizes the companion extension.
+public enum BrowserCompanion {
+    /// Chrome Web Store id for Ortus · Website blocking.
+    /// The unpacked build's id is different; it comes from the manifest key.
+    /// Keep this equal to `storeID` in BrowserExtension/identity.json.
+    public static let storeExtensionID = "lheanmgemlbnpeonkdbbinmankaineao"
+
+    public static func storeListingURL(extensionID: String = storeExtensionID) -> URL {
+        URL(string: "https://chromewebstore.google.com/detail/\(extensionID)")
+            ?? URL(string: "https://chromewebstore.google.com/detail/\(storeExtensionID)")!
+    }
+
+    /// Chromium only launches the native host for these origins.
+    /// Pass the unpacked id and, when present, the store id. Duplicates and blanks are dropped.
+    public static func allowedOrigins(unpackedID: String, storeID: String?) -> [String] {
+        var ids = [unpackedID]
+        if let storeID, !storeID.isEmpty, storeID != unpackedID { ids.append(storeID) }
+        return ids.map { "chrome-extension://\($0)/" }
+    }
+}
+
 public enum NativeMessage {
     public static let maximumBytes = 65_536
     public static func frame(_ data: Data) -> Data {

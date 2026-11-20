@@ -113,8 +113,7 @@ final class WebsiteBlockingService: ObservableObject {
         do {
             guard let extensionDirectory, let bundledExtension = Bundle.main.resourceURL?.appendingPathComponent("BrowserExtension", isDirectory: true),
                   let bundle = Bundle.main.executableURL?.deletingLastPathComponent(),
-                  let data = try? Data(contentsOf: bundledExtension.appendingPathComponent("identity.json")),
-                  let identity = try JSONSerialization.jsonObject(with: data) as? [String: String], let id = identity["id"] else {
+                  let identity = readBundledIdentity(), let id = identity["id"] else {
                 throw NSError(domain: "Ortus", code: 1, userInfo: [NSLocalizedDescriptionKey: "Rebuild Ortus with the bundled browser companion."])
             }
             let bridge = bundle.appendingPathComponent("OrtusBrowserBridge")
@@ -139,8 +138,8 @@ final class WebsiteBlockingService: ObservableObject {
                     try contents.write(to: destination, options: [.atomic])
                 }
             }
-            // The unpacked development build and the Chrome Web Store build have different IDs.
-            let origins = [id, identity["storeID"]].compactMap { $0 }.map { "chrome-extension://\($0)/" }
+            // The unpacked build (manifest key) and the Chrome Web Store build have different ids.
+            let origins = BrowserCompanion.allowedOrigins(unpackedID: id, storeID: identity["storeID"])
             let manifest: [String: Any] = ["name": hostName, "description": "Ortus focus rules", "path": bridge.path,
                                           "type": "stdio", "allowed_origins": origins]
             let json = try JSONSerialization.data(withJSONObject: manifest, options: [.prettyPrinted, .sortedKeys])
@@ -153,7 +152,49 @@ final class WebsiteBlockingService: ObservableObject {
         } catch { setupError = "Browser setup: \(error.localizedDescription)" }
     }
 
+    /// The published listing. Uses the bundled store id when the app has one, so the
+    /// button and the native host allow the same extension.
+    var storeListing: URL {
+        let id = readBundledIdentity()?["storeID"] ?? ""
+        return BrowserCompanion.storeListingURL(extensionID: id.isEmpty ? BrowserCompanion.storeExtensionID : id)
+    }
+
+    private func readBundledIdentity() -> [String: String]? {
+        guard let url = Bundle.main.resourceURL?
+                .appendingPathComponent("BrowserExtension", isDirectory: true)
+                .appendingPathComponent("identity.json"),
+              let data = try? Data(contentsOf: url),
+              let identity = try? JSONSerialization.jsonObject(with: data) as? [String: String],
+              identity["id"] != nil else { return nil }
+        return identity
+    }
+
+    /// Opens the Chrome Web Store listing in a detected browser, or the default browser
+    /// when none of the supported ones is installed.
+    func openStoreListing(browserID: String?) {
+        let listing = storeListing
+        setupError = nil
+        guard let browserID,
+              let choice = availableBrowsers.first(where: { $0.id == browserID }),
+              let browser = NSWorkspace.shared.urlForApplication(withBundleIdentifier: choice.id) else {
+            if availableBrowsers.isEmpty {
+                setupError = "Choose an installed supported browser: Arc, Chrome, Edge or Brave. Safari and Firefox are not supported."
+            }
+            NSWorkspace.shared.open(listing)
+            return
+        }
+        let name = choice.name
+        // NSWorkspace calls this on a background queue. Without @Sendable, the Xcode 16 SDK
+        // makes the closure MainActor-isolated and Swift 6 traps on entry (v1.1.0 crash).
+        NSWorkspace.shared.open([listing], withApplicationAt: browser, configuration: .init()) { @Sendable _, error in
+            if error != nil {
+                Task { @MainActor in self.setupError = "Open the Chrome Web Store in \(name) and add Ortus." }
+            }
+        }
+    }
+
     func openExtensionsPage(browserID: String) {
+        setupError = nil
         guard let choice = availableBrowsers.first(where: { $0.id == browserID }),
               let browser = NSWorkspace.shared.urlForApplication(withBundleIdentifier: choice.id),
               let target = URL(string: choice.page) else {

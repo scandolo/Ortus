@@ -49,7 +49,9 @@ After you add it, open its Details and turn on **Allow in Incognito**, so privat
 
 During a website session, a browser that has connected before must keep the extension on and allowed in incognito. Otherwise Ortus opens a warning tab, counts down 60 seconds in the menu bar, and quits the browser. Reopen it and the countdown starts again.
 
-**Load unpacked.** The store listing above is the install path for the signed app. **Settings → Website blocking → Set up** still walks through Load unpacked. Use that for a build from source, or for work on `BrowserExtension/`. Turn on Developer mode in the browser, then choose **Load unpacked**. Select the folder beside the app, `Ortus Browser`, or `Ortus Preview Browser` for a preview. Allow it in incognito. Reload the extension after a new build.
+**Settings → Website blocking → Set up** opens this listing in the browser you choose. Then open the extension’s Details and turn on **Allow in Incognito**.
+
+**Load unpacked.** Use this for a build from source, or for work on `BrowserExtension/`. In **Set up**, open **Install from a folder**. Turn on Developer mode, then choose **Load unpacked**. Select the folder beside the app, `Ortus Browser`, or `Ortus Preview Browser` for a preview. The published extension calls the Ortus host, so it connects to Ortus. A preview connects from its own folder. Allow it in incognito. Reload the extension after a new build.
 
 ## How it works
 

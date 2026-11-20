@@ -221,6 +221,25 @@ struct BlockingTests {
         expect(FocusMode.builtIn.allSatisfy(\.isBuiltIn) && !FocusMode(name: "Mine", blocked: .slackOnly).isBuiltIn)
     }
 
+    func storeAndUnpackedExtensionsAreBothAllowed() throws {
+        expect(BrowserCompanion.storeExtensionID == "lheanmgemlbnpeonkdbbinmankaineao")
+        expect(BrowserCompanion.storeListingURL().absoluteString == "https://chromewebstore.google.com/detail/lheanmgemlbnpeonkdbbinmankaineao")
+        expect(BrowserCompanion.allowedOrigins(unpackedID: "unpacked", storeID: "store") == ["chrome-extension://unpacked/", "chrome-extension://store/"])
+        expect(BrowserCompanion.allowedOrigins(unpackedID: "same", storeID: "same") == ["chrome-extension://same/"])
+        expect(BrowserCompanion.allowedOrigins(unpackedID: "only", storeID: nil) == ["chrome-extension://only/"])
+        expect(BrowserCompanion.allowedOrigins(unpackedID: "only", storeID: "") == ["chrome-extension://only/"])
+        // The host manifest and the in-app button both read this file. They have to name the same store build.
+        let identityURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("BrowserExtension/identity.json")
+        let identity = try JSONSerialization.jsonObject(with: Data(contentsOf: identityURL)) as? [String: String]
+        let unpackedID = identity?["id"] ?? ""
+        expect(!unpackedID.isEmpty && unpackedID != BrowserCompanion.storeExtensionID)
+        expect(identity?["storeID"] == BrowserCompanion.storeExtensionID)
+        let origins = BrowserCompanion.allowedOrigins(unpackedID: unpackedID, storeID: identity?["storeID"])
+        expect(origins == ["chrome-extension://\(unpackedID)/", "chrome-extension://\(BrowserCompanion.storeExtensionID)/"])
+    }
+
     func nativeFramingIsLittleEndianAndBounded() {
         let data = Data("{\"hello\":true}".utf8)
         let frame = NativeMessage.frame(data)
@@ -255,6 +274,7 @@ struct CoreChecks {
         checks.browserRulesUseLongestMatchingSessionAndCrashLease()
         checks.browserWithoutExtensionIsWarnedThenClosedAndStartsOverWhenReopened()
         checks.selectionDeduplicatesAndKeepsEscapeToolsAvailable()
+        try checks.storeAndUnpackedExtensionsAreBothAllowed()
         checks.nativeFramingIsLittleEndianAndBounded()
         try checks.onlyOneAppCanOwnFocusAtATime()
         checks.presetEditingPreservesUnrelatedTargets()
@@ -274,6 +294,6 @@ struct CoreChecks {
         let credentials = CredentialTests()
         credentials.migrationKeepsTheKeychainValueAndCopiesTheRest()
         credentials.migrationKeepsTheFileWhenAWriteFails()
-        print("PASS: 27 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, framing, modes, chat stream, chat blocks, update feed, update verification, credential migration)")
+        print("PASS: 28 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, store extension, framing, modes, chat stream, chat blocks, update feed, update verification, credential migration)")
     }
 }

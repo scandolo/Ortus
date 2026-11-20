@@ -47,6 +47,8 @@ enum SnapshotHarness {
             await render("focus-modes", tab: 0, height: 760, state: "modes")
             await render("mode-editor", tab: 0, height: 760, state: "mode-editor")
             await render("browser-setup", tab: 0, state: "browser-setup")
+            await render("browser-setup-dark", tab: 0, state: "browser-setup", dark: true)
+            await render("browser-setup-folder", tab: 0, height: 760, state: "browser-setup-folder")
             await render("schedule", tab: 1)
             await render("schedule-editor", tab: 1, height: 860, state: "new-schedule")
             await render("chat", tab: 2, state: "empty")
