@@ -9,10 +9,8 @@ final class SlackService: ObservableObject {
     private let session = URLSession.shared
 
     /// In-memory token cache. Loaded lazily from the keychain on first access
-    /// and reused for the lifetime of the process. Without this every API call
-    /// (and every `isConnected` check) hits the keychain, which can fire the
-    /// macOS password prompt repeatedly even when the ACL is healthy. A single
-    /// cached read per launch means at most one prompt instead of many.
+    /// and reused for the lifetime of the process, so status updates don't
+    /// re-read the keychain on every call.
     private var cachedToken: String??
 
     init() {

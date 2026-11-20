@@ -357,8 +357,14 @@ struct SlackSetupModal: View {
                     }
                     Spacer()
                     Button("Connect Slack") {
-                        try? KeychainService.save(clientID, for: .slackClientId)
-                        try? KeychainService.save(clientSecret, for: .slackClientSecret)
+                        do {
+                            try KeychainService.save(clientID, for: .slackClientId)
+                            try KeychainService.save(clientSecret, for: .slackClientSecret)
+                        } catch {
+                            slackOAuthService.error = error.localizedDescription
+                            return
+                        }
+                        slackOAuthService.invalidateCredentialsCache()
                         slackOAuthService.startOAuthFlow()
                     }
                     .buttonStyle(OrtusPrimaryButtonStyle())
@@ -366,7 +372,7 @@ struct SlackSetupModal: View {
                 }
             }
         }
-        // Read saved credentials only when the form opens, so Settings never triggers a keychain prompt.
+        // Load the saved credentials once, when the form opens. The fields hold edits until Connect Slack.
         .onAppear {
             clientID = KeychainService.load(.slackClientId) ?? ""
             clientSecret = KeychainService.load(.slackClientSecret) ?? ""
