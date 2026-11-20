@@ -107,6 +107,9 @@ struct OrtusApp: App {
 
     // Runs before the state objects above are created, so they read the copied preferences.
     init() {
+        // Before anything reads Slack credentials. A failed move leaves the file
+        // in place and load keeps using it, so a launch never drops the token.
+        KeychainService.migrateLegacyFileIfNeeded()
         Self.migrateLegacyPreferences()
         // FocusManager sets this on its first run, and migration copies it from older builds.
         AppDelegate.isFreshInstall = UserDefaults.standard.object(forKey: "focusModesMigrated") == nil

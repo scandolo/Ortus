@@ -291,6 +291,9 @@ struct CoreChecks {
         update.feedOnlyPointsAtOurHosts()
         update.versionsCompareNumerically()
         try update.verifierRejectsCodeThatIsntOurRelease()
-        print("PASS: 26 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, store extension, framing, modes, chat stream, chat blocks, update feed, update verification)")
+        let credentials = CredentialTests()
+        credentials.migrationKeepsTheKeychainValueAndCopiesTheRest()
+        credentials.migrationKeepsTheFileWhenAWriteFails()
+        print("PASS: 28 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, store extension, framing, modes, chat stream, chat blocks, update feed, update verification, credential migration)")
     }
 }

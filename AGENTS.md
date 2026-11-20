@@ -62,8 +62,11 @@ build or run may touch it.
 **Two identities.** Only CI's `./build.sh release` builds the release (`Ortus`,
 `com.ortusmode.app`). Every local build, `./build.sh` and `./build.sh preview`, is
 **Ortus Preview** (`com.ortusmode.preview`) with its own settings, session lock,
-browser companion and login item. A preview session never ends, blocks or changes the
+browser companion, login item and keychain items. A preview session never ends, blocks or changes the
 release's. Never run a release-identity build on the maintainer's Mac.
+Slack credentials: the Developer ID release keeps them in the login keychain; ad-hoc
+builds (the preview) keep them in their own `credentials-<bundle id>.json`, because
+macOS asks for keychain access again after every ad-hoc rebuild.
 
 **Telling them apart.** A preview shows a **P** next to the sunrise in the menu bar,
 and Settings names it "Ortus Preview · <branch> · <commit>". The release shows a plain
