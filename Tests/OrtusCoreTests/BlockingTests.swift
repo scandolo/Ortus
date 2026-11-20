@@ -272,10 +272,8 @@ struct CoreChecks {
         update.versionsCompareNumerically()
         try update.verifierRejectsCodeThatIsntOurRelease()
         let credentials = CredentialTests()
-        credentials.planKeepsAKeychainValueOverTheFile()
-        credentials.onlyATeamSignedReleaseMayRemoveTheSharedFile()
-        try credentials.migrationRemovesTheFileOnlyAfterAVerifiedReleaseCopy()
-        try credentials.secureDeleteRemovesARegularFileAndLeavesSymlinksAlone()
-        print("PASS: 29 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, framing, modes, chat stream, chat blocks, update feed, update verification, credential migration)")
+        credentials.migrationKeepsTheKeychainValueAndCopiesTheRest()
+        credentials.migrationKeepsTheFileWhenAWriteFails()
+        print("PASS: 27 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, framing, modes, chat stream, chat blocks, update feed, update verification, credential migration)")
     }
 }

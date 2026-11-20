@@ -1,33 +1,21 @@
 import Foundation
-import LocalAuthentication
 import OrtusCore
 import Security
 
-/// Login-keychain store for the Slack token and the Slack app credentials.
+/// Where the Slack token and Slack app credentials live.
 ///
-/// This used to be the login keychain. It moved to
-/// `~/Library/Application Support/Ortus/credentials.json` (mode 0600) because an
-/// ad-hoc signature's designated requirement includes the cdhash: every rebuild
-/// failed the item's ACL and macOS asked "Always Allow" again. Releases are
-/// Developer ID signed now (team XGJ489TRXB, the same identity `UpdateVerifier`
-/// checks). That signature's designated requirement does not include the cdhash,
-/// so an item created by one release is readable by the next one with no dialog.
+/// A Developer ID-signed release uses the login keychain. Its keychain access is
+/// tied to the team (XGJ489TRXB), which stays the same across updates, so macOS
+/// never asks for permission after an update.
 ///
-/// The data-protection keychain (`kSecUseDataProtectionKeychain` plus a
-/// `keychain-access-groups` entitlement) would also avoid dialogs, but that
-/// entitlement has to be authorized by a provisioning profile. These releases
-/// are signed and notarized without one. Shipping the entitlement makes AMFI
-/// refuse to launch the app on machines other than the build machine.
+/// Ad-hoc builds (Ortus Preview, snapshots, a release built without the signing
+/// secrets) use a 0600 JSON file instead. macOS ties an ad-hoc build's keychain
+/// access to that exact binary, so every rebuild would ask "Allow access?" again.
+/// That prompt is why the token moved to a file in the first place.
 ///
-/// Ad-hoc preview builds still have no team. `build.sh` pins their designated
-/// requirement to the bundle identifier so a rebuild matches the ACL. Queries
-/// pass a context with interaction disallowed, so a mismatch returns an error
-/// instead of a dialog. The service name is the bundle id: `com.ortusmode.app`
-/// and `com.ortusmode.preview` do not see each other's items.
-///
-/// `load`, `save` and `delete` are unchanged.
+/// The service name is the bundle id, so release and preview never share items.
 enum KeychainService {
-    enum Key: String {
+    enum Key: String, CaseIterable {
         case slackToken = "slack_token"
         case slackTeamName = "slack_team_name"
         case slackClientId = "slack_client_id"
@@ -39,185 +27,149 @@ enum KeychainService {
 
         var errorDescription: String? {
             switch self {
-            case .saveFailed(let reason):
-                "Credential save failed: \(reason)"
+            case .saveFailed(let reason): "Credential save failed: \(reason)"
             }
         }
     }
 
     private static let lock = NSLock()
+    private static let bundleID = Bundle.main.bundleIdentifier ?? "com.ortusmode.app"
 
-    /// Present for a Developer ID or Apple Development signature, absent for
-    /// ad-hoc. The release ACL is the system's designated requirement only when
-    /// this is true; that requirement is what stays stable across updates.
-    private static let hasTeamSignature: Bool = {
+    /// True for a Developer ID (or Apple Development) signature, false for ad-hoc.
+    private static let usesKeychain: Bool = {
         var code: SecCode?
-        guard SecCodeCopySelf([], &code) == errSecSuccess, let code else { return false }
         var staticCode: SecStaticCode?
-        guard SecCodeCopyStaticCode(code, [], &staticCode) == errSecSuccess, let staticCode else { return false }
         var info: CFDictionary?
-        let flags = SecCSFlags(rawValue: kSecCSSigningInformation)
-        guard SecCodeCopySigningInformation(staticCode, flags, &info) == errSecSuccess,
+        guard SecCodeCopySelf([], &code) == errSecSuccess, let code,
+              SecCodeCopyStaticCode(code, [], &staticCode) == errSecSuccess, let staticCode,
+              SecCodeCopySigningInformation(staticCode, SecCSFlags(rawValue: kSecCSSigningInformation), &info) == errSecSuccess,
               let info = info as? [String: Any] else { return false }
-        let team = info[kSecCodeInfoTeamIdentifier as String] as? String
-        return team?.isEmpty == false
+        return (info[kSecCodeInfoTeamIdentifier as String] as? String)?.isEmpty == false
     }()
 
-    private static var service: String {
-        Bundle.main.bundleIdentifier ?? "com.ortusmode.unsigned"
-    }
-
-    private static var mayMutateSharedFile: Bool {
-        LegacyCredentialFile.mayRemoveSharedFile(bundleIdentifier: Bundle.main.bundleIdentifier, teamSigned: hasTeamSignature)
-    }
-
     private static let directoryURL: URL = {
-        let base = FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support")
         return base.appendingPathComponent("Ortus", isDirectory: true)
     }()
 
-    private static let fileURL = directoryURL.appendingPathComponent("credentials.json")
+    /// The release's old file, which the signed release moves into the keychain.
+    private static let legacyFileURL = directoryURL.appendingPathComponent("credentials.json")
 
-    /// Accounts the user deleted. Migration must not copy them back out of the
-    /// file. The preview cannot edit that file (it may be the release's only
-    /// copy), so the set is what makes Disconnect stick there. Per bundle id,
-    /// because UserDefaults is.
-    private static let ignoredAccountsKey = "ortus.keychain.ignoredFileAccounts"
-
-    private static func ignoredAccounts() -> Set<String> {
-        Set(UserDefaults.standard.stringArray(forKey: ignoredAccountsKey) ?? [])
-    }
-
-    private static func setIgnoredAccounts(_ accounts: Set<String>) {
-        if accounts.isEmpty {
-            UserDefaults.standard.removeObject(forKey: ignoredAccountsKey)
-        } else {
-            UserDefaults.standard.set(accounts.sorted(), forKey: ignoredAccountsKey)
-        }
+    /// Ad-hoc builds keep a file per identity, so the release moving and deleting
+    /// `credentials.json` never takes the preview's token with it.
+    private static var fileURL: URL {
+        bundleID == "com.ortusmode.app" ? legacyFileURL
+            : directoryURL.appendingPathComponent("credentials-\(bundleID).json")
     }
 
     // MARK: - Public API
 
-    /// Copies `credentials.json` into this app's keychain. The signed release
-    /// deletes the file only after the keychain reads back. Safe to call again.
+    /// Signed release only: copies `credentials.json` into the keychain and deletes
+    /// the file once every value reads back. If anything fails, the file stays and
+    /// the next launch tries again; until then `load` still reads the file.
     static func migrateLegacyFileIfNeeded() {
         lock.lock()
         defer { lock.unlock() }
-        migrateLocked()
+        guard usesKeychain else { return }
+        let file = readFile(legacyFileURL)
+        guard !file.isEmpty else { return }
+        if CredentialMigration.copy(file, load: keychainRead, store: { try keychainWrite($1, account: $0) }) {
+            try? FileManager.default.removeItem(at: legacyFileURL)
+        }
     }
 
     static func save(_ value: String, for key: Key) throws {
         lock.lock()
         defer { lock.unlock() }
-        var ignored = ignoredAccounts()
-        ignored.remove(key.rawValue)
-        setIgnoredAccounts(ignored)
-        migrateLocked()
-        try write(value, account: key.rawValue)
-        // The keychain now has the newest value. Drop the file's copy so a
-        // later migration cannot put the previous token back. Previews do not
-        // edit the file: it may still be the release's only copy.
-        if mayMutateSharedFile { LegacyCredentialFile.removeKey(key.rawValue, from: fileURL) }
+        if usesKeychain {
+            try keychainWrite(value, account: key.rawValue)
+            // An unmigrated file must not hand back the older value later.
+            removeFromFile(key, at: legacyFileURL)
+        } else {
+            var store = readFile(fileURL)
+            store[key.rawValue] = value
+            do { try writeFile(store, to: fileURL) } catch { throw KeychainError.saveFailed(error.localizedDescription) }
+        }
     }
 
     static func load(_ key: Key) -> String? {
         lock.lock()
         defer { lock.unlock() }
-        migrateLocked()
-        if let value = read(account: key.rawValue) { return value }
-        // Deleted in this app. The file may still hold it for the other identity.
-        if ignoredAccounts().contains(key.rawValue) { return nil }
-        // The keychain write has not succeeded yet. Keep using the file so a
-        // working token survives until a later launch can move it.
-        guard case .values(let values) = LegacyCredentialFile.read(fileURL) else { return nil }
-        return values[key.rawValue]
+        if usesKeychain {
+            // The file only still exists if the move failed; keep the token working.
+            return keychainRead(key.rawValue) ?? readFile(legacyFileURL)[key.rawValue]
+        }
+        return readFile(fileURL)[key.rawValue]
     }
 
     static func delete(_ key: Key) {
         lock.lock()
         defer { lock.unlock() }
-        // Not migrated first: migration would write the key back, then we would
-        // delete it. The ignored set stops the next launch from restoring it
-        // out of the file. The signed release also removes it from the file.
-        var ignored = ignoredAccounts()
-        ignored.insert(key.rawValue)
-        setIgnoredAccounts(ignored)
-        _ = SecItemDelete(query(account: key.rawValue) as CFDictionary)
-        if mayMutateSharedFile { LegacyCredentialFile.removeKey(key.rawValue, from: fileURL) }
+        if usesKeychain {
+            SecItemDelete(query(account: key.rawValue) as CFDictionary)
+            removeFromFile(key, at: legacyFileURL)
+        } else {
+            removeFromFile(key, at: fileURL)
+        }
     }
 
     // MARK: - Keychain
 
-    private static func migrateLocked() {
-        LegacyCredentialFile.migrate(
-            fileAt: fileURL,
-            bundleIdentifier: Bundle.main.bundleIdentifier,
-            teamSigned: hasTeamSignature,
-            load: { read(account: $0) },
-            store: { try write($1, account: $0) },
-            ignoring: ignoredAccounts()
-        )
-    }
-
     private static func query(account: String) -> [String: Any] {
-        // A dialog here would be the bug we are avoiding. Failure leaves the
-        // file in place, and `load` keeps reading it. The context has to live
-        // as long as the query dictionary that holds it.
-        let context = LAContext()
-        context.interactionNotAllowed = true
-        return [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecUseAuthenticationContext as String: context,
-        ]
+        [kSecClass as String: kSecClassGenericPassword,
+         kSecAttrService as String: bundleID,
+         kSecAttrAccount as String: account]
     }
 
-    private static func read(account: String) -> String? {
+    private static func keychainRead(_ account: String) -> String? {
         var query = query(account: account)
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
         var result: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        guard status == errSecSuccess, let data = result as? Data else { return nil }
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess, let data = result as? Data else { return nil }
         return String(data: data, encoding: .utf8)
     }
 
-    /// Updates the item, or adds it when it is missing. An add gets this
-    /// process's designated requirement as its ACL. An update leaves the ACL
-    /// alone, so a token that is already stored is never deleted in order to
-    /// recreate it.
-    private static func write(_ value: String, account: String) throws {
-        let query = query(account: account)
-        let updated = SecItemUpdate(query as CFDictionary, [kSecValueData as String: Data(value.utf8)] as CFDictionary)
+    /// Updates the item, or adds it when missing. Never deletes first, so a failed
+    /// write can't lose the token that's already there.
+    private static func keychainWrite(_ value: String, account: String) throws {
+        let data = Data(value.utf8)
+        let updated = SecItemUpdate(query(account: account) as CFDictionary, [kSecValueData as String: data] as CFDictionary)
         if updated == errSecSuccess { return }
-        if updated != errSecItemNotFound { throw KeychainError.saveFailed(explain(updated)) }
-        var add = query
-        add[kSecValueData as String] = Data(value.utf8)
-        // Available after the user has unlocked the Mac once, including while
-        // the screen is locked, so a scheduled session can still update Slack.
-        // Not the iCloud-synced classes: synchronizable is left unset, so the
-        // item stays in the local login keychain.
+        guard updated == errSecItemNotFound else { throw KeychainError.saveFailed(explain(updated)) }
+        var add = query(account: account)
+        add[kSecValueData as String] = data
+        // Readable while the screen is locked, so a scheduled session can still
+        // update Slack. Not synchronizable, so it stays out of iCloud Keychain.
         add[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
-        add[kSecAttrLabel as String] = label(for: account)
+        add[kSecAttrLabel as String] = "Ortus \(account.replacingOccurrences(of: "_", with: " "))"
         let status = SecItemAdd(add as CFDictionary, nil)
         guard status == errSecSuccess else { throw KeychainError.saveFailed(explain(status)) }
     }
 
-    private static func label(for account: String) -> String {
-        switch Key(rawValue: account) {
-        case .slackToken: "Ortus Slack token"
-        case .slackTeamName: "Ortus Slack workspace"
-        case .slackClientId: "Ortus Slack client ID"
-        case .slackClientSecret: "Ortus Slack client secret"
-        case nil: "Ortus credential"
-        }
+    private static func explain(_ status: OSStatus) -> String {
+        "\(SecCopyErrorMessageString(status, nil) as String? ?? "keychain error") (\(status))"
     }
 
-    private static func explain(_ status: OSStatus) -> String {
-        let text = SecCopyErrorMessageString(status, nil) as String? ?? "keychain error"
-        return "\(text) (\(status))"
+    // MARK: - File
+
+    private static func readFile(_ url: URL) -> [String: String] {
+        guard let data = try? Data(contentsOf: url),
+              let dict = try? JSONDecoder().decode([String: String].self, from: data) else { return [:] }
+        return dict
+    }
+
+    private static func writeFile(_ store: [String: String], to url: URL) throws {
+        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true,
+                                                attributes: [.posixPermissions: 0o700])
+        try JSONEncoder().encode(store).write(to: url, options: [.atomic])
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+    }
+
+    private static func removeFromFile(_ key: Key, at url: URL) {
+        var store = readFile(url)
+        guard store.removeValue(forKey: key.rawValue) != nil else { return }
+        if store.isEmpty { try? FileManager.default.removeItem(at: url) } else { try? writeFile(store, to: url) }
     }
 }

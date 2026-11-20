@@ -15,9 +15,7 @@ ID=com.ortusmode.snapshot
 pkill -9 -f "^$APP/Contents/MacOS/Ortus$" 2>/dev/null || true
 ./build.sh debug >/dev/null
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $ID" "$APP/Contents/Info.plist"
-# Same identifier requirement as build.sh, so this re-sign doesn't put the cdhash
-# back into the designated requirement.
-codesign --force --sign - --identifier "$ID" -r "designated => identifier \"$ID\"" --entitlements Ortus/Ortus.entitlements "$APP" 2>/dev/null
+codesign --force --sign - --entitlements Ortus/Ortus.entitlements "$APP" 2>/dev/null
 defaults delete $ID 2>/dev/null || true
 rm -f "$OUT"/*.png
 # Every launch points the preview's browser connection at the running build. Put the

@@ -64,9 +64,9 @@ build or run may touch it.
 **Ortus Preview** (`com.ortusmode.preview`) with its own settings, session lock,
 browser companion, login item and keychain items. A preview session never ends, blocks or changes the
 release's. Never run a release-identity build on the maintainer's Mac.
-Slack credentials are per identity (`com.ortusmode.app` and `com.ortusmode.preview`
-in the login keychain). `credentials.json` is removed only by a Developer ID-signed
-release after the keychain read-back matches; a preview must leave that file alone.
+Slack credentials: the Developer ID release keeps them in the login keychain; ad-hoc
+builds (the preview) keep them in their own `credentials-<bundle id>.json`, because
+macOS asks for keychain access again after every ad-hoc rebuild.
 
 **Telling them apart.** A preview shows a **P** next to the sunrise in the menu bar,
 and Settings names it "Ortus Preview · <branch> · <commit>". The release shows a plain
