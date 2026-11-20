@@ -3,249 +3,393 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ortus - The hardcore focus app for makers</title>
-
-  <!-- SEO / social -->
-  <meta name="description" content="Ortus is a macOS menu-bar app that blocks distractions while you do deep work. On a schedule or on demand. No end button. Free & open source." />
-  <meta name="theme-color" content="#1A1A1C" />
+  <title>Ortus — No end button. Good luck.</title>
+  <meta name="description" content="A Mac app that closes Slack, X, email and anything else you pick, and keeps them closed until your session ends. Your agent checks them for you. Free and open source." />
+  <meta name="theme-color" content="#0C0C0D" />
   <meta name="color-scheme" content="dark" />
+  <link rel="canonical" href="https://ortusmode.com/" />
 
-  <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://ortusmode.com/" />
   <meta property="og:site_name" content="Ortus" />
-  <meta property="og:title" content="Ortus: the hardcore focus app for makers" />
-  <meta property="og:description" content="A macOS menu-bar app that blocks distractions on a schedule or on demand. No end button. Free & open source." />
+  <meta property="og:title" content="No end button. Good luck." />
+  <meta property="og:description" content="A Mac app that closes Slack, X, email and anything else you pick, and keeps them closed until your session ends. Your agent checks them for you." />
   <meta property="og:image" content="https://ortusmode.com/assets/social-preview.png" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Ortus, a macOS menu-bar focus app, showing a locked 52:00 deep-focus session." />
+  <meta property="og:image:width" content="2400" />
+  <meta property="og:image:height" content="1260" />
+  <meta property="og:image:alt" content="Ortus. No end button. Good luck. A focus app for Mac." />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Ortus: the hardcore focus app for makers" />
-  <meta name="twitter:description" content="A macOS menu-bar app that blocks distractions while you do deep work. No end button." />
+  <meta name="twitter:title" content="No end button. Good luck." />
+  <meta name="twitter:description" content="A Mac app that closes Slack, X, email and anything else you pick, and keeps them closed until your session ends. Your agent checks them for you." />
   <meta name="twitter:image" content="https://ortusmode.com/assets/social-preview.png" />
 
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="preload" href="assets/bricolage-grotesque-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="styles.css" />
+
+  <!--
+    Launch hero. Change HERO_HEADLINE to A/B the h1 (JavaScript writes it in).
+    Council pick: "No end button.\nGood luck."
+    Challenger, if people can't say what Ortus does in 5 seconds:
+      "Close Slack.\nYour agent's on it."
+    Keep the same words in the h1 below so the page is right with JavaScript off.
+  -->
+  <script>
+    var HERO_HEADLINE = "No end button.\nGood luck.";
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Ortus",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "macOS 14 or later",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "downloadUrl": "https://ortusmode.com/download/Ortus.dmg",
+    "license": "https://opensource.org/licenses/MIT",
+    "url": "https://ortusmode.com/",
+    "description": "A Mac app that closes Slack, X, email and anything else you pick, and keeps them closed until your session ends."
+  }
+  </script>
 </head>
 <body>
-  <!-- ============================== NAV ============================== -->
-  <header class="nav" id="nav" aria-label="Ortus">
-    <div class="nav__bar">
-      <a class="nav__brand" href="#top" aria-label="Ortus home">
-        <img class="nav__logo" src="assets/favicon.svg" width="30" height="30" alt="Ortus" />
-      </a>
-    </div>
+  <a class="skip" href="#top">Skip to content</a>
+
+  <header class="nav" id="nav">
+    <a class="nav__brand" href="#top">
+      <img class="nav__logo" src="assets/favicon.svg" width="28" height="28" alt="" />
+      <span class="nav__name">Ortus</span>
+    </a>
+    <nav class="nav__links" aria-label="On this page">
+      <a href="#session">Session</a>
+      <a href="#blocks">Blocks</a>
+      <a href="#agent">Agent</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <a class="btn btn--primary nav__cta" href="/download/Ortus.dmg" data-download>Download</a>
   </header>
 
   <main id="top">
-    <!-- ============================== HERO ============================== -->
     <section class="hero" aria-labelledby="hero-title">
-      <!-- cinematic dawn horizon glow -->
-      <div class="hero__glow" aria-hidden="true"></div>
-
       <div class="hero__inner">
-        <div class="hero__copy">
-          <h1 class="hero__title fade-up d2" id="hero-title">
-            One switch to <span class="grad-text">lock in.</span>
-          </h1>
-          <p class="hero__sub fade-up d3">
-            Ortus is the most <strong>hardcore focus app</strong> for makers.
-          </p>
-          <p class="hero__sub hero__sub--detail fade-up d3">
-            It lives in your Mac menu bar, blocks distractions on a schedule or on demand, and has no end button until you're done.
-          </p>
+        <p class="eyebrow fade-up d1">Focus app for Mac</p>
+        <h1 class="hero__title fade-up d2" id="hero-title">
+          <span class="hero__line" data-line>No end button.</span>
+          <span class="hero__line hero__line--hit" data-line>Good luck.</span>
+        </h1>
 
-          <div class="hero__cta fade-up d4">
-            <a class="btn btn--primary btn--lg" href="/download/Ortus.dmg" data-download>Download for Mac</a>
+        <div class="hero__row">
+          <div class="hero__copy">
+            <p class="hero__sub fade-up d3">
+              A Mac app that closes Slack, X, email and anything else you pick, and keeps them closed until your session ends. Your agent checks them for you.
+            </p>
+            <div class="hero__cta fade-up d4">
+              <a class="btn btn--primary btn--lg" href="/download/Ortus.dmg" data-download>Download for Mac</a>
+            </div>
+            <p class="hero__meta fade-up d4">
+              Free and <a href="https://github.com/scandolo/Ortus" target="_blank" rel="noopener">open source</a>
+              · macOS 14 or later · Apple silicon and Intel
+            </p>
+            <p class="hero__brand fade-up d4">The focus app that doesn't trust you.</p>
           </div>
-          <p class="hero__meta fade-up d4">Free · macOS 14 or later · Apple silicon and Intel</p>
-        </div>
 
-        <!-- ===== macOS MENU-BAR MOCKUP (the proof) ===== -->
-        <div class="hero__device fade-up d5">
-          <div class="hero__device-glow" aria-hidden="true"></div>
-          <div class="macscene">
-            <!-- macOS menu bar with the Ortus sun lit -->
-            <div class="menubar" aria-hidden="true">
-              <div class="menubar__sys">
-                <svg width="20" height="14" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="18" height="10" rx="2.5"/><rect x="3" y="5" width="12" height="6" rx="1" fill="currentColor" stroke="none"/><path d="M21 6v4" stroke-linecap="round"/></svg>
-                <svg width="17" height="15" viewBox="0 0 24 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 7.5a15 15 0 0 1 20 0"/><path d="M5 11a10 10 0 0 1 14 0"/><path d="M8.5 14.5a5 5 0 0 1 7 0"/><circle cx="12" cy="18" r="0.6" fill="currentColor"/></svg>
-                <span class="menubar__clock">9:41</span>
-                <span class="menubar__ortus"><img src="assets/sunmark.svg" width="18" height="18" alt="" /></span>
+          <figure class="lock fade-up d5">
+            <figcaption class="visually-hidden">Illustration of a focus session in progress. Slack, X and Gmail are closed. The timer is locked until 12:00. There is no end button.</figcaption>
+            <div class="lock__frame" aria-hidden="true">
+              <div class="lock__bar">
+                <span class="lock__app">Ortus</span>
+                <span class="lock__status">
+                  <span class="lock__sun"><img src="assets/sunmark.svg" width="18" height="18" alt="" /></span>
+                  <span class="lock__live">Live</span>
+                  <span class="lock__clock" data-clock>9:41</span>
+                </span>
               </div>
-            </div>
-
-            <div class="popover">
-              <span class="popover__notch" aria-hidden="true"></span>
-            <!-- floating capsule tab bar -->
-            <div class="popover__tabs" role="tablist" aria-label="Ortus">
-              <button class="tab tab--active" type="button" role="tab" data-panel="focus">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="13" r="7" /><path d="M12 13V9" /><path d="M9 2h6" /><path d="m19 5 1.5-1.5" />
-                </svg>
-                Focus
-              </button>
-              <button class="tab" type="button" role="tab" data-panel="schedule">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="5" width="18" height="16" rx="2.5" /><path d="M3 9h18" /><path d="M8 3v4" /><path d="M16 3v4" />
-                </svg>
-                Schedule
-              </button>
-              <button class="tab" type="button" role="tab" data-panel="chat">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 12a8 8 0 0 1-11.5 7.2L4 21l1.8-5.5A8 8 0 1 1 21 12Z" />
-                </svg>
-                Chat
-              </button>
-              <button class="tab tab--icon" type="button" role="tab" data-panel="settings" aria-label="Settings">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
-                </svg>
-              </button>
-            </div>
-
-            <!-- FOCUS -->
-            <div class="popover__screen panel panel--active" data-panel="focus">
-              <div class="timer">
-                <div class="timer__glow"></div>
-                <div class="timer__ring">
-                  <div class="timer__center">
-                    <span class="timer__time">52:00</span>
+              <div class="lock__stage">
+                <div class="shutters">
+                  <div class="win" style="--d: 0.15s">
+                    <span class="win__name">Slack</span>
+                    <span class="win__body">
+                      <span class="win__lines"><i></i><i></i><i></i></span>
+                      <span class="win__shutter"><span>Closed</span></span>
+                    </span>
+                  </div>
+                  <div class="win" style="--d: 0.45s">
+                    <span class="win__name">X</span>
+                    <span class="win__body">
+                      <span class="win__lines"><i></i><i></i><i></i></span>
+                      <span class="win__shutter"><span>Closed</span></span>
+                    </span>
+                  </div>
+                  <div class="win" style="--d: 0.75s">
+                    <span class="win__name">Gmail</span>
+                    <span class="win__body">
+                      <span class="win__lines"><i></i><i></i><i></i></span>
+                      <span class="win__shutter"><span>Closed</span></span>
+                    </span>
                   </div>
                 </div>
-              </div>
-              <p class="focus__name">Deep work</p>
-              <p class="focus__targets">LinkedIn · X · Slack</p>
-              <span class="focus__extend">+ 15 min</span>
-            </div>
-
-            <!-- SCHEDULE -->
-            <div class="popover__screen panel" data-panel="schedule" hidden>
-              <p class="popover__eyebrow">Schedule</p>
-              <ul class="sched">
-                <li class="sched__row">
-                  <div>
-                    <p class="sched__name">Deep work</p>
-                    <p class="sched__time">Mon-Fri · 9:00-12:00</p>
-                  </div>
-                  <span class="toggle is-on"></span>
-                </li>
-                <li class="sched__row">
-                  <div>
-                    <p class="sched__name">Afternoon focus</p>
-                    <p class="sched__time">Mon-Fri · 14:00-16:00</p>
-                  </div>
-                  <span class="toggle is-on"></span>
-                </li>
-                <li class="sched__row">
-                  <div>
-                    <p class="sched__name">Weekend reset</p>
-                    <p class="sched__time">Sat · 10:00-13:00</p>
-                  </div>
-                  <span class="toggle"></span>
-                </li>
-              </ul>
-            </div>
-
-            <!-- CHAT -->
-            <div class="popover__screen panel" data-panel="chat" hidden>
-              <p class="popover__eyebrow">Chat</p>
-              <div class="chat">
-                <div class="chat__bubble chat__bubble--me">What did #eng decide on the migration timeline?</div>
-                <div class="chat__bubble">Pushed to next sprint. Raj flagged an auth dependency, and Lena's owning the rollback plan.</div>
-                <div class="chat__bubble chat__bubble--me">Link me the thread.</div>
+                <div class="meter">
+                  <p class="meter__mode">Everything</p>
+                  <p class="meter__time" data-remain>2:19:00</p>
+                  <p class="meter__until" data-until>Locked until 12:00</p>
+                  <ul class="meter__chips">
+                    <li>Slack</li>
+                    <li>X</li>
+                    <li>Gmail</li>
+                  </ul>
+                  <p class="meter__lock">No end button</p>
+                </div>
               </div>
             </div>
-
-            <!-- SETTINGS -->
-            <div class="popover__screen panel" data-panel="settings" hidden>
-              <p class="popover__eyebrow">Settings</p>
-              <ul class="set">
-                <li class="set__row"><span>Launch at login</span><span class="toggle is-on"></span></li>
-                <li class="set__row"><span>Focus notifications</span><span class="toggle is-on"></span></li>
-                <li class="set__row"><span>Relaunch apps after focus</span><span class="toggle is-on"></span></li>
-                <li class="set__row"><span>Emergency end · 1 left this week</span><span class="toggle"></span></li>
-              </ul>
-            </div>
-          </div>
-          </div>
+          </figure>
         </div>
       </div>
     </section>
 
-    <!-- ============================== TRUST STRIP ============================== -->
-    <section class="trust" aria-label="Why Ortus works">
-      <p class="trust__line reveal">
-        Willpower runs out. <span class="grad-text">A locked session doesn't.</span>
-        Ortus holds the line so you can stay in the work.
-      </p>
-    </section>
-
-    <!-- ============================== HOW IT WORKS ============================== -->
-    <section class="how" id="how" aria-labelledby="how-title">
-      <div class="section-head reveal">
-        <p class="eyebrow">How it works</p>
-        <h2 class="section-title" id="how-title">Built to keep you in. Not let you out.</h2>
+    <section class="canwait" aria-label="Slack, X and Gmail can wait">
+      <div class="canwait__inner reveal">
+        <p class="visually-hidden">Slack, X and Gmail can wait.</p>
+        <p class="canwait__spin" aria-hidden="true">
+          <span class="canwait__slot">
+            <span class="canwait__word">Slack</span>
+            <span class="canwait__word">X</span>
+            <span class="canwait__word">Gmail</span>
+          </span>
+        </p>
+        <p class="canwait__rest" aria-hidden="true">can wait.</p>
+        <p class="canwait__note">You don't decide to open them. Your hands do. Ortus closes them first.</p>
       </div>
-
-      <ol class="steps">
-        <li class="step reveal">
-          <span class="step__num" aria-hidden="true">1</span>
-          <h3 class="step__title">Block from the menu bar</h3>
-          <p class="step__body">Ortus blocks your distractions straight from the macOS menu bar. Run it on a schedule, or kick off a session on demand.</p>
-        </li>
-        <li class="step reveal">
-          <span class="step__num" aria-hidden="true">2</span>
-          <h3 class="step__title">No end button</h3>
-          <p class="step__body">Once a session starts, there's no off switch to talk yourself into. The door stays closed until the time is up.</p>
-        </li>
-        <li class="step reveal">
-          <span class="step__num" aria-hidden="true">3</span>
-          <h3 class="step__title">Chat, not chatter</h3>
-          <p class="step__body">Need something while you're heads down? Ask in chat and get just the info you need, none of the distractions.</p>
-        </li>
-      </ol>
     </section>
 
-    <!-- ============================== FINAL CTA ============================== -->
-    <section class="cta" aria-labelledby="cta-title">
-      <div class="cta__panel reveal">
-        <div class="cta__glow" aria-hidden="true"></div>
-        <h2 class="cta__title" id="cta-title">First light. First task.</h2>
-        <p class="cta__sub">Block the distractions, drop into deep work, and ship.</p>
+    <section class="band" id="session" aria-labelledby="session-title">
+      <div class="band__inner">
+        <div class="section-head reveal">
+          <p class="eyebrow">01 · The session</p>
+          <h2 class="section-title" id="session-title">Once it starts, it holds.</h2>
+          <p class="section-lead">The focus app with no off switch. A schedule or a timer. Then the door stays shut.</p>
+        </div>
+        <ol class="steps">
+          <li class="step reveal">
+            <span class="step__num">1</span>
+            <h3 class="step__title">Start it</h3>
+            <p class="step__body">Put it on a schedule, like weekday mornings until noon, or start a timer from 15 minutes to 4 hours. The first time, Ortus shows what will close, when it ends, and the one way out.</p>
+          </li>
+          <li class="step reveal">
+            <span class="step__num">2</span>
+            <h3 class="step__title">It closes them</h3>
+            <p class="step__body">Mac apps quit. Websites in Chrome, Arc, Edge and Brave hit a wall. Reopen a blocked app and Ortus closes it again. Ortus, Finder and System Settings stay open.</p>
+          </li>
+          <li class="step reveal">
+            <span class="step__num">3</span>
+            <h3 class="step__title">No end button</h3>
+            <p class="step__body">Start one yourself and you get 30 seconds to press Never mind. After that, and for every session a schedule starts, it runs to the end. Quitting Ortus is blocked, including Cmd+Q. You can add 15 minutes. You cannot end it.</p>
+          </li>
+          <li class="step reveal">
+            <span class="step__num">4</span>
+            <h3 class="step__title">One way out</h3>
+            <p class="step__body">End focus early, in Settings, once each calendar week. That reopens what Ortus closed. When a session ends on time, the sites load again and the apps stay closed until you open them.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="band band--tight" id="blocks" aria-labelledby="blocks-title">
+      <div class="band__inner">
+        <div class="section-head reveal">
+          <p class="eyebrow">02 · The wall</p>
+          <h2 class="section-title" id="blocks-title">Pick what can't get in.</h2>
+          <p class="section-lead">Three built-in modes, or one you build. Mac apps and websites. Socials is the default.</p>
+        </div>
+
+        <div class="modes reveal" data-tabs>
+          <div class="modes__tabs" role="tablist" aria-label="Blocking modes">
+            <button class="modes__tab" type="button" role="tab" id="tab-socials" aria-controls="panel-socials" aria-selected="true" data-tab="socials">Socials</button>
+            <button class="modes__tab" type="button" role="tab" id="tab-messages" aria-controls="panel-messages" aria-selected="false" tabindex="-1" data-tab="messages">Messages</button>
+            <button class="modes__tab" type="button" role="tab" id="tab-everything" aria-controls="panel-everything" aria-selected="false" tabindex="-1" data-tab="everything">Everything</button>
+            <button class="modes__tab" type="button" role="tab" id="tab-custom" aria-controls="panel-custom" aria-selected="false" tabindex="-1" data-tab="custom">Custom</button>
+          </div>
+
+          <div class="modes__panel" role="tabpanel" id="panel-socials" aria-labelledby="tab-socials" data-panel="socials">
+            <p class="modes__kicker">Websites</p>
+            <ul class="targets">
+              <li><span>LinkedIn</span><small>linkedin.com</small></li>
+              <li><span>X</span><small>x.com and twitter.com</small></li>
+              <li><span>Instagram</span><small>instagram.com</small></li>
+              <li><span>Facebook</span><small>facebook.com</small></li>
+              <li><span>Reddit</span><small>reddit.com</small></li>
+              <li><span>TikTok</span><small>tiktok.com</small></li>
+            </ul>
+          </div>
+
+          <div class="modes__panel" role="tabpanel" id="panel-messages" aria-labelledby="tab-messages" data-panel="messages" hidden>
+            <p class="modes__kicker">Apps and websites</p>
+            <ul class="targets">
+              <li><span>Gmail</span><small>gmail.com and mail.google.com. The rest of Google stays open.</small></li>
+              <li><span>Slack</span><small>The Mac app and slack.com</small></li>
+              <li><span>WhatsApp</span><small>The Mac app and web.whatsapp.com</small></li>
+            </ul>
+          </div>
+
+          <div class="modes__panel" role="tabpanel" id="panel-everything" aria-labelledby="tab-everything" data-panel="everything" hidden>
+            <p class="modes__kicker">Socials and Messages, together</p>
+            <ul class="targets targets--names">
+              <li><span>LinkedIn</span></li>
+              <li><span>X</span></li>
+              <li><span>Instagram</span></li>
+              <li><span>Facebook</span></li>
+              <li><span>Reddit</span></li>
+              <li><span>TikTok</span></li>
+              <li><span>Gmail</span></li>
+              <li><span>Slack</span></li>
+              <li><span>WhatsApp</span></li>
+            </ul>
+          </div>
+
+          <div class="modes__panel" role="tabpanel" id="panel-custom" aria-labelledby="tab-custom" data-panel="custom" hidden>
+            <p class="modes__kicker">Yours</p>
+            <ul class="targets">
+              <li><span>Any website</span><small>The domain and its subdomains. You type it.</small></li>
+              <li><span>Any Mac app</span><small>Except Ortus, Finder and System Settings.</small></li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="modes__note reveal">
+          Mac apps close on their own. Websites need the
+          <a href="https://chromewebstore.google.com/detail/ortus-%C2%B7-website-blocking/lheanmgemlbnpeonkdbbinmankaineao" target="_blank" rel="noopener">Ortus extension</a>
+          for Chrome, Arc, Edge and Brave. Allow it in Incognito, or private windows stay open. Safari and Firefox aren't supported.
+        </p>
+      </div>
+    </section>
+
+    <section class="band" id="agent" aria-labelledby="agent-title">
+      <div class="band__inner agent">
+        <div class="agent__copy reveal">
+          <p class="eyebrow">03 · The agent</p>
+          <h2 class="section-title" id="agent-title">Close Slack. Your agent's on it.</h2>
+          <p class="section-lead">Need the decision from Slack, or a file from email? Ask Chat. You never open the app that would eat the morning.</p>
+          <ul class="agent__points">
+            <li>Chat runs the Claude Code already on your Mac, with your sign-in and the tools you connected there. Slack, email, calendar, docs.</li>
+            <li>It answers the question and leaves the rest. It will not send or change anything until you tell it to.</li>
+            <li>The blocker doesn't need any of this. No Claude Code, no account, the session still locks.</li>
+          </ul>
+          <p class="agent__fine">Connecting Slack in Settings is separate. That only sets your status and Do Not Disturb for the session. Reading Slack is Chat.</p>
+        </div>
+
+        <figure class="chat reveal">
+          <figcaption class="chat__cap">Example · Chat uses your Claude Code, not ours</figcaption>
+          <div class="chat__log">
+            <p class="chat__who">You</p>
+            <p class="chat__bubble chat__bubble--me">Did #eng decide on the migration?</p>
+            <p class="chat__who">Ortus</p>
+            <p class="chat__bubble">Pushed to next sprint. An auth dependency is still open.</p>
+          </div>
+        </figure>
+      </div>
+    </section>
+
+    <section class="band band--tight" id="private" aria-labelledby="private-title">
+      <div class="band__inner">
+        <div class="section-head reveal">
+          <p class="eyebrow">04 · Private, and free</p>
+          <h2 class="section-title" id="private-title">Nothing of yours comes to us.</h2>
+        </div>
+        <ul class="facts">
+          <li class="fact reveal">
+            <h3>No account</h3>
+            <p>Ortus doesn't sign you up. Settings, modes and the session stay on your Mac.</p>
+          </li>
+          <li class="fact reveal">
+            <h3>Keychain</h3>
+            <p>On a signed release, Slack credentials live in the macOS login Keychain. They are not synced to iCloud.</p>
+          </li>
+          <li class="fact reveal">
+            <h3>Analytics, off</h3>
+            <p>Anonymous usage events stay off until you opt in. They never include messages, the sites you block, or what you ask in Chat.</p>
+          </li>
+          <li class="fact reveal">
+            <h3>The extension</h3>
+            <p>It talks only to the Ortus app on your Mac. It sends nothing over the internet, and it doesn't keep your browsing history.</p>
+          </li>
+        </ul>
+        <p class="oss reveal">
+          <strong>Free. MIT.</strong>
+          <a href="https://github.com/scandolo/Ortus" target="_blank" rel="noopener">Read the code on GitHub</a>
+          <span aria-hidden="true">·</span>
+          <a href="/privacy">Privacy policy</a>
+        </p>
+      </div>
+    </section>
+
+    <section class="band" id="faq" aria-labelledby="faq-title">
+      <div class="band__inner band__inner--narrow">
+        <div class="section-head reveal">
+          <p class="eyebrow">05 · Before you lock in</p>
+          <h2 class="section-title" id="faq-title">The honest part.</h2>
+        </div>
+        <div class="faq__list">
+          <details class="qa">
+            <summary>What if something urgent happens?</summary>
+            <p>For almost everyone, nothing is so urgent it can't wait until the session ends. The fear is real. The urgency usually isn't. Ask your agent and you get the answer without the rest of the inbox. If it truly can't wait, End focus early is in Settings, once a week. Ortus will not ping you on its own.</p>
+          </details>
+          <details class="qa">
+            <summary>Can I get out of a session?</summary>
+            <p>If you started it, you have 30 seconds to press Never mind. A scheduled session has no cancel window. After that there is no end button, and you can't quit Ortus. You can add 15 minutes from the panel. The other way out is End focus early, once each calendar week, which reopens the apps Ortus closed. A normal ending doesn't. The sites come back. The apps stay closed until you open them.</p>
+          </details>
+          <details class="qa">
+            <summary>Which browsers does it block?</summary>
+            <p>Chrome, Arc, Edge and Brave, through the <a href="https://chromewebstore.google.com/detail/ortus-%C2%B7-website-blocking/lheanmgemlbnpeonkdbbinmankaineao" target="_blank" rel="noopener">Chrome Web Store extension</a>. Turn on Allow in Incognito. If the extension is off during a website session, Ortus warns you, counts down 60 seconds, and quits that browser. Safari and Firefox aren't supported. Mac apps close with no browser at all.</p>
+          </details>
+          <details class="qa">
+            <summary>Do I need Claude Code?</summary>
+            <p>Not for blocking. Chat is the part that needs it: your own install, your sign-in, your tools. If it isn't on the Mac, sessions still lock.</p>
+          </details>
+          <details class="qa">
+            <summary>Is it signed? Which Macs?</summary>
+            <p>Releases are signed and notarized. macOS 14 or later, on Apple silicon and Intel. Open the dmg and drag Ortus to Applications. There's also a one-line install from Terminal, in the download window.</p>
+          </details>
+          <details class="qa">
+            <summary>What about my phone?</summary>
+            <p>Ortus guards your Mac. It doesn't touch your phone. Put the phone in another room.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="close" aria-labelledby="close-title">
+      <div class="close__inner reveal">
+        <span class="horizon" aria-hidden="true"></span>
+        <h2 class="close__title" id="close-title">Get the hard shit done before lunch.</h2>
+        <p class="close__sub">Download Ortus. Free and open source. The session ends when the time does.</p>
         <a class="btn btn--primary btn--lg" href="/download/Ortus.dmg" data-download>Download for Mac</a>
-        <p class="cta__meta">macOS 14+ · Free &amp; open source</p>
+        <p class="close__meta">macOS 14 or later · Signed and notarized · Apple silicon and Intel</p>
       </div>
     </section>
   </main>
 
-  <!-- ============================== FOOTER ============================== -->
   <footer class="footer">
     <div class="footer__inner">
       <div class="footer__brand">
-        <div>
-          <p class="footer__word">Ortus</p>
-          <p class="footer__tag">Block distractions. Do the work.</p>
-        </div>
+        <p class="footer__word">Ortus</p>
+        <p class="footer__tag">The focus app that doesn't trust you.</p>
       </div>
-
       <nav class="footer__links" aria-label="Footer">
-        <a href="#how">How it works</a>
+        <a href="#session">Session</a>
+        <a href="#blocks">Blocks</a>
+        <a href="#agent">Agent</a>
+        <a href="#faq">FAQ</a>
         <a href="#download">Download</a>
         <a href="/privacy">Privacy</a>
         <a href="mailto:support@ortusmode.com">Support</a>
         <a href="https://github.com/scandolo/Ortus" target="_blank" rel="noopener">GitHub</a>
       </nav>
     </div>
-
     <div class="footer__base">
-      <p class="footer__latin">Carpe lucem.</p>
-      <p class="footer__copy">© 2026 Ortus · Free &amp; open source</p>
+      <p class="footer__copy">© 2026 Ortus</p>
+      <p class="footer__copy">MIT license · <a href="https://github.com/scandolo/Ortus" target="_blank" rel="noopener">scandolo/Ortus</a></p>
     </div>
   </footer>
 
-  <!-- ============================== DOWNLOAD MODAL ============================== -->
   <dialog class="dl" id="download" aria-labelledby="dl-title">
     <form method="dialog"><button class="dl__close" aria-label="Close">×</button></form>
     <h2 class="dl__title" id="dl-title" data-started="Ortus is downloading" data-idle="Install Ortus">Install Ortus</h2>
@@ -256,13 +400,13 @@
     </ol>
     <p class="dl__note">Ortus closes Mac apps on its own. For websites, it walks you through adding its extension to Chrome, Arc, Edge or Brave.</p>
     <a class="btn btn--primary dl__again" href="/download/Ortus.dmg" data-download data-idle="Download Ortus.dmg" data-started="Download again">Download Ortus.dmg</a>
-    <p class="dl__meta">macOS 14 or later · Apple silicon and Intel · Signed and notarized by Apple</p>
+    <p class="dl__meta">macOS 14 or later · Apple silicon and Intel · Signed and notarized</p>
     <details class="dl__terminal">
       <summary>Prefer Terminal?</summary>
       <div class="install" role="group" aria-label="Install command">
         <code class="install__cmd"><span class="install__prompt">$</span> curl -fsSL https://ortusmode.com/install.sh | bash</code>
         <button class="install__copy" type="button" data-copy="curl -fsSL https://ortusmode.com/install.sh | bash" aria-label="Copy install command">
-          <svg class="install__icon-copy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+          <svg class="install__icon-copy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
           <span class="install__copy-label">Copy</span>
         </button>
       </div>

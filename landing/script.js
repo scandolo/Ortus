@@ -1,6 +1,6 @@
 /* ==========================================================================
-   Ortus landing - progressive enhancement only.
-   Content is fully visible without JS; this file just adds polish.
+   Ortus landing. Content is visible without this file.
+   HERO_HEADLINE lives in index.html. This script only writes it into the h1.
    ========================================================================== */
 (function () {
   "use strict";
@@ -9,7 +9,79 @@
     window.matchMedia &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  /* ----- 1. Nav: hairline border + bg on scroll ----- */
+  /* Headline. Last line is the amber punch when there is more than one. */
+  var title = document.getElementById("hero-title");
+  if (title && typeof HERO_HEADLINE === "string" && HERO_HEADLINE.length) {
+    var lines = HERO_HEADLINE.split("\n").filter(function (line) { return line.length; });
+    title.replaceChildren();
+    lines.forEach(function (line, i) {
+      var span = document.createElement("span");
+      span.className = "hero__line" + (lines.length > 1 && i === lines.length - 1 ? " hero__line--hit" : "");
+      span.textContent = line;
+      title.appendChild(span);
+    });
+  }
+
+  /* Session clock in the hero illustration. 9:41, 2:19:00 left, ends at 12:00. */
+  var remainEl = document.querySelector("[data-remain]");
+  var clockEl = document.querySelector("[data-clock]");
+  var untilEl = document.querySelector("[data-until]");
+  if (remainEl && clockEl && !prefersReduced) {
+    var started = Date.now();
+    var remain0 = (2 * 3600 + 19 * 60) * 1000;
+    var clock0 = 9 * 3600 + 41 * 60;
+    var pad = function (n) { return String(n).padStart(2, "0"); };
+    var paint = function () {
+      var elapsed = Date.now() - started;
+      var remain = Math.max(0, remain0 - elapsed);
+      var total = Math.floor(remain / 1000);
+      var h = Math.floor(total / 3600);
+      var m = Math.floor((total % 3600) / 60);
+      var s = total % 60;
+      remainEl.textContent = h + ":" + pad(m) + ":" + pad(s);
+      var clock = clock0 + Math.floor(elapsed / 1000);
+      clockEl.textContent = Math.floor(clock / 3600) + ":" + pad(Math.floor((clock % 3600) / 60));
+      if (untilEl && remain === 0) untilEl.textContent = "Session ended";
+    };
+    paint();
+    var timer = setInterval(function () {
+      if (document.hidden) return;
+      paint();
+      if (Date.now() - started >= remain0) clearInterval(timer);
+    }, 1000);
+  }
+
+  /* Mode tabs. */
+  document.querySelectorAll("[data-tabs]").forEach(function (root) {
+    var tabs = Array.prototype.slice.call(root.querySelectorAll('[role="tab"]'));
+    var panels = Array.prototype.slice.call(root.querySelectorAll('[role="tabpanel"]'));
+    if (!tabs.length) return;
+    var select = function (tab) {
+      tabs.forEach(function (t) {
+        var on = t === tab;
+        t.setAttribute("aria-selected", on ? "true" : "false");
+        t.tabIndex = on ? 0 : -1;
+      });
+      panels.forEach(function (panel) {
+        panel.hidden = panel.id !== tab.getAttribute("aria-controls");
+      });
+    };
+    tabs.forEach(function (tab, index) {
+      tab.addEventListener("click", function () { select(tab); });
+      tab.addEventListener("keydown", function (e) {
+        var next = null;
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") next = tabs[(index + 1) % tabs.length];
+        else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = tabs[(index - 1 + tabs.length) % tabs.length];
+        else if (e.key === "Home") next = tabs[0];
+        else if (e.key === "End") next = tabs[tabs.length - 1];
+        if (!next) return;
+        e.preventDefault();
+        select(next);
+        next.focus();
+      });
+    });
+  });
+
   var nav = document.getElementById("nav");
   if (nav) {
     var onScroll = function () {
@@ -20,14 +92,9 @@
     window.addEventListener("scroll", onScroll, { passive: true });
   }
 
-  /* ----- 2. Scroll-reveal via IntersectionObserver -----
-     Mark <html> so CSS hides .reveal elements only when JS is active.
-     If motion is reduced or IO is unavailable, leave everything visible. */
   var reveals = document.querySelectorAll(".reveal");
-
   if (!prefersReduced && "IntersectionObserver" in window && reveals.length) {
     document.documentElement.classList.add("reveal-ready");
-
     var io = new IntersectionObserver(
       function (entries, obs) {
         entries.forEach(function (entry) {
@@ -37,95 +104,56 @@
           }
         });
       },
-      { rootMargin: "0px 0px -10% 0px", threshold: 0.1 }
+      { rootMargin: "0px 0px -8% 0px", threshold: 0.08 }
     );
-
-    reveals.forEach(function (el) {
-      io.observe(el);
-    });
+    reveals.forEach(function (el) { io.observe(el); });
   }
 
-  /* ----- 3. Smooth-scroll for in-page anchors (offset for sticky nav) ----- */
   var navH = nav ? nav.offsetHeight : 0;
   document.querySelectorAll('a[href^="#"]').forEach(function (link) {
     link.addEventListener("click", function (e) {
       var id = link.getAttribute("href");
-      if (id === "#" || id.length < 2) return;
+      if (!id || id.length < 2) return;
       var target = document.querySelector(id);
-      // A link to the download dialog opens it (section 6) instead of scrolling.
       if (!target || target.tagName === "DIALOG") return;
       e.preventDefault();
-      var top =
-        target.getBoundingClientRect().top + window.scrollY - navH - 12;
-      window.scrollTo({
-        top: top,
-        behavior: prefersReduced ? "auto" : "smooth"
-      });
+      var top = target.getBoundingClientRect().top + window.scrollY - navH - 12;
+      window.scrollTo({ top: top, behavior: prefersReduced ? "auto" : "smooth" });
     });
   });
 
-  /* ----- 4. Copy-to-clipboard for install command blocks ----- */
   document.querySelectorAll(".install__copy").forEach(function (btn) {
     var resetTimer = null;
     var label = btn.querySelector(".install__copy-label");
     var originalText = label ? label.textContent : "";
-
     btn.addEventListener("click", function () {
       var text = btn.getAttribute("data-copy") || "";
-      if (!text || !navigator.clipboard || !navigator.clipboard.writeText) {
-        return;
-      }
+      if (!text || !navigator.clipboard || !navigator.clipboard.writeText) return;
+      navigator.clipboard.writeText(text).then(function () {
+        btn.classList.add("is-copied");
+        if (label) label.textContent = "Copied";
+        if (resetTimer) clearTimeout(resetTimer);
+        resetTimer = setTimeout(function () {
+          btn.classList.remove("is-copied");
+          if (label) label.textContent = originalText;
+        }, 1600);
+      }, function () {});
+    });
+  });
 
-      navigator.clipboard.writeText(text).then(
-        function () {
-          btn.classList.add("is-copied");
-          if (label) label.textContent = "Copied!";
-          if (resetTimer) clearTimeout(resetTimer);
-          resetTimer = setTimeout(function () {
-            btn.classList.remove("is-copied");
-            if (label) label.textContent = originalText;
-          }, 1600);
-        },
-        function () {
-          /* clipboard write failed - leave button unchanged */
-        }
-      );
-    });
-  });
-  /* ----- 5. Interactive mockup tabs (Focus / Schedule / Chat / Settings) ----- */
-  document.querySelectorAll(".popover").forEach(function (pop) {
-    var tabs = pop.querySelectorAll(".tab");
-    var panels = pop.querySelectorAll(".panel");
-    tabs.forEach(function (tab) {
-      tab.addEventListener("click", function () {
-        var name = tab.getAttribute("data-panel");
-        tabs.forEach(function (t) {
-          t.classList.toggle("tab--active", t === tab);
-          t.setAttribute("aria-selected", t === tab ? "true" : "false");
-        });
-        panels.forEach(function (p) {
-          var match = p.getAttribute("data-panel") === name;
-          p.hidden = !match;
-          p.classList.toggle("panel--active", match);
-        });
-      });
-    });
-  });
-  /* ----- 6. Download: the link downloads the dmg; a dialog shows how to install ----- */
   var dl = document.getElementById("download");
   if (dl && typeof dl.showModal === "function") {
     var dlTitle = dl.querySelector(".dl__title");
     var dlAgain = dl.querySelector(".dl__again");
     var openDownload = function (started) {
       var state = started ? "data-started" : "data-idle";
-      dlTitle.textContent = dlTitle.getAttribute(state);
-      dlAgain.textContent = dlAgain.getAttribute(state);
+      if (dlTitle) dlTitle.textContent = dlTitle.getAttribute(state);
+      if (dlAgain) dlAgain.textContent = dlAgain.getAttribute(state);
       if (!dl.open) dl.showModal();
     };
     document.querySelectorAll("[data-download]").forEach(function (link) {
       link.addEventListener("click", function () { openDownload(true); });
     });
-    // ortusmode.com/download redirects to /#download, and the footer links to it.
     var openFromHash = function () { if (location.hash === "#download") openDownload(false); };
     window.addEventListener("hashchange", openFromHash);
     openFromHash();
