@@ -5,7 +5,7 @@
 # Ortus
 
 **The most hardcore focus app for makers.**
-A Mac menu-bar app that blocks distractions so you can do deep work.
+A free, open source Mac menu-bar app. It closes the apps you choose and blocks the sites you choose until the session is over.
 
 [![Website](https://img.shields.io/badge/website-ortusmode.com-FD9E4D)](https://ortusmode.com)
 [![Latest release](https://img.shields.io/github/v/release/scandolo/Ortus?color=FD9E4D&label=download)](https://github.com/scandolo/Ortus/releases/latest)
@@ -25,63 +25,38 @@ A Mac menu-bar app that blocks distractions so you can do deep work.
 
 ## What is Ortus?
 
-Ortus lives in your Mac menu bar and blocks your biggest distraction while you do
-deep work. When focus mode starts (manually or on a schedule), Ortus terminates
-Slack and keeps it terminated: reopen it and Ortus closes it again. When your
-session ends, Slack comes back on its own.
+Ortus lives in your Mac menu bar. Start a session yourself, or let a schedule start one. Until that session ends, Ortus closes the Mac apps in your mode. With the browser extension, it blocks the websites too.
 
-There is no "End Focus" button to talk yourself into. Quitting Ortus mid-session
-is blocked too. The only escape hatch is a hidden emergency end, rate-limited to
-once per week.
+**Socials**, the default, blocks LinkedIn, X (x.com and twitter.com), Instagram, Facebook, Reddit, and TikTok. **Messages** blocks Gmail, Slack, and WhatsApp. **Everything** blocks both. Choose **Change → New custom mode** to add websites and Mac apps of your own. Schedules use the same modes.
 
-An optional AI chat (powered by your own Claude) lets you check what is happening
-in Slack without opening it, so you stay heads-down.
+Websites include their subdomains. Gmail is mail.google.com and gmail.com only, so the rest of Google stays open. Slack is the Mac app and slack.com. WhatsApp is the Mac app and web.whatsapp.com. Reopen a blocked app and Ortus closes it again. Ortus, Finder, and System Settings stay available.
 
-> Willpower runs out. A locked session doesn't. Ortus holds the line so you can
-> stay in the work.
+There is no End Focus button to talk yourself into. Quitting Ortus is blocked while a session is running. A session you start yourself gives you 30 seconds to press **Never mind**. A scheduled session has no cancel window. The remaining way out is **End focus early** in Settings, once a week. Before your first session, Ortus shows what it will block, when it ends, and that one way out.
 
-## Website and app blocking
+When the timer ends, the websites load again. Apps Ortus closed stay closed until you open them. The weekly emergency end reopens those apps.
 
-Since 1.1.0, Ortus blocks websites and Mac apps on top of Slack. To try unreleased
-changes, build a preview that installs next to the release:
+Slack status and chat are optional. When a session closes the Slack app, and Slack is connected, Ortus sets your status and Do Not Disturb. It clears them when the session ends. Turn either off in Settings. Chat runs the Claude Code already on your Mac. It uses your sign-in and the tools you connected there, so you can check Slack without opening it.
 
-```bash
-./build.sh preview
-python3 scripts/install-preview.py
-open "/Applications/Ortus Preview.app"
-```
+> Willpower runs out. A locked session doesn't.
 
-**Modes.** A session blocks a mode: **Socials** (the default), **Messages** or
-**Everything**. Custom modes are optional: choose **Change → New custom mode** to pick
-websites and apps. Websites include their subdomains; Gmail blocks only mail, so
-other Google services stay available. Selected apps close when focus starts.
+## Website blocking
 
-**Browser.** Website blocking uses a small companion extension for Chrome, Arc, Edge
-or Brave. In Ortus, open **Settings → Website blocking → Set up** and follow the
-four steps (load the `/Applications/Ortus Browser` folder, or `Ortus Preview Browser`
-for a preview build, as an unpacked extension, then allow it in incognito). Repeat for each browser profile;
-Safari and Firefox are not covered.
-Reload the extension once after installing a new build.
-During a website session, a browser that has connected to Ortus before must keep the
-extension on and allowed in incognito. Otherwise Ortus opens a warning tab, counts down
-60 seconds in the menu bar and quits the browser (again on each reopen).
+Mac apps close on their own. Websites need the companion extension.
 
-**How it fits together.** `Sources/OrtusCore` holds the shared model (targets,
-schedules, sessions, browser policy). The app publishes a short-lived policy;
-`OrtusBrowserBridge` (a Native Messaging host) passes it to the extension, which
-redirects blocked sites to a local page and clears its rules within 20 seconds if
-Ortus stops updating them. No browsing data is sent to Ortus.
+Install [Ortus · Website blocking](https://chromewebstore.google.com/detail/ortus-·-website-blocking/lheanmgemlbnpeonkdbbinmankaineao) from the Chrome Web Store. Chrome, Arc, Edge, and Brave can install it. Safari and Firefox are not supported. The extension requires Chromium 120 or later.
 
-**Checks**
+After you add it, open its Details and turn on **Allow in Incognito**, so private windows are covered. Repeat that for each browser profile.
 
-```bash
-swift run OrtusCoreChecks                       # core model
-node --test BrowserExtension/tests/*.test.js    # extension logic
-bash scripts/test-app-blocking.sh               # app blocking with a fixture app
-bash scripts/test-modal-scrolling.sh            # compact and scrollable panel modals
-bash scripts/test-brand-glyphs.sh               # website brands and mode marks
-python3 scripts/test-browser.py                 # end to end in headless Chromium (needs Playwright)
-```
+During a website session, a browser that has connected before must keep the extension on and allowed in incognito. Otherwise Ortus opens a warning tab, counts down 60 seconds in the menu bar, and quits the browser. Reopen it and the countdown starts again.
+
+**Load unpacked.** The store listing above is the install path for the signed app. **Settings → Website blocking → Set up** still walks through Load unpacked. Use that for a build from source, or for work on `BrowserExtension/`. Turn on Developer mode in the browser, then choose **Load unpacked**. Select the folder beside the app, `Ortus Browser`, or `Ortus Preview Browser` for a preview. Allow it in incognito. Reload the extension after a new build.
+
+## How it works
+
+1. You choose a mode and a length, or a schedule reaches its window. A session you start yourself runs from 15 minutes to 4 hours. The first time you start one, Ortus asks you to confirm with **Understood, start**. You can add 15 minutes from the panel while it runs.
+2. Ortus terminates the Mac apps in the mode and watches for launches. If one starts, Ortus closes it, and force-quits it if it keeps running.
+3. The extension replaces a blocked site with a page inside the extension. It also blocks that site's other requests. `api.slack.com` is excluded. Rules clear within 20 seconds if Ortus stops updating them. No browsing data is sent to Ortus.
+4. `applicationShouldTerminate` returns `.terminateCancel` while a session is running, so Cmd+Q, Dock quit, and a programmatic quit all fail. When the session ends, monitoring stops and the website rules expire. Closed apps stay closed. The weekly emergency end reopens them.
 
 ## Install
 
@@ -89,7 +64,8 @@ python3 scripts/test-browser.py                 # end to end in headless Chromiu
 
 Download `Ortus.dmg` from [ortusmode.com/download](https://ortusmode.com/download), open
 it and drag Ortus into Applications. Releases are signed and notarized by Apple. Requires
-macOS 14 or later, on Apple silicon or Intel.
+macOS 14 or later, on Apple silicon or Intel. Websites stay open until you add the
+[browser extension](#website-blocking).
 
 ### One-line install
 
@@ -117,26 +93,50 @@ connectors. Ortus detects it automatically. Open **Settings → Chat → Configu
 to change its location or check again; leave the location empty to use automatic
 detection.
 
-## How it works
-
-1. When focus activates, Ortus terminates all Slack processes.
-2. It watches for app launches and closes Slack again if it tries to start.
-3. An `NSApplicationDelegate` intercepts `Cmd+Q` and termination requests so you
-   cannot quit your way out.
-4. When focus ends (or the scheduled window passes), monitoring stops and Slack
-   relaunches on its own.
-
 ## Privacy
 
-Your Slack token is stored in the macOS Keychain and is only sent to Slack. Chat
-uses Claude Code's existing authentication. If you opt in (on the welcome page or in
-Settings), Ortus sends anonymous usage events via PostHog. There are no Ortus accounts.
+There are no Ortus accounts. If you connect Slack, the token is stored in
+`~/Library/Application Support/Ortus/credentials.json`, readable only by your user.
+Ortus sends that token only to Slack. Chat uses Claude Code's existing authentication.
+If you opt in (on the welcome page or in Settings), Ortus sends anonymous usage
+events via PostHog. The browser extension talks only to the Ortus app on your Mac.
+[Privacy policy](https://ortusmode.com/privacy).
 
 ## Development
 
 Ortus is a SwiftUI macOS menu-bar app built with Swift Package Manager. It runs as
 a `MenuBarExtra` with `.window` style (a popover panel) and no dock icon
 (`LSUIElement = true`).
+
+### Preview
+
+A preview is a separate app (`Ortus Preview`, `com.ortusmode.preview`), with its own
+settings, session lock, and browser companion.
+
+```bash
+./build.sh preview
+python3 scripts/install-preview.py
+open "/Applications/Ortus Preview.app"
+```
+
+### Checks
+
+```bash
+swift run OrtusCoreChecks                       # core model
+node --test BrowserExtension/tests/*.test.js    # extension logic
+bash scripts/test-app-blocking.sh               # app blocking with a fixture app
+bash scripts/test-modal-scrolling.sh            # compact and scrollable panel modals
+bash scripts/test-brand-glyphs.sh               # website brands and mode marks
+python3 scripts/test-browser.py                 # end to end in headless Chromium (needs Playwright)
+```
+
+`scripts/package-extension.sh` writes `Ortus-extension.zip` for the Chrome Web Store.
+The manifest `key` stays in the repo so a Load unpacked build keeps a stable id.
+The store package leaves that key out.
+
+### How the pieces talk
+
+`Sources/OrtusCore` holds the shared model (targets, modes, schedules, sessions, browser policy). The app writes a short-lived policy on disk. `OrtusBrowserBridge`, a Native Messaging host, passes it to the extension. The extension applies it only while the heartbeat is fresh. Nothing about the pages you open is sent to Ortus.
 
 ### Project structure
 
@@ -162,7 +162,7 @@ Ortus/
     │   ├── ClaudeCodeService.swift     # Chat via the local Claude Code CLI
     │   ├── SlackService.swift # Slack Web API client
     │   ├── SlackOAuthService.swift # OAuth flow via a loopback HTTP server
-    │   ├── KeychainService.swift   # macOS Keychain wrapper for secrets
+    │   ├── KeychainService.swift   # Local credential file for the Slack token
     │   ├── UpdateService.swift     # Release updates
     │   └── Analytics.swift    # Thin PostHog wrapper (anonymous usage events)
     ├── Views/
@@ -185,16 +185,22 @@ Ortus/
 ### Key design decisions
 
 - **No End Focus button.** An easy escape defeats the purpose. Emergency end lives
-  in Settings and is gated to once per calendar week. Developer mode (tap the version
-  label 7 times) adds a dev-only end button.
+  in Settings and is gated to once per calendar week (`weekOfYear`). It shows up
+  only while a session is locked. Developer mode (tap the version label 7 times)
+  adds a dev-only end button.
+- **Closed apps stay closed.** A normal ending stops blocking. The apps Ortus quit
+  stay quit. Emergency end relaunches them.
 - **Inline editing in ScheduleView.** `.sheet()` spawns a new `NSWindow`, which makes
   the `MenuBarExtra` panel lose key-window status and dismiss. Schedules are edited
   in place with state variables instead.
 - **Quit blocking via AppDelegate.** `applicationShouldTerminate` returns
   `.terminateCancel` while focus is active, blocking Cmd+Q, Dock quit, and
-  programmatic termination.
-- **Glass material design.** Cards and the status ring use `.ultraThinMaterial` with
-  continuous (supercircle) corner radii, adapting to light and dark mode.
+  programmatic termination. That includes the 30-second cancel window.
+- **Lifted cards.** Cards use `cardSurface`, lighter than the canvas in light and
+  dark mode, with continuous corner radii. The amber accent is the timer ring and
+  the menu-bar icon.
+- **Website rules fail open.** If Ortus stops publishing a heartbeat, the extension
+  drops its block rules within 20 seconds.
 
 ### Dependencies
 
