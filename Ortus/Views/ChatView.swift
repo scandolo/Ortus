@@ -89,7 +89,6 @@ struct ChatView: View {
                 .padding(OrtusTheme.spacingMD)
                 .animation(.easeOut(duration: 0.22), value: claudeCodeService.messages.count)
             }
-            .scrollIndicators(.never)
             // Also follows the activity row and the answer as they grow in place.
             .onChange(of: claudeCodeService.messages.last) {
                 withAnimation(.easeOut(duration: 0.22)) {

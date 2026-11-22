@@ -71,7 +71,6 @@ struct ScheduleView: View {
                     }
                     .padding(OrtusTheme.spacingMD)
                 }
-                .scrollIndicators(.never)
             }
 
             Button {

@@ -57,7 +57,6 @@ struct OrtusModal<Content: View>: View {
                         .padding([.horizontal, .bottom], 20)
                         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
                 }
-                .scrollIndicators(.never)
                 .frame(maxHeight: contentHeight)
             }
             .foregroundStyle(OrtusTheme.text)

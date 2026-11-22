@@ -30,7 +30,6 @@ struct FocusView: View {
                     // The grace countdown sits in the middle of the panel, not at the top.
                     .frame(maxWidth: .infinity, minHeight: inGracePeriod ? proxy.size.height : nil, alignment: .leading)
                 }
-                .scrollIndicators(.never)
             }
             footer
         }

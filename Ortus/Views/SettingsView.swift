@@ -72,7 +72,6 @@ struct SettingsView: View {
             }
             .padding(OrtusTheme.spacingMD)
         }
-        .scrollIndicators(.never)
         .onAppear {
             claudeCodeService.detectIfNeeded()
             // Read the real login-item state; the toggle must never guess.
