@@ -59,7 +59,9 @@ function apply(nextPolicy, connected, error = null) {
       await protectOpenTabs(rules);
     }
     await chrome.action.setBadgeText({ text: error ? '!' : rules.length ? String(new Set(rules.map(r => r.domain)).size) : '' });
-    await chrome.action.setBadgeBackgroundColor({ color: error ? '#B74327' : '#AC501A' });
+    // First Light: Persimmon badge with ink text, for both the count and the problem mark.
+    await chrome.action.setBadgeBackgroundColor({ color: '#FE701C' });
+    await chrome.action.setBadgeTextColor?.({ color: '#1C1C19' })?.catch(() => {});
     port?.postMessage({ type: 'status', state: 'ready' });
   }).catch(async error => {
     // Report enforcement errors instead of claiming that the browser is protected.

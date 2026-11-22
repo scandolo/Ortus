@@ -11,7 +11,7 @@ OUT="$PWD/Ortus-extension.zip"
 STAGE=$(mktemp -d)
 trap 'rm -rf "$STAGE"' EXIT
 
-cp BrowserExtension/*.js BrowserExtension/*.html BrowserExtension/*.css BrowserExtension/*.png "$STAGE/"
+cp BrowserExtension/*.js BrowserExtension/*.html BrowserExtension/*.css BrowserExtension/*.png BrowserExtension/*.svg BrowserExtension/*.woff2 BrowserExtension/*.txt "$STAGE/"
 python3 - BrowserExtension/manifest.json "$STAGE/manifest.json" <<'EOF'
 import json, sys
 manifest = json.load(open(sys.argv[1]))

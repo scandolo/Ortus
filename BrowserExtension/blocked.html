@@ -1,8 +1,17 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Set aside · Ortus</title><link rel="icon" type="image/png" href="icon-32.png"><link rel="stylesheet" href="style.css"></head>
+<html lang="en" data-state="locked"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ortus</title><link rel="icon" type="image/svg+xml" href="ortus-mark.svg"><link rel="stylesheet" href="style.css"></head>
 <body class="blocked"><main>
-<div class="emblem" id="emblem" title="Ortus"><svg class="mark" viewBox="0 0 48 48" aria-hidden="true"><path class="arrow" d="M24 4v12M19 9l5-5 5 5"/><path class="ray" d="M6 33h4M38 33h4M11 21l3 3M37 21l-3 3"/><path class="disc" d="M14 35a10 10 0 0 1 20 0z"/><path class="horizon" d="M6 40h36"/></svg></div>
-<h1 id="title">This website is set aside</h1>
-<p id="status" role="status" aria-live="polite" aria-atomic="true"></p>
-<button id="return" hidden>Go back</button>
+<header>
+<p class="label locked when-locked"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="3"></path><path fill="currentColor" fill-rule="evenodd" d="M4 10.5h16V22H4ZM10.8 14h2.4v4.5h-2.4Z"></path></svg><span id="label">Locked in</span></p>
+<img class="logo when-free" src="ortus-logo.svg" alt="Ortus" width="104" height="24">
+</header>
+<div class="middle">
+<h1 id="title">Not yet.</h1>
+<p><span id="status" role="status" aria-live="polite" aria-atomic="true"></span> <span id="left"></span></p>
+<button id="return" type="button" hidden>Go back</button>
+</div>
+<footer class="bottom when-locked">
+<img class="logo" src="ortus-logo-on-ink.svg" alt="Ortus" width="104" height="24">
+<p id="help"></p>
+</footer>
 </main><script type="module" src="blocked.js"></script></body></html>

@@ -36,7 +36,12 @@
         "style.css",
         "core.js",
         "icon-32.png",
-        "glyphs.js"
+        "glyphs.js",
+        "ortus-logo.svg",
+        "ortus-logo-on-ink.svg",
+        "ortus-mark.svg",
+        "archivo.woff2",
+        "archivo-black.woff2"
       ],
       "matches": [
         "http://*/*",

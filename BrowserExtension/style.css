@@ -1,81 +1,88 @@
-/* Mirrors OrtusTheme (Ortus/Views/OrtusTheme.swift): warm cream canvas with a sunrise
-   glow, white cards, SF type, capsule buttons. Bright amber is decorative only; text
-   and filled buttons use the deeper accent-ink so they stay readable. */
+/* Ortus · First Light (brand kit: projects/ortus/brand in the brain repo, tokens.json).
+   Bone is free, ink is locked: pages set <html data-state>, and "locked" switches the
+   ground to ink. Dark mode is ignored on purpose, so the state reads the same everywhere.
+   Persimmon marks the sun and the locked state only, and is never text on bone. */
+@font-face { font-family: 'Archivo'; src: url('archivo.woff2') format('woff2'); font-weight: 100 900; font-style: normal; font-display: block; }
+@font-face { font-family: 'Archivo Black'; src: url('archivo-black.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: block; }
 :root {
-  color-scheme: light dark;
-  --canvas: #f5efe8; --card: #fff; --ink: #1f1c18; --muted: #66615c;
-  --accent: #e07327; --accent-ink: #ae4e16; --accent-ink-hover: #96420f; --on-accent: #fff;
-  --hairline: rgb(0 0 0 / .08); --glow: rgb(224 115 39 / .18); --shadow: rgb(0 0 0 / .12);
+  --bone: #F2EEE8; --ink: #1C1C19; --sand: #E3DED5; --ash: #2E2D29;
+  --stone: #9A978E; --bone-muted: #5E5C55; --line-on-ink: #3A3934; --persimmon: #FE701C;
+  --ground: var(--bone); --text: var(--ink); --muted: var(--bone-muted); --focus: var(--ink);
+  --text-font: 'Archivo', -apple-system, system-ui, sans-serif;
+  --display-font: 'Archivo Black', 'Archivo', -apple-system, system-ui, sans-serif;
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --canvas: #1a1a1c; --card: #292929; --ink: #f2eee8; --muted: #b8b3a8;
-    --accent: #fa9f47; --accent-ink: #fa9f47; --accent-ink-hover: #ffb76a; --on-accent: #281b10;
-    --hairline: rgb(255 255 255 / .08); --glow: rgb(250 159 71 / .24); --shadow: rgb(0 0 0 / .4);
-  }
-}
+:root[data-state="locked"] { --ground: var(--ink); --text: var(--bone); --muted: var(--stone); --focus: var(--persimmon); color-scheme: dark; }
+:root:not([data-state="locked"]) .when-locked, :root[data-state="locked"] .when-free { display: none !important; }
 * { box-sizing: border-box; }
-body {
-  margin: 0; color: var(--ink);
-  font: 13px/1.45 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  background: linear-gradient(to bottom, var(--glow), color-mix(in srgb, var(--glow) 30%, transparent) 25%, transparent 50%) no-repeat, var(--canvas);
-  min-height: 100vh;
-}
-h1 { font-size: 22px; line-height: 1.25; font-weight: 700; margin: 0 0 6px; }
+html { background: var(--ground); }
+body { margin: 0; color: var(--text); background: var(--ground); font: 400 15px/1.45 var(--text-font); font-synthesis: none; -webkit-font-smoothing: antialiased; }
+h1, h2 { margin: 0; }
+h1 { font-family: var(--display-font); font-weight: 400; letter-spacing: -.035em; line-height: 1; }
 p { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
 p:empty { display: none; }
 [hidden] { display: none !important; }
+.logo { display: block; height: auto; }
+.label { display: flex; align-items: center; gap: 6px; font: 700 12px/1 var(--text-font); letter-spacing: 1.3px; text-transform: uppercase; color: var(--muted); }
+.label.locked { color: var(--persimmon); }
+.label .icon { width: 14px; height: 14px; flex: none; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-.mark { display: block; fill: none; stroke: var(--accent); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
-.mark .disc { fill: var(--accent); stroke: none; opacity: .75; }
-
+/* Buttons: Archivo Bold, 12 px corners, ink on bone. No shadows. */
 button {
-  font: 600 14px/1 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  border: 0; border-radius: 999px; padding: 12px 24px; cursor: pointer;
-  color: var(--on-accent); background: var(--accent-ink);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 30%, transparent);
+  font: 700 15px/1 var(--text-font); height: 44px; padding: 0 20px; border: 0; border-radius: 12px; cursor: pointer;
+  color: var(--bone); background: var(--ink); transition: background-color .15s ease-out, transform .12s ease-out;
 }
-button { transition: background-color .15s ease-out, transform .12s ease-out, box-shadow .15s ease-out; }
-button:hover { background: var(--accent-ink-hover); box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 38%, transparent); }
-button:active { transform: scale(.96); box-shadow: 0 1px 4px color-mix(in srgb, var(--accent) 30%, transparent); }
-button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+button:hover { background: var(--ash); }
+button:active { transform: scale(.98); }
+button:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 
-/* Blocked page */
-.blocked { display: grid; place-items: center; padding: 32px 20px;
-  background: radial-gradient(ellipse 60% 55% at 50% 38%, var(--glow), transparent 70%), var(--canvas); }
-.blocked main { max-width: 600px; text-align: center; }
-.emblem { width: 140px; height: 140px; margin: 0 auto 16px; display: grid; place-items: center; border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%); }
-.emblem .mark { width: 68px; height: 68px; overflow: visible; }
-.emblem { cursor: pointer; user-select: none; transition: transform .18s ease-out; }
-.emblem:hover { transform: scale(1.05); }
-.emblem:active { transform: scale(.96); }
-/* Click the mark: the sun rises, the arrow lifts, the rays and glow brighten. */
-.emblem.rise { animation: glow 1.3s ease-out; }
-.emblem.rise .disc { animation: sunrise 1.3s cubic-bezier(.2,.8,.2,1); transform-box: view-box; transform-origin: 24px 35px; }
-.emblem.rise .ray { animation: rays 1.3s cubic-bezier(.2,.8,.2,1); transform-box: view-box; transform-origin: 24px 35px; }
-.emblem.rise .arrow { animation: lift 1.3s cubic-bezier(.2,.8,.2,1); }
-@keyframes sunrise { 0% { transform: none; } 30% { transform: translateY(-6px) scale(1.18); opacity: 1; } 65% { transform: translateY(-2px) scale(1.04); } 100% { transform: none; } }
-@keyframes rays { 0% { transform: none; opacity: 1; } 30% { transform: scale(1.3); opacity: .55; } 65% { transform: scale(1.06); opacity: 1; } 100% { transform: none; } }
-@keyframes lift { 0% { transform: none; } 25% { transform: translateY(-7px); } 55% { transform: translateY(1px); } 100% { transform: none; } }
-@keyframes glow { 0% { filter: none; } 30% { filter: drop-shadow(0 0 22px color-mix(in srgb, var(--accent) 65%, transparent)); } 100% { filter: none; } }
-.blocked h1 { font-size: clamp(28px, 4.4vw, 44px); letter-spacing: -.6px; margin-bottom: 10px; }
-.blocked p { font-size: 17px; }
-.blocked button { margin-top: 28px; font-size: 15px; padding: 14px 28px; }
+/* Blocked page: label on top, the big words in the middle, logo and the way out below. */
+.blocked main {
+  min-height: 100vh; max-width: 1240px; margin: 0 auto; padding: clamp(24px, 5vw, 72px);
+  display: grid; grid-template-rows: auto 1fr auto; gap: 40px;
+}
+.blocked .label { font-size: 13px; }
+.blocked .label .icon { width: 15px; height: 15px; }
+.blocked .logo { width: clamp(92px, 8vw, 120px); }
+.blocked .middle { align-self: center; }
+.blocked h1 { font-size: clamp(64px, 8vw + 16px, 160px); line-height: .86; letter-spacing: -.05em; margin-bottom: clamp(18px, 2vw, 28px); overflow-wrap: anywhere; }
+.blocked .middle p { font-size: 20px; }
+.blocked button { height: 52px; padding: 0 28px; font-size: 17px; margin-top: clamp(28px, 3vw, 40px); }
+.blocked .bottom { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+.blocked .bottom p { font-size: 14px; text-align: right; max-width: 60ch; }
 
 /* Popup */
-.popup { width: 300px; min-height: 0; }
-.popup main { padding: 20px; }
-.brand { display: flex; align-items: center; gap: 6px; font-weight: 600; margin-bottom: 16px; }
-.brand .mark { width: 20px; height: 20px; stroke-width: 3; }
-.popup h2 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 16px 0 8px; }
-.sites { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
-.sites li { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; cursor: default;
-  background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--muted); }
+.popup { width: 300px; }
+.popup main { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.popup .logo { width: 70px; }
+.popup .headline { display: flex; flex-direction: column; gap: 6px; }
+.popup .title-row { display: flex; align-items: flex-start; gap: 8px; }
+.popup .title-row .problem { margin-top: 1px; }
+.popup h1 { font-size: 24px; letter-spacing: -.02em; }
+:root[data-state="locked"] .popup h1 { font-size: 34px; letter-spacing: -.035em; }
+.popup .headline p { font-size: 13px; }
+.problem { width: 22px; height: 22px; flex: none; color: var(--persimmon); }
+.popup section { display: flex; flex-direction: column; gap: 10px; }
+.popup h2.label { font-size: 11px; }
+.popup button { width: 100%; }
+
+/* Blocked sites: overlapping circles that fade a step each, each holding the site's mark.
+   The 2 px ring is the ground colour, so each circle cuts into the one before it. */
+.sites { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; row-gap: 6px; }
+.sites li {
+  display: grid; place-items: center; width: 34px; height: 34px; border: 2px solid var(--ground); border-radius: 50%;
+  cursor: default; color: var(--ink); background: var(--bone);
+}
+.sites li + li { margin-left: -12px; }
+.sites li:nth-child(2) { background: color-mix(in srgb, var(--bone) 84%, var(--ink)); }
+.sites li:nth-child(3) { background: color-mix(in srgb, var(--bone) 68%, var(--ink)); }
+.sites li:nth-child(4) { background: color-mix(in srgb, var(--bone) 54%, var(--ink)); }
+.sites li:nth-child(5) { background: color-mix(in srgb, var(--bone) 42%, var(--ink)); }
+.sites li:nth-child(6) { background: color-mix(in srgb, var(--bone) 32%, var(--ink)); }
+.sites li:nth-child(n+7) { background: color-mix(in srgb, var(--bone) 24%, var(--ink)); }
 .sites .glyph { width: 16px; height: 16px; }
 .sites .glyph svg { display: block; width: 16px; height: 16px; }
-.sites .glyph:empty { background: no-repeat center/14px url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%2366615c" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>'); }
-.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.popup button { width: 100%; margin-top: 16px; }
+.sites .glyph:empty { background: no-repeat center/15px url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%231C1C19" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>'); }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
