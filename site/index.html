@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ortus · The focus app that doesn't trust you</title>
+  <meta name="description" content="Ortus closes Slack, X, email and anything else you pick, and keeps them closed until your session ends. Need something? Your agent checks it for you. Free and open source.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Archivo+Black&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script src="hero.js" defer></script>
+</head>
+<body>
+<main>
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="stage">
+      <div class="curtain ba" aria-hidden="true"></div>
+
+      <header class="nav">
+        <a class="logo" href="/" aria-label="Ortus">
+          <svg viewBox="0 0 156 36" aria-hidden="true"><g transform="translate(0 2) scale(.83077)" fill="#FE701C"><path d="M3.5 26.5a22.5 22.5 0 0 1 45 0Z"></path><path d="M1.6 28.5H51L50.4 32.1H1Z"></path><path d="M9.3 35H43L42.7 36.6H9Z"></path></g></svg>
+          <svg class="blend" viewBox="0 0 156 36" aria-hidden="true"><g fill="#F2EEE8"><path d="M65.8944 3.1200Q72.7296 3.1200 76.4544 6.6144Q80.1792 10.1088 80.1792 16.7904Q80.1792 23.4720 76.4544 26.9664Q72.7296 30.4608 65.8944 30.4608Q59.0592 30.4608 55.3536 26.9856Q51.6480 23.5104 51.6480 16.7904Q51.6480 10.0704 55.3536 6.5952Q59.0592 3.1200 65.8944 3.1200ZM65.8944 9.4560Q63.1680 9.4560 61.7472 11.1072Q60.3264 12.7584 60.3264 15.5616L60.3264 18.0192Q60.3264 20.8224 61.7472 22.4736Q63.1680 24.1248 65.8944 24.1248Q68.6208 24.1248 70.0608 22.4736Q71.5008 20.8224 71.5008 18.0192L71.5008 15.5616Q71.5008 12.7584 70.0608 11.1072Q68.6208 9.4560 65.8944 9.4560Z"></path><path d="M92.8896 9.2256Q93.7728 9.2256 94.4640 9.4368Q95.1552 9.6480 95.1552 9.6864L95.1552 16.0992L92.6976 16.0992Q90.3168 16.0992 89.2608 17.3280Q88.2048 18.5568 88.2048 20.9760L88.2048 30.0000L80.5632 30.0000L80.5632 9.7248L86.8224 9.7248L87.3216 12.7968Q88.0128 11.0304 89.5104 10.1280Q91.0080 9.2256 92.8896 9.2256Z"></path><path d="M109.4016 9.7248L109.4016 14.9088L105.1008 14.9088L105.1008 22.6272Q105.1008 24.0096 105.5616 24.6432Q106.0224 25.2768 107.2512 25.2768L109.4016 25.2768L109.4016 29.7696Q108.4800 30.0768 107.0208 30.2688Q105.5616 30.4608 104.4864 30.4608Q101.1072 30.4608 99.2832 29.2320Q97.4592 28.0032 97.4592 25.0464L97.4592 14.9088L94.6176 14.9088L94.6176 9.7248L97.7664 9.7248L99.4176 3.5808L105.1008 3.5808L105.1008 9.7248Z"></path><path d="M123.9936 30.0000L123.4944 26.9280Q122.3040 28.5792 120.3648 29.5200Q118.4256 30.4608 116.2752 30.4608Q112.7424 30.4608 110.9760 28.5024Q109.2096 26.5440 109.2096 22.8576L109.2096 9.7248L116.8512 9.7248L116.8512 21.9360Q116.8512 23.2416 117.5232 24.0288Q118.1952 24.8160 119.4240 24.8160Q120.8448 24.8160 121.7280 23.8944Q122.6112 22.9728 122.6112 21.6288L122.6112 9.7248L130.2528 9.7248L130.2528 30.0000Z"></path><path d="M140.8896 9.2640Q144.9600 9.2640 147.7824 10.8576Q150.6048 12.4512 150.6048 15.7920L143.5008 15.7920Q143.5008 14.6784 142.5024 14.2176Q141.8112 13.8336 140.7744 13.8336Q138.0096 13.8336 138.0096 15.1392Q138.0096 15.8688 138.9696 16.1760Q139.9296 16.4832 142.1184 16.8288Q144.8064 17.2128 146.6112 17.7312Q148.4160 18.2496 149.7600 19.5744Q151.1040 20.8992 151.1040 23.2800Q151.1040 27.1584 148.2048 28.8096Q145.3056 30.4608 140.6208 30.4608Q137.9328 30.4608 135.5520 29.7120Q133.1712 28.9632 131.6736 27.3888Q130.1760 25.8144 130.1760 23.3952L137.2800 23.3952L137.2800 23.5488Q137.3184 24.8544 138.3744 25.3728Q139.4304 25.8912 140.6208 25.8912Q143.8080 25.8912 143.8080 24.3936Q143.8080 23.6256 142.8096 23.2800Q141.8112 22.9344 139.5456 22.5504Q136.8192 22.0896 135.0720 21.5520Q133.3248 21.0144 132.0192 19.7280Q130.7136 18.4416 130.7136 16.1376Q130.7136 12.4128 133.5360 10.8384Q136.3584 9.2640 140.8896 9.2640Z"></path></g></svg>
+        </a>
+        <nav class="links" aria-label="Main">
+          <a class="blend" href="#how-it-works">How it works</a>
+          <a class="blend" href="https://github.com/scandolo/Ortus">GitHub</a>
+          <a class="blend nav-download" href="#download">Download</a>
+        </nav>
+      </header>
+
+      <div class="intro">
+        <h1 id="hero-title"><span class="blend line1">No end button.</span><span class="blend line2">The focus app that doesn't trust you.</span></h1>
+        <p class="sub blend">Ortus closes Slack, X, email and anything else you pick, and keeps them closed until your session ends. Need something? Your agent checks it for you.</p>
+        <div class="actions">
+          <a class="cta" id="download" href="#download"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"></path></svg>Download for Mac</a>
+          <span class="note blend">Free and open source. No account.</span>
+          <span class="cue ba" aria-hidden="true">Scroll to lock in <svg viewBox="0 0 12 12" width="12" height="12"><path d="M6 1v9M2 6.5 6 10.5 10 6.5" fill="none" stroke="currentColor" stroke-width="1.6"></path></svg></span>
+        </div>
+      </div>
+
+      <div class="scene-box" role="img" aria-label="A Mac desktop full of Slack, Gmail, X and YouTube. As you scroll, the page goes dark, the windows close, and only the work stays open.">
+        <img class="wallpaper" src="assets/wallpaper.jpg" alt="">
+        <div class="dim ba"></div>
+        <div class="scene scene-desktop" aria-hidden="true">
+      <div class="ba b-w1" style="position: absolute; left: 28px; top: 34px; width: 470px; height: 360px; background: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 22px 60px rgba(0, 0, 0, 0.35); display: flex; flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif">
+      <div style="height: 30px; flex: none; display: flex; align-items: center; gap: 7px; padding: 0 12px; background: #F4F2EE; border-bottom: 1px solid rgba(28, 28, 25, 0.08)">
+      <span style="width: 11px; height: 11px; border-radius: 50%; background: #FF5F57"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #28C840"></span>
+      <span style="flex: 1; text-align: center; font-size: 12px; color: #5E5C55; margin-right: 40px">Slack · Acme</span>
+      </div>
+      <div style="flex: 1; display: flex; min-height: 0">
+      <div style="width: 146px; flex: none; background: #4A154B; color: rgba(255, 255, 255, 0.72); padding: 14px 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 7px; font-size: 13px">
+      <div style="color: #FFFFFF; font-weight: 700; font-size: 15px; margin-bottom: 6px">Acme</div>
+      <div># general</div>
+      <div style="display: flex; justify-content: space-between; color: #FFFFFF; font-weight: 700"><span># eng</span><span style="background: #E01E5A; border-radius: 9px; padding: 0 7px; font-size: 11px; line-height: 18px">12</span></div>
+      <div># design</div>
+      <div style="display: flex; justify-content: space-between; color: #FFFFFF; font-weight: 700"><span># launch</span><span style="background: #E01E5A; border-radius: 9px; padding: 0 7px; font-size: 11px; line-height: 18px">4</span></div>
+      <div style="margin-top: 8px; display: flex; justify-content: space-between; color: #FFFFFF; font-weight: 700"><span>Luca</span><span style="background: #E01E5A; border-radius: 9px; padding: 0 7px; font-size: 11px; line-height: 18px">3</span></div>
+      <div>Marta</div>
+      </div>
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+      <div style="padding: 11px 16px; border-bottom: 1px solid #ECEAE6; font-size: 15px; font-weight: 700; color: #1D1C1D"># eng</div>
+      <div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; font-size: 14px; line-height: 1.4; color: #1D1C1D">
+      <div style="display: flex; gap: 10px"><div style="width: 34px; height: 34px; flex: none; border-radius: 8px; background: #E8A87C; color: #FFFFFF; font-weight: 700; display: flex; align-items: center; justify-content: center">M</div><div><div><b>Marta</b> <span style="color: #8A8780; font-size: 12px">9:58</span></div>Deploy is red again. Can someone look before the demo?</div></div>
+      <div style="display: flex; align-items: center; gap: 8px; color: #E01E5A; font-size: 11px; font-weight: 700"><div style="flex: 1; height: 1px; background: #E01E5A"></div>New</div>
+      <div style="display: flex; gap: 10px"><div style="width: 34px; height: 34px; flex: none; border-radius: 8px; background: #7FB3D5; color: #FFFFFF; font-weight: 700; display: flex; align-items: center; justify-content: center">L</div><div><div><b>Luca</b> <span style="color: #8A8780; font-size: 12px">10:02</span></div><span style="background: #FFF3C4; color: #1264A3; padding: 0 2px">@sam</span> quick one, did you see my DM?</div></div>
+      <div style="display: flex; gap: 10px"><div style="width: 34px; height: 34px; flex: none; border-radius: 8px; background: #8FB996; color: #FFFFFF; font-weight: 700; display: flex; align-items: center; justify-content: center">P</div><div><div><b>Priya</b> <span style="color: #8A8780; font-size: 12px">10:05</span></div>Standup moved to 10:30. Also, who touched staging?</div></div>
+      </div>
+      </div>
+      </div>
+      </div>
+
+      <div class="ba b-w2" style="position: absolute; left: 540px; top: 24px; width: 400px; height: 280px; background: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 22px 60px rgba(0, 0, 0, 0.35); font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: #1F1F1F">
+      <div style="height: 30px; display: flex; align-items: center; gap: 7px; padding: 0 12px; background: #F4F2EE; border-bottom: 1px solid rgba(28, 28, 25, 0.08)">
+      <span style="width: 11px; height: 11px; border-radius: 50%; background: #FF5F57"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #28C840"></span>
+      <span style="flex: 1; text-align: center; font-size: 12px; color: #5E5C55; margin-right: 40px">mail.google.com</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px">
+      <svg viewBox="0 0 24 24" width="22" height="22" role="img" aria-label="Gmail"><path fill="#EA4335" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"></path></svg>
+      <b style="font-size: 14px">Inbox</b><span style="background: #D3E3FD; border-radius: 10px; padding: 1px 8px; font-size: 12px; font-weight: 700">1,284</span>
+      </div>
+      <div style="display: flex; flex-direction: column; font-size: 13px">
+      <div style="display: flex; gap: 10px; padding: 9px 14px; border-top: 1px solid #F1F3F4; font-weight: 700"><span style="width: 86px; flex: none">Stripe</span><span style="flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">Your invoice is overdue</span><span style="font-size: 12px">10:41</span></div>
+      <div style="display: flex; gap: 10px; padding: 9px 14px; border-top: 1px solid #F1F3F4; font-weight: 700"><span style="width: 86px; flex: none">Anna Keller</span><span style="flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">Re: Q4 plan, need your input today</span><span style="font-size: 12px">10:38</span></div>
+      <div style="display: flex; gap: 10px; padding: 9px 14px; border-top: 1px solid #F1F3F4; font-weight: 700"><span style="width: 86px; flex: none">LinkedIn</span><span style="flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">14 people viewed your profile</span><span style="font-size: 12px">10:30</span></div>
+      <div style="display: flex; gap: 10px; padding: 9px 14px; border-top: 1px solid #F1F3F4; font-weight: 700"><span style="width: 86px; flex: none">GitHub</span><span style="flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">[web-app] 3 new issues opened</span><span style="font-size: 12px">10:12</span></div>
+      <div style="display: flex; gap: 10px; padding: 9px 14px; border-top: 1px solid #F1F3F4"><span style="width: 86px; flex: none">Figma</span><span style="flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">6 new comments on Hero v3</span><span style="font-size: 12px">9:40</span></div>
+      </div>
+      </div>
+
+      <div class="ba b-w3" style="position: absolute; left: 976px; top: 56px; width: 340px; height: 400px; background: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 22px 60px rgba(0, 0, 0, 0.35); font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: #0F1419">
+      <div style="height: 30px; display: flex; align-items: center; gap: 7px; padding: 0 12px; background: #F4F2EE; border-bottom: 1px solid rgba(28, 28, 25, 0.08)">
+      <span style="width: 11px; height: 11px; border-radius: 50%; background: #FF5F57"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #28C840"></span>
+      <span style="flex: 1; text-align: center; font-size: 12px; color: #5E5C55; margin-right: 40px">x.com/home</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px 0">
+      <svg viewBox="0 0 24 24" width="18" height="18" role="img" aria-label="X"><path fill="#0F1419" d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"></path></svg>
+      <span style="font-size: 17px; font-weight: 700">Home</span>
+      </div>
+      <div style="padding: 11px; margin-top: 8px; text-align: center; color: #1D9BF0; font-size: 14px; border-top: 1px solid #EFF3F4; border-bottom: 1px solid #EFF3F4">Show 48 posts</div>
+      <div style="display: flex; flex-direction: column; font-size: 14px; line-height: 1.35">
+      <div style="display: flex; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #EFF3F4"><div style="width: 36px; height: 36px; flex: none; border-radius: 50%; background: #C9B8A6"></div><div><div><b>dan</b> <span style="color: #536471">@dan_ships · 2m</span></div>Hot take: deep work is a myth invented by people with no Slack.</div></div>
+      <div style="display: flex; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #EFF3F4"><div style="width: 36px; height: 36px; flex: none; border-radius: 50%; background: #9EB3C7"></div><div><div><b>Sara Lin</b> <span style="color: #536471">@saralin · 6m</span></div>This launch just changed everything. A thread (1/27)</div></div>
+      <div style="display: flex; gap: 10px; padding: 12px 16px"><div style="width: 36px; height: 36px; flex: none; border-radius: 50%; background: #B7C4A8"></div><div><div><b>the build guy</b> <span style="color: #536471">@buildguy · 9m</span></div>You don't need focus. You need better notifications.</div></div>
+      </div>
+      </div>
+
+      <div class="ba b-w4" style="position: absolute; left: 400px; top: 270px; width: 440px; height: 280px; background: #0F0F0F; border-radius: 12px; overflow: hidden; box-shadow: 0 26px 70px rgba(0, 0, 0, 0.45); font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif">
+      <div style="height: 30px; display: flex; align-items: center; gap: 7px; padding: 0 12px; background: #F4F2EE; border-bottom: 1px solid rgba(28, 28, 25, 0.08)">
+      <span style="width: 11px; height: 11px; border-radius: 50%; background: #FF5F57"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #28C840"></span>
+      <span style="flex: 1; text-align: center; font-size: 12px; color: #5E5C55; margin-right: 40px">youtube.com/watch</span>
+      </div>
+      <div style="position: relative; height: 190px; overflow: hidden; background: linear-gradient(135deg, #3A3836 0%, #1A1918 100%); display: flex; align-items: center; justify-content: center">
+      <svg viewBox="0 0 24 24" width="60" height="60" role="img" aria-label="Play on YouTube" style="position: relative"><path fill="#FF0000" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"></path><path fill="#FFFFFF" d="M9.545 15.568V8.432L15.818 12z"></path></svg>
+      <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255, 255, 255, 0.25)"><div style="width: 38%; height: 3px; background: #FF0000"></div></div>
+      <span style="position: absolute; left: 12px; bottom: 10px; font-size: 12px; color: #FFFFFF; font-variant-numeric: tabular-nums">17:42 / 47:12</span>
+      </div>
+      <div style="padding: 10px 14px; color: #F1F1F1">
+      <div style="font-size: 15px; font-weight: 700">I tried 30 productivity apps so you don't have to</div>
+      <div style="font-size: 12px; color: #AAAAAA; margin-top: 4px">2.1M views · Autoplay next in 5</div>
+      </div>
+      </div>
+
+      <div class="ba b-n1" style="position: absolute; left: 1002px; top: 14px; width: 322px; display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; box-sizing: border-box; background: rgba(250, 248, 244, 0.96); border-radius: 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: #1C1C19">
+      <div style="width: 30px; height: 30px; flex: none; border-radius: 7px; background: #FFFFFF; border: 1px solid #ECEAE6; display: flex; align-items: center; justify-content: center"><svg viewBox="0 0 24 24" width="17" height="17" role="img" aria-label="Slack"><path fill="#4A154B" d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"></path></svg></div>
+      <div style="flex: 1; font-size: 13px; line-height: 1.35"><div style="display: flex; justify-content: space-between"><b>Luca</b><span style="font-size: 11px; color: #8A8780">now</span></div>you there?</div>
+      </div>
+      <div class="ba b-n2" style="position: absolute; left: 1002px; top: 84px; width: 322px; display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; box-sizing: border-box; background: rgba(250, 248, 244, 0.96); border-radius: 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: #1C1C19">
+      <div style="width: 30px; height: 30px; flex: none; border-radius: 7px; background: #FFFFFF; border: 1px solid #ECEAE6; display: flex; align-items: center; justify-content: center"><svg viewBox="0 0 24 24" width="17" height="17" role="img" aria-label="Gmail"><path fill="#EA4335" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"></path></svg></div>
+      <div style="flex: 1; font-size: 13px; line-height: 1.35"><div style="display: flex; justify-content: space-between"><b>Anna Keller</b><span style="font-size: 11px; color: #8A8780">now</span></div>Re: Q4 plan, need your input today</div>
+      </div>
+
+      <div class="ba b-work" style="position: absolute; left: 292px; top: 40px; width: 760px; height: 470px; background: #F2EEE8; color: #1C1C19; border-radius: 12px; overflow: hidden; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5); opacity: 0">
+      <div style="height: 30px; display: flex; align-items: center; gap: 7px; padding: 0 12px; background: #E3DED5">
+      <span style="width: 11px; height: 11px; border-radius: 50%; background: #FF5F57"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #28C840"></span>
+      <span style="flex: 1; text-align: center; font-size: 12px; color: #5E5C55; margin-right: 40px">activation-plan.md</span>
+      </div>
+      <div style="padding: 34px 48px; display: flex; flex-direction: column; gap: 14px; font-size: 16px; line-height: 1.6">
+      <div style="font-family: 'Archivo Black', Archivo, sans-serif; font-size: 28px; line-height: 1.1; letter-spacing: -0.03em">Fix activation before Q1</div>
+      <div>42% of new signups never finish setup. Everything else on the roadmap waits until that number moves.</div>
+      <div style="font-weight: 700; font-size: 18px; margin-top: 6px">This week</div>
+      <div>Cut setup from six steps to two. Ship the import flow. Kill the empty dashboard.</div>
+      <div>Draft to the team by Thursday.<span style="display: inline-block; width: 2px; height: 20px; margin-left: 2px; vertical-align: -4px; background: #1C1C19"></span></div>
+      </div>
+      </div>
+
+        </div>
+        <div class="scene scene-mobile" aria-hidden="true">
+      <div class="ba b-w1" style="position: absolute; left: 10px; top: 46px; width: 236px; height: 196px; background: #FFFFFF; border-radius: 10px; overflow: hidden; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35); display: flex; flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif">
+      <div style="height: 22px; flex: none; display: flex; align-items: center; gap: 5px; padding: 0 9px; background: #F4F2EE"><span style="width: 8px; height: 8px; border-radius: 50%; background: #FF5F57"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #28C840"></span></div>
+      <div style="flex: 1; display: flex; min-height: 0">
+      <div style="width: 74px; flex: none; background: #4A154B; color: rgba(255, 255, 255, 0.72); padding: 9px 7px; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px; font-size: 10px">
+      <div style="color: #FFFFFF; font-weight: 700; font-size: 11px">Acme</div>
+      <div style="display: flex; justify-content: space-between; color: #FFFFFF; font-weight: 700"><span># eng</span><span style="background: #E01E5A; border-radius: 6px; padding: 0 4px; font-size: 9px">12</span></div>
+      <div># design</div>
+      <div style="display: flex; justify-content: space-between; color: #FFFFFF; font-weight: 700"><span>Luca</span><span style="background: #E01E5A; border-radius: 6px; padding: 0 4px; font-size: 9px">3</span></div>
+      </div>
+      <div style="flex: 1; padding: 9px; display: flex; flex-direction: column; gap: 8px; font-size: 11px; line-height: 1.35; color: #1D1C1D">
+      <b># eng</b>
+      <div><b>Marta</b> Deploy is red again. Can someone look?</div>
+      <div><b>Luca</b> <span style="background: #FFF3C4; color: #1264A3">@sam</span> did you see my DM?</div>
+      </div>
+      </div>
+      </div>
+
+      <div class="ba b-w2" style="position: absolute; left: 132px; top: 26px; width: 224px; height: 150px; background: #FFFFFF; border-radius: 10px; overflow: hidden; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35); font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: #1F1F1F">
+      <div style="height: 22px; display: flex; align-items: center; gap: 5px; padding: 0 9px; background: #F4F2EE"><span style="width: 8px; height: 8px; border-radius: 50%; background: #FF5F57"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #28C840"></span></div>
+      <div style="display: flex; align-items: center; gap: 6px; padding: 7px 10px; font-size: 11px"><svg viewBox="0 0 24 24" width="14" height="14" role="img" aria-label="Gmail"><path fill="#EA4335" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"></path></svg><b>Inbox</b><span style="background: #D3E3FD; border-radius: 7px; padding: 0 5px; font-size: 10px; font-weight: 700">1,284</span></div>
+      <div style="font-size: 10.5px">
+      <div style="padding: 5px 10px; border-top: 1px solid #F1F3F4; font-weight: 700">Stripe · Invoice overdue</div>
+      <div style="padding: 5px 10px; border-top: 1px solid #F1F3F4; font-weight: 700">Anna · Q4 plan, need input</div>
+      <div style="padding: 5px 10px; border-top: 1px solid #F1F3F4; font-weight: 700">LinkedIn · 14 profile views</div>
+      </div>
+      </div>
+
+      <div class="ba b-w3" style="position: absolute; left: 172px; top: 198px; width: 184px; height: 240px; background: #FFFFFF; border-radius: 10px; overflow: hidden; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35); font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: #0F1419">
+      <div style="height: 22px; display: flex; align-items: center; gap: 5px; padding: 0 9px; background: #F4F2EE"><span style="width: 8px; height: 8px; border-radius: 50%; background: #FF5F57"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #28C840"></span></div>
+      <div style="display: flex; align-items: center; gap: 7px; padding: 8px 10px 0"><svg viewBox="0 0 24 24" width="13" height="13" role="img" aria-label="X"><path fill="#0F1419" d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"></path></svg><b style="font-size: 12px">Home</b></div>
+      <div style="padding: 7px; margin-top: 6px; text-align: center; color: #1D9BF0; font-size: 11px; border-top: 1px solid #EFF3F4; border-bottom: 1px solid #EFF3F4">Show 48 posts</div>
+      <div style="display: flex; gap: 7px; padding: 8px 10px; font-size: 10.5px; line-height: 1.35; border-bottom: 1px solid #EFF3F4"><div style="width: 24px; height: 24px; flex: none; border-radius: 50%; background: #C9B8A6"></div><div><b>dan</b> Hot take: deep work is a myth invented by people with no Slack.</div></div>
+      <div style="display: flex; gap: 7px; padding: 8px 10px; font-size: 10.5px; line-height: 1.35; border-bottom: 1px solid #EFF3F4"><div style="width: 24px; height: 24px; flex: none; border-radius: 50%; background: #9EB3C7"></div><div><b>Sara Lin</b> This launch just changed everything. (1/27)</div></div>
+      <div style="display: flex; gap: 7px; padding: 8px 10px; font-size: 10.5px; line-height: 1.35"><div style="width: 24px; height: 24px; flex: none; border-radius: 50%; background: #B7C4A8"></div><div><b>the build guy</b> You don't need focus. You need better notifications.</div></div>
+      </div>
+
+      <div class="ba b-w4" style="position: absolute; left: 16px; top: 262px; width: 214px; height: 150px; background: #0F0F0F; border-radius: 10px; overflow: hidden; box-shadow: 0 18px 46px rgba(0, 0, 0, 0.45); font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif">
+      <div style="height: 22px; display: flex; align-items: center; gap: 5px; padding: 0 9px; background: #F4F2EE"><span style="width: 8px; height: 8px; border-radius: 50%; background: #FF5F57"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #28C840"></span></div>
+      <div style="position: relative; height: 98px; overflow: hidden; background: linear-gradient(135deg, #3A3836 0%, #1A1918 100%); display: flex; align-items: center; justify-content: center">
+      <svg viewBox="0 0 24 24" width="34" height="34" role="img" aria-label="Play on YouTube" style="position: relative"><path fill="#FF0000" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"></path><path fill="#FFFFFF" d="M9.545 15.568V8.432L15.818 12z"></path></svg>
+      <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255, 255, 255, 0.25)"><div style="width: 38%; height: 3px; background: #FF0000"></div></div>
+      </div>
+      <div style="padding: 6px 9px; color: #F1F1F1; font-size: 10.5px; font-weight: 700; line-height: 1.3">I tried 30 productivity apps so you don't have to</div>
+      </div>
+
+      <div class="ba b-n1" style="position: absolute; left: 34px; top: 8px; width: 300px; display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; box-sizing: border-box; background: rgba(250, 248, 244, 0.96); border-radius: 12px; box-shadow: 0 10px 26px rgba(0, 0, 0, 0.3); font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: #1C1C19">
+      <div style="width: 24px; height: 24px; flex: none; border-radius: 6px; background: #FFFFFF; border: 1px solid #ECEAE6; display: flex; align-items: center; justify-content: center"><svg viewBox="0 0 24 24" width="13" height="13" role="img" aria-label="Slack"><path fill="#4A154B" d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"></path></svg></div>
+      <div style="flex: 1; font-size: 11.5px; line-height: 1.3"><div style="display: flex; justify-content: space-between"><b>Luca</b><span style="font-size: 10px; color: #8A8780">now</span></div>you there?</div>
+      </div>
+      <div class="ba b-n2" style="position: absolute; left: 34px; top: 60px; width: 300px; display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; box-sizing: border-box; background: rgba(250, 248, 244, 0.96); border-radius: 12px; box-shadow: 0 10px 26px rgba(0, 0, 0, 0.3); font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: #1C1C19">
+      <div style="width: 24px; height: 24px; flex: none; border-radius: 6px; background: #FFFFFF; border: 1px solid #ECEAE6; display: flex; align-items: center; justify-content: center"><svg viewBox="0 0 24 24" width="13" height="13" role="img" aria-label="Gmail"><path fill="#EA4335" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"></path></svg></div>
+      <div style="flex: 1; font-size: 11.5px; line-height: 1.3"><div style="display: flex; justify-content: space-between"><b>Anna Keller</b><span style="font-size: 10px; color: #8A8780">now</span></div>Re: Q4 plan, need your input today</div>
+      </div>
+
+      <div class="ba b-work" style="position: absolute; left: 16px; top: 34px; width: 334px; height: 360px; background: #F2EEE8; color: #1C1C19; border-radius: 10px; overflow: hidden; opacity: 0">
+      <div style="height: 24px; display: flex; align-items: center; gap: 5px; padding: 0 9px; background: #E3DED5"><span style="width: 8px; height: 8px; border-radius: 50%; background: #FF5F57"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #28C840"></span><span style="flex: 1; text-align: center; font-size: 10px; color: #5E5C55; margin-right: 26px">activation-plan.md</span></div>
+      <div style="padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; line-height: 1.55">
+      <div style="font-family: 'Archivo Black', Archivo, sans-serif; font-size: 20px; line-height: 1.1; letter-spacing: -0.03em">Fix activation before Q1</div>
+      <div>42% of new signups never finish setup. Everything else on the roadmap waits until that number moves.</div>
+      <div style="font-weight: 700; font-size: 14px">This week</div>
+      <div>Cut setup from six steps to two. Ship the import flow.</div>
+      <div>Draft to the team by Thursday.<span style="display: inline-block; width: 2px; height: 16px; margin-left: 2px; vertical-align: -3px; background: #1C1C19"></span></div>
+      </div>
+      </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,125 @@
+/* Ortus landing page. First Light: bone ground, ink type, Persimmon only on the
+   sun, the locked state and Download. Source of truth: the brand kit (tokens.json). */
+:root {
+  --bone: #F2EEE8;
+  --ink: #1C1C19;
+  --sand: #E3DED5;
+  --stone: #9A978E;
+  --bone-muted: #5E5C55;
+  --persimmon: #FE701C;
+  --display: "Archivo Black", "Arial Black", system-ui, sans-serif;
+  --text: "Archivo", system-ui, -apple-system, sans-serif;
+  --gutter: clamp(20px, 5.5vw, 80px);
+  --scene-gutter: clamp(12px, 3.3vw, 48px);
+}
+
+* { box-sizing: border-box; }
+html { background: var(--ink); }
+body { margin: 0; background: var(--ink); color: var(--ink); font-family: var(--text); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+a:focus-visible { outline: 3px solid var(--persimmon); outline-offset: 3px; border-radius: 6px; }
+
+/* ---------- Hero: one tall section, the stage sticks while the page scrolls ---------- */
+.hero { height: 250vh; view-timeline: --hero block; }
+.stage {
+  position: sticky; top: 0; height: 100vh; height: 100svh; overflow: clip;
+  display: flex; flex-direction: column; background: var(--bone);
+}
+.curtain { position: absolute; inset: 0; background: var(--ink); clip-path: inset(0 0 100% 0); }
+
+/* Text flips from ink to bone exactly where the curtain edge passes. */
+.blend { mix-blend-mode: difference; }
+
+.nav {
+  position: relative; display: flex; align-items: center; justify-content: space-between;
+  padding: 28px var(--gutter) 0; height: 68px;
+}
+.logo { position: relative; display: block; width: 122px; height: 28px; }
+.logo svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.links { display: flex; align-items: center; gap: 28px; font-size: 14px; font-weight: 600; }
+.links a.blend { color: var(--bone); }
+.nav-download {
+  height: 34px; padding: 0 14px; display: inline-flex; align-items: center;
+  border-radius: 10px; background: var(--bone); color: var(--ink) !important; font-size: 13px; font-weight: 700;
+}
+
+.intro { position: relative; padding: clamp(28px, 7.5vh, 68px) var(--gutter) 0; }
+.intro h1 { margin: 0; font-family: var(--display); font-weight: 400; letter-spacing: -0.035em; font-size: clamp(40px, 4.2vw, 60px); line-height: 1.02; }
+.intro h1 span { display: block; letter-spacing: -0.035em; }
+.line1 { color: var(--bone); }
+.line2 { color: var(--stone); }
+.sub { margin: 18px 0 0; max-width: 600px; font-size: 17px; line-height: 1.45; color: var(--bone); }
+.actions { margin-top: 28px; display: flex; align-items: center; gap: 18px; }
+.cta {
+  height: 52px; padding: 0 22px; display: inline-flex; align-items: center; gap: 10px;
+  background: var(--persimmon); color: var(--ink); border-radius: 12px; font-size: 16px; font-weight: 700;
+}
+.cta svg { width: 17px; height: 17px; }
+.note { font-size: 14px; color: var(--stone); }
+.cue { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--bone-muted); }
+
+.scene-box {
+  position: relative; flex: 1; min-height: 0; overflow: hidden;
+  margin: clamp(24px, 4.6vh, 42px) var(--scene-gutter) 0;
+  border-radius: 18px 18px 0 0; background: #2B2621; box-shadow: 0 30px 80px rgba(28, 28, 25, 0.22);
+}
+.wallpaper { position: absolute; inset: -24px; width: calc(100% + 48px); height: calc(100% + 48px); object-fit: cover; filter: blur(6px); }
+.dim { position: absolute; inset: 0; background: #000; opacity: 0; }
+.scene { position: absolute; left: 0; top: 0; transform-origin: top left; transform: scale(var(--s, 1)); }
+.scene-desktop { width: 1344px; height: 560px; }
+.scene-mobile { width: 366px; height: 460px; display: none; }
+
+@media (max-width: 719px) {
+  .nav { padding: 19px 20px 0; height: 50px; }
+  .logo { width: 100px; height: 23px; }
+  .links a.blend:not(.nav-download) { display: none; }
+  .nav-download { height: 30px; padding: 0 12px; font-size: 12px; border-radius: 9px; }
+  .intro { padding: 22px 20px 0; }
+  .intro h1 .line1 { font-size: 46px; line-height: 0.98; }
+  .intro h1 .line2 { margin-top: 8px; font-size: 22px; line-height: 1.12; }
+  .sub { margin-top: 14px; font-size: 15px; }
+  .actions { margin-top: 20px; flex-direction: column; align-items: stretch; gap: 10px; }
+  .cta { justify-content: center; height: 50px; }
+  .note { text-align: center; font-size: 13px; }
+  .cue { margin: 2px 0 0; justify-content: center; font-size: 12px; }
+  .scene-box { margin: 24px 12px 0; border-radius: 16px 16px 0 0; }
+  .scene-desktop { display: none; }
+  .scene-mobile { display: block; }
+}
+
+/* ---------- Motion: page scroll drives one timeline, 0% clutter, 100% clarity ---------- */
+.ba {
+  animation-duration: auto; animation-timing-function: linear; animation-fill-mode: both;
+  animation-timeline: --hero; animation-range: contain 0% contain 100%;
+}
+/* Browsers without scroll-driven animations: hero.js sets --p from the scroll position. */
+@supports not (animation-timeline: view()) {
+  .ba { animation-duration: 1s; animation-play-state: paused; animation-delay: calc(var(--p, 0) * -0.999s); }
+}
+@media (prefers-reduced-motion: reduce) { .ba { animation: none !important; } }
+
+.curtain { animation-name: bCurtain; }
+.dim { animation-name: bDim; }
+.cue { animation-name: bCue; }
+.b-n1 { animation-name: bN1; }
+.b-n2 { animation-name: bN2; }
+.b-w1 { animation-name: bW1; }
+.b-w2 { animation-name: bW2; }
+.b-w3 { animation-name: bW3; }
+.b-w4 { animation-name: bW4; }
+.b-work { animation-name: bWork, bGlow; }
+
+@keyframes bCurtain { 0%, 22% { clip-path: inset(0 0 100% 0); } 56%, 100% { clip-path: inset(0 0 0 0); } }
+@keyframes bDim { 0%, 37% { opacity: 0; } 61%, 100% { opacity: .85; } }
+@keyframes bCue { 0%, 5% { opacity: 1; } 12%, 100% { opacity: 0; } }
+@keyframes bN1 { 0%, 5% { opacity: 1; transform: none; } 15%, 100% { opacity: 0; transform: translateY(-16px); } }
+@keyframes bN2 { 0%, 7% { opacity: 1; transform: none; } 17%, 100% { opacity: 0; transform: translateY(-16px); } }
+@keyframes bW1 { 0%, 29% { opacity: 1; transform: none; filter: brightness(1); } 46%, 100% { opacity: 0; transform: translateY(46px) scale(.96); filter: brightness(.2); } }
+@keyframes bW2 { 0%, 33% { opacity: 1; transform: none; filter: brightness(1); } 50%, 100% { opacity: 0; transform: translateY(46px) scale(.96); filter: brightness(.2); } }
+@keyframes bW3 { 0%, 37% { opacity: 1; transform: none; filter: brightness(1); } 54%, 100% { opacity: 0; transform: translateY(46px) scale(.96); filter: brightness(.2); } }
+@keyframes bW4 { 0%, 40% { opacity: 1; transform: none; filter: brightness(1); } 57%, 100% { opacity: 0; transform: translateY(46px) scale(.96); filter: brightness(.2); } }
+@keyframes bWork { 0%, 61% { opacity: 0; transform: translateY(24px); } 78%, 100% { opacity: 1; transform: none; } }
+@keyframes bGlow {
+  0%, 68% { box-shadow: 0 30px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(254,112,28,0), 0 0 0 rgba(254,112,28,0); }
+  88%, 100% { box-shadow: 0 30px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(254,112,28,.55), 0 0 90px rgba(254,112,28,.28); }
+}
