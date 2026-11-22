@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { effectiveRules, matchingRule, networkRules, originalURL, validDomain, siteGroups, connectionMessage, offlineMessage } from '../core.js';
+import { effectiveRules, matchingRule, networkRules, originalURL, validDomain, siteGroups, connectionMessage, offlineMessage, timeLeft } from '../core.js';
 import { glyph } from '../glyphs.js';
 
 const policy = { schemaVersion: 1, generatedAt: 100, heartbeatExpiresAt: 120, rules: [{ domain: 'linkedin.com', expiresAt: 150 }] };
@@ -70,4 +70,13 @@ test('custom website glyphs recognize services, subdomains and aliases without l
   assert.equal(glyph('discord.gg'), glyph('Discord'));
   assert.equal(glyph('t.me'), glyph('Telegram'));
   for (const unknown of ['example.com', 'constructor', '__proto__', null]) assert.equal(glyph(unknown), '');
+});
+
+test('time left rounds up to whole minutes and never reads zero', () => {
+  assert.equal(timeLeft(48 * 60), '48 minutes');
+  assert.equal(timeLeft(47 * 60 + 1), '48 minutes');
+  assert.equal(timeLeft(20), '1 minute');
+  assert.equal(timeLeft(-5), '1 minute');
+  assert.equal(timeLeft(60 * 60), '1 hour');
+  assert.equal(timeLeft(125 * 60), '2 hours 5 minutes');
 });
