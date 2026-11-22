@@ -107,6 +107,8 @@ struct OrtusApp: App {
 
     // Runs before the state objects above are created, so they read the copied preferences.
     init() {
+        // Archivo and Archivo Black, before any view draws.
+        OrtusFont.register()
         // Before anything reads Slack credentials. A failed move leaves the file
         // in place and load keeps using it, so a launch never drops the token.
         KeychainService.migrateLegacyFileIfNeeded()
@@ -177,32 +179,37 @@ struct OrtusApp: App {
         .menuBarExtraStyle(.window)
     }
 
-    /// During focus, the icon plus a countdown, like the system Clock timer.
+    /// The brand tile: outlined when free, filled with the mark cut out when locked, plus
+    /// the time left, like the system Clock timer. One colour, so the states differ by shape.
     @ViewBuilder private var menuBarIcon: some View {
         if let closing = focusManager.websites.closingBrowser {
             // Redrawn each second by menuBarClock, like the focus countdown.
             let time = FocusView.formatDuration(max(0, closing.closesAt.timeIntervalSince(menuBarClock.now)))
-            Image(nsImage: Self.countdownImage("\(closing.name) \(time)", symbol: "exclamationmark.triangle.fill",
+            Image(nsImage: Self.countdownImage("\(closing.name) \(time)", icon: .warning,
                                                description: "\(closing.name) closes in \(time)"))
         } else if focusManager.isInFocus, let end = focusManager.focusEndTime {
             Image(nsImage: Self.countdownImage(FocusView.formatDuration(max(0, end.timeIntervalSince(menuBarClock.now)))))
-        } else if BuildProfile.isPreview {
-            Image(nsImage: Self.countdownImage(nil, symbol: focusManager.isInFocus ? "sunrise.fill" : "sunrise", description: "Ortus Preview"))
         } else {
-            Image(systemName: focusManager.isInFocus ? "sunrise.fill" : "sunrise")
+            Image(nsImage: Self.countdownImage(nil, icon: focusManager.isInFocus ? .locked : .free, description: BuildProfile.name))
         }
     }
+
+    enum MenuBarIcon { case free, locked, warning }
 
     /// The menu bar drops font modifiers from a label's Text, so proportional digits
     /// would nudge every item to its left each second. Render it as one template image
     /// instead (the label shows only its first Image) to keep monospaced digits.
-    private static func countdownImage(_ time: String?, symbol: String = "sunrise.fill", description: String? = nil) -> NSImage {
-        let renderer = ImageRenderer(content: HStack(spacing: 4) {
-            Image(systemName: symbol)
+    private static func countdownImage(_ time: String?, icon: MenuBarIcon = .locked, description: String? = nil) -> NSImage {
+        let renderer = ImageRenderer(content: HStack(spacing: 5) {
+            switch icon {
+            case .free: OrtusMenuBarTile(locked: false)
+            case .locked: OrtusMenuBarTile(locked: true)
+            case .warning: OrtusIcon(.warn, size: 15).foregroundStyle(Color.black)
+            }
             if let time { Text(time).monospacedDigit() }
             // A preview is marked so it can't be mistaken for the installed release.
             if BuildProfile.isPreview { Text("P").fontWeight(.bold) }
-        }.font(.system(size: NSFont.menuBarFont(ofSize: 0).pointSize)))
+        }.foregroundStyle(Color.black).font(.system(size: NSFont.menuBarFont(ofSize: 0).pointSize)))
         renderer.scale = NSScreen.main?.backingScaleFactor ?? 2
         let image = renderer.nsImage ?? NSImage()
         image.isTemplate = true
@@ -216,7 +223,8 @@ struct OrtusApp: App {
     private func openDebugWindowIfRequested() {
         // The panel snapshots don't include the menu bar icon, so save it separately.
         if let directory = ProcessInfo.processInfo.environment["ORTUS_SNAPSHOT_DIR"] {
-            for (name, image) in [("menubar-idle", Self.countdownImage(nil, symbol: "sunrise")), ("menubar-focus", Self.countdownImage("47:25"))] {
+            for (name, image) in [("menubar-idle", Self.countdownImage(nil, icon: .free)), ("menubar-focus", Self.countdownImage("47:25")),
+                                  ("menubar-closing", Self.countdownImage("Arc 0:41", icon: .warning))] {
                 guard let tiff = image.tiffRepresentation, let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) else { continue }
                 try? png.write(to: URL(fileURLWithPath: directory).appendingPathComponent(name + ".png"))
             }

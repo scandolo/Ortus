@@ -38,7 +38,7 @@ struct SlackStatusPreview: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
-                .strokeBorder(OrtusTheme.hairline, lineWidth: 1)
+                .strokeBorder(OrtusTheme.line, lineWidth: 1)
         )
         .overlay(alignment: .topTrailing) {
             Text("Slack preview")

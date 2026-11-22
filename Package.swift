@@ -18,7 +18,7 @@ let package = Package(
                 .product(name: "PostHog", package: "posthog-ios"),
             ],
             path: "Ortus",
-            exclude: ["Info.plist", "Ortus.entitlements"],
+            exclude: ["Info.plist", "Ortus.entitlements", "Fonts"],
             resources: [.process("Assets.xcassets")]
         ),
     ]

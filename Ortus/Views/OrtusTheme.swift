@@ -1,159 +1,94 @@
 import AppKit
+import CoreText
 import SwiftUI
 
-// MARK: - Design System
+// MARK: - Design System: First Light
 //
 // ┌─────────────────────────────────────────────────────────────────────┐
-// │  ORTUS VISUAL GUIDELINES — Sunrise palette + lifted cards          │
-// │  The browser extension (BrowserExtension/style.css) and the landing │
-// │  page (landing/styles.css) mirror these tokens. Change all three.   │
-// │                                                                     │
-// │  1. CARDS LIFT: cardSurface is lighter than the canvas in light and │
-// │     dark mode. ortusCard() for content, OrtusGroup for lists.       │
-// │                                                                     │
-// │  2. ACCENT: bright amber (accent) is decoration only: timer ring,   │
-// │     glow, emblem. Text and filled buttons use accentInk (≥4.5:1).   │
-// │     Muted text uses textMuted, never system secondary grey.         │
-// │                                                                     │
-// │  3. SHAPE: continuous corners; capsules for buttons.                │
-// │                                                                     │
-// │  4. ROWS: every list item is OrtusListRow (icon, title, one status  │
-// │     line, one control) inside an OrtusGroup, hairline between rows. │
-// │                                                                     │
-// │  5. BUTTONS: OrtusPrimaryButtonStyle (one CTA per view),            │
-// │     OrtusSecondaryButtonStyle, OrtusGhostButtonStyle (text actions), │
-// │     OrtusRowButtonStyle for a row's control (role: .destructive).   │
-// │                                                                     │
-// │  6. SETUP FLOWS: OrtusModal with OrtusStepRow steps.                │
-// │                                                                     │
-// │  7. TYPE: section headers are uppercase tracked; titles 22 bold;    │
-// │     body 13; status lines 12. Hero timer is SF Rounded.             │
-// │                                                                     │
-// │  8. TOKENS: use only OrtusTheme spacing/radius/color tokens.        │
+// │  ORTUS VISUAL RULES (brand kit: brain/projects/ortus/brand/)         │
+// │  The browser extension (BrowserExtension/style.css) and the website  │
+// │  (landing/styles.css) use the same tokens. Change all three.         │
+// │                                                                      │
+// │  1. BONE IS FREE, INK IS LOCKED. The panel ignores macOS dark mode.  │
+// │     ContentView sets colorScheme .light when free and .dark during   │
+// │     a session, so every token below resolves to bone or ink. Never   │
+// │     read the system appearance.                                      │
+// │                                                                      │
+// │  2. ORANGE IS RARE. Persimmon marks the sun, the locked state and at │
+// │     most one action per screen. Never text on bone (2.4:1).          │
+// │     Problems use the persimmon warning triangle (OrtusProblemIcon).  │
+// │                                                                      │
+// │  3. ONE TYPE FAMILY. Archivo Black (OrtusFont.display) for big words │
+// │     and numbers, 28 pt and up. Archivo for everything else, buttons  │
+// │     in 700. Never Archivo Black in a button.                         │
+// │                                                                      │
+// │  4. SQUIRCLES FOR WHAT YOU TOUCH, STRAIGHT LINES FOR STRUCTURE.      │
+// │     Buttons and tiles 12, cards 18. Dividers and progress bars are   │
+// │     straight, square-ended lines. No shadows, glows or gradients.    │
+// │                                                                      │
+// │  5. ROWS: OrtusListRow inside an OrtusGroup, full-width lines        │
+// │     between rows. BUTTONS: OrtusPrimaryButtonStyle (one per view),   │
+// │     OrtusSecondaryButtonStyle, OrtusRowButtonStyle (2 pt outline),   │
+// │     OrtusGhostButtonStyle (underlined text).                         │
+// │                                                                      │
+// │  6. ICONS: OrtusIcon, solid shapes with real cut-outs, 24 grid.      │
+// │     Inactive icons take the muted colour.                            │
+// │                                                                      │
+// │  7. VOICE: stoic, blunt, short. "Lock in" is the verb. No cheering,  │
+// │     no exclamation marks, no "AI" (say "agent").                     │
 // └─────────────────────────────────────────────────────────────────────┘
 
 enum OrtusTheme {
-    // MARK: Colors — Accent (sunrise amber, adaptive light/dark)
+    // MARK: Brand colours (fixed)
 
-    /// Warm sunrise amber. The colour of the rising sun on the horizon.
-    static let accent = Color(nsColor: NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            ? NSColor(red: 0.98, green: 0.62, blue: 0.28, alpha: 1)   // #FA9F47 — bright in dark
-            : NSColor(red: 0.88, green: 0.45, blue: 0.15, alpha: 1)   // #E07327 — saturated in light
-    })
+    static let bone = Color(hex: 0xF2EEE8)
+    static let ink = Color(hex: 0x1C1C19)
+    static let sand = Color(hex: 0xE3DED5)
+    static let ash = Color(hex: 0x2E2D29)
+    static let stone = Color(hex: 0x9A978E)
+    static let boneMuted = Color(hex: 0x5E5C55)
+    static let lineOnInk = Color(hex: 0x3A3934)
+    static let persimmon = Color(hex: 0xFE701C)
+    static let white = Color.white
 
-    static let accentSoft = Color(nsColor: NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            ? NSColor(red: 0.98, green: 0.62, blue: 0.28, alpha: 0.24)
-            : NSColor(red: 0.88, green: 0.45, blue: 0.15, alpha: 0.18)
-    })
+    // MARK: Roles (free / locked)
 
-    static let accentHover = Color(nsColor: NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            ? NSColor(red: 1.00, green: 0.72, blue: 0.42, alpha: 1)
-            : NSColor(red: 0.76, green: 0.36, blue: 0.10, alpha: 1)
-    })
+    /// The panel ground: bone when free, ink when locked.
+    static let canvas = dynamic(free: 0xF2EEE8, locked: 0x1C1C19)
+    /// Cards and modal sheets: white on bone, ash on ink.
+    static let cardSurface = dynamic(free: 0xFFFFFF, locked: 0x2E2D29)
+    /// Secondary buttons, chips, fields and the tab bar: sand on bone, ash on ink.
+    static let fill = dynamic(free: 0xE3DED5, locked: 0x2E2D29)
+    /// A box inside a card: bone inside white, ink inside ash.
+    static let inset = dynamic(free: 0xF2EEE8, locked: 0x1C1C19)
+    /// Chips and avatars inside a card: sand in white, ink in ash.
+    static let cardChip = dynamic(free: 0xE3DED5, locked: 0x1C1C19)
+    /// Dividers and progress tracks.
+    static let line = dynamic(free: 0xE3DED5, locked: 0x3A3934)
+    /// Text and icons.
+    static let text = dynamic(free: 0x1C1C19, locked: 0xF2EEE8)
+    /// Muted text and inactive icons: bone muted on bone, stone on ink.
+    static let textMuted = dynamic(free: 0x5E5C55, locked: 0x9A978E)
+    /// The primary button and selected states: ink on bone, bone on ink.
+    static let strong = dynamic(free: 0x1C1C19, locked: 0xF2EEE8)
+    /// Text and icons on `strong`.
+    static let onStrong = dynamic(free: 0xF2EEE8, locked: 0x1C1C19)
+    /// The sun, the locked state, one action per screen.
+    static let accent = persimmon
+    /// Text on persimmon.
+    static let onAccent = ink
+    /// The dim behind a modal.
+    static let scrim = dynamic(free: 0x1C1C19, locked: 0x1C1C19, freeAlpha: 0.42, lockedAlpha: 0.55)
 
-    /// Accent for text and filled controls. The bright amber above is for decoration
-    /// (timer ring, glow, emblem); on light surfaces it is too pale to carry text, so
-    /// labels and filled buttons use this deeper burnt orange (at least 4.5:1).
-    static let accentInk = adaptive(dark: (0.98, 0.62, 0.28), light: (0.68, 0.31, 0.09))      // #FA9F47 / #AE4E16
-    static let accentInkHover = adaptive(dark: (1.00, 0.72, 0.42), light: (0.59, 0.26, 0.06)) // #FFB76A / #96420F
-    /// Solid text colour for marks drawn as shapes; matches the extension's --ink.
-    /// The panel's vibrancy washes out `.primary` on filled shapes.
-    static let ink = adaptive(dark: (0.95, 0.93, 0.91), light: (0.12, 0.11, 0.09))                 // #F2EEE8 / #1F1C18
-    /// Text and icons placed on an `accentInk` fill.
-    static let onAccent = adaptive(dark: (0.16, 0.11, 0.06), light: (1, 1, 1))
-
-    private static func adaptive(dark: (CGFloat, CGFloat, CGFloat), light: (CGFloat, CGFloat, CGFloat)) -> Color {
+    /// Resolves through the SwiftUI colour scheme, which ContentView pins to the lock state.
+    private static func dynamic(free: UInt32, locked: UInt32, freeAlpha: CGFloat = 1, lockedAlpha: CGFloat = 1) -> Color {
         Color(nsColor: NSColor(name: nil) { appearance in
-            let c = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
-            return NSColor(red: c.0, green: c.1, blue: c.2, alpha: 1)
+            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                ? NSColor(hex: locked, alpha: lockedAlpha) : NSColor(hex: free, alpha: freeAlpha)
         })
     }
 
-    /// Twilight indigo — a deep evening-sky companion accent for emphasis and badges.
-    static let twilight = Color(nsColor: NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            ? NSColor(red: 0.55, green: 0.60, blue: 0.95, alpha: 1)
-            : NSColor(red: 0.32, green: 0.36, blue: 0.72, alpha: 1)
-    })
-
-    // MARK: Colors — Semantic
-
-    static let warning = Color(nsColor: NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            ? NSColor(red: 0.95, green: 0.78, blue: 0.40, alpha: 1)
-            : NSColor(red: 0.78, green: 0.55, blue: 0.20, alpha: 1)
-    })
-
-    /// Deep ember — the colour of a sunset's last burning edge. The destructive
-    /// counterpart to `accent`: same warm family, hue-shifted toward red so it
-    /// reads as "stop / careful" without breaking the sunrise palette.
-    static let danger = Color(nsColor: NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            ? NSColor(red: 0.96, green: 0.44, blue: 0.28, alpha: 1)   // #F47147 — bright ember in dark
-            : NSColor(red: 0.74, green: 0.26, blue: 0.12, alpha: 1)   // #BD431F — burnt sienna in light
-    })
-
-    /// Calm sage — the colour of post-sunrise vegetation. Used for "all clear / connected" states.
-    static let success = Color(nsColor: NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            ? NSColor(red: 0.52, green: 0.78, blue: 0.58, alpha: 1)
-            : NSColor(red: 0.28, green: 0.52, blue: 0.36, alpha: 1)
-    })
-
-    // MARK: Colors — Surfaces
-
-    /// Popover canvas. SOLID adaptive color — does not let the desktop wallpaper bleed through
-    /// in light mode. This is what fixes the "weird tint depending on what's behind the menu bar"
-    /// problem with vibrant materials.
-    static let canvas = Color(nsColor: NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            ? NSColor(red: 0.10, green: 0.10, blue: 0.11, alpha: 1.0)   // #1A1A1C — warm near-black
-            : NSColor(red: 0.96, green: 0.94, blue: 0.91, alpha: 1.0)   // #F5EFE8 — warm cream
-    })
-
-    /// Card / elevated surface. Sits ON the canvas with a clear contrast step.
-    /// Light: pure white. Dark: slightly-lifted dark gray. Both fully opaque.
-    static let cardSurface = Color(nsColor: NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            ? NSColor(red: 0.16, green: 0.16, blue: 0.18, alpha: 1.0)   // #292929 — lifted dark
-            : NSColor(red: 1.00, green: 1.00, blue: 1.00, alpha: 1.0)   // pure white
-    })
-
-    /// Nested input surface — recessed below the card. Subtly darker than the card,
-    /// not jarring, but enough to read as "input field".
-    static let inputSurface = Color(nsColor: NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            ? NSColor(red: 0.08, green: 0.08, blue: 0.09, alpha: 1.0)   // deeper than card
-            : NSColor(red: 0.94, green: 0.92, blue: 0.88, alpha: 1.0)   // warm pale gray
-    })
-
-    /// Inner highlight — gives surfaces a thin top edge of light. Only meaningful in dark mode.
-    static let innerHighlight = Color(nsColor: NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            ? NSColor.white.withAlphaComponent(0.10)
-            : NSColor.white.withAlphaComponent(0.0)
-    })
-    static let innerHighlightStrong = Color.white.opacity(0.20)
-
-    /// Thin border on cards / inputs.
-    static let hairline = Color(nsColor: NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            ? NSColor.white.withAlphaComponent(0.08)
-            : NSColor.black.withAlphaComponent(0.08)
-    })
-
-    // MARK: Colors — Text
-
-    static let textMuted = Color(nsColor: NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            ? NSColor(red: 0.72, green: 0.70, blue: 0.66, alpha: 1)
-            : NSColor(red: 0.40, green: 0.38, blue: 0.36, alpha: 1)
-    })
-
-    // MARK: Spacing (4pt grid)
+    // MARK: Spacing (4 pt grid)
 
     static let spacingXS: CGFloat = 4
     static let spacingSM: CGFloat = 8
@@ -161,251 +96,373 @@ enum OrtusTheme {
     static let spacingLG: CGFloat = 22
     static let spacingXL: CGFloat = 32
 
-    /// Height of the primary CTA (17pt line + 2×12 padding). Secondary buttons and the
-    /// chat bar match it so the pinned bottom actions line up across tabs.
-    static let controlHeight: CGFloat = 41
+    /// Button heights: small (row actions), medium, large (the one primary).
+    static let controlHeightSM: CGFloat = 34
+    static let controlHeight: CGFloat = 44
+    static let controlHeightLG: CGFloat = 52
 
-    // MARK: Corner Radii (continuous everywhere)
+    // MARK: Corner radii (continuous)
 
     static let radiusSM: CGFloat = 8
     static let radiusMD: CGFloat = 12
     static let radiusLG: CGFloat = 18
-    static let radiusXL: CGFloat = 26
+    static let radiusXL: CGFloat = 22
 
-    // MARK: - Typography Scale
+    // MARK: Type scale
     //
-    // The ONLY type tokens any view should use. Every Text/Label in every view
-    // must reach for one of these. No raw .system(size:) or .caption / .subheadline
-    // / .headline shortcuts — that's what produced the size drift across screens.
+    // The only type tokens a view should use.
 
     enum Typo {
-        /// 54pt rounded light — the focus timer. One per app.
-        static let hero        = Font.system(size: 54, weight: .light, design: .rounded)
-
-        /// 30pt rounded medium — emphasis numbers (e.g. countdown ring secondary).
-        static let display     = Font.system(size: 30, weight: .medium, design: .rounded)
-
-        /// 22pt bold — primary screen titles ("Ready when you are", "No schedules yet").
-        static let title       = Font.system(size: 22, weight: .bold)
-
-        /// 15pt semibold — card titles, list-row primaries ("Focus Time", "Connected to Acme").
-        static let headline    = Font.system(size: 15, weight: .semibold)
-
-        /// 13pt regular — paragraphs, descriptions, helper text.
-        static let body        = Font.system(size: 13, weight: .regular)
-
-        /// 13pt medium — body that needs a touch more emphasis (toggle labels, input labels).
-        static let bodyMedium  = Font.system(size: 13, weight: .medium)
-
-        /// 12pt regular — secondary lines under headlines (schedule day summary, timestamps).
-        static let caption     = Font.system(size: 12, weight: .regular)
-
-        /// 11pt medium — small metadata (footer text, expirations, "1 schedule active").
-        static let meta        = Font.system(size: 11, weight: .medium)
-
-        /// 11pt bold uppercase — section headers. Use with .tracking(1.4).
-        static let section     = Font.system(size: 11, weight: .bold)
-
-        /// 11pt rounded semibold — pill badges ("Slack: Ortus mode", "+15 min").
-        static let badge       = Font.system(size: 11, weight: .semibold, design: .rounded)
-
-        /// 13pt semibold — button text.
-        static let button      = Font.system(size: 13, weight: .semibold)
-
-        /// 14pt semibold — primary CTA button text.
-        static let buttonPrimary = Font.system(size: 14, weight: .semibold)
+        /// The session timer.
+        static let hero = OrtusFont.display(104)
+        /// The grace countdown.
+        static let countdown = OrtusFont.display(120)
+        /// Big numbers inside cards ("90 min", a verification code).
+        static let display = OrtusFont.display(34)
+        /// Screen headings ("Ready when you are").
+        static let title = OrtusFont.display(34)
+        /// Secondary screen headings ("Ask your agent.").
+        static let titleSmall = OrtusFont.display(30)
+        /// Modal titles that make a statement ("No end button.").
+        static let sheetTitle = OrtusFont.display(26)
+        /// Modal titles for setup forms ("Connect Slack").
+        static let sheetTitleSmall = OrtusFont.text(19, .bold)
+        /// Card titles ("Focus Time").
+        static let cardTitle = OrtusFont.text(17, .bold)
+        /// Row titles and emphasis.
+        static let headline = OrtusFont.text(15, .semibold)
+        /// Running text: paragraphs, chat answers.
+        static let body = OrtusFont.text(15)
+        /// Body that needs more weight.
+        static let bodyMedium = OrtusFont.text(15, .medium)
+        /// Smaller paragraphs in modals.
+        static let callout = OrtusFont.text(14)
+        /// Status lines under titles.
+        static let caption = OrtusFont.text(13)
+        /// Small metadata.
+        static let meta = OrtusFont.text(12)
+        /// Uppercase labels. Use with .tracking(1.3).
+        static let section = OrtusFont.text(11, .bold)
+        /// Small badges and counts.
+        static let badge = OrtusFont.text(12, .bold)
+        /// Medium buttons.
+        static let button = OrtusFont.text(15, .bold)
+        /// Small buttons.
+        static let buttonSmall = OrtusFont.text(13, .bold)
+        /// The large primary button.
+        static let buttonPrimary = OrtusFont.text(17, .bold)
     }
 }
 
-// MARK: - Card (lifted glass surface)
+// MARK: - Fonts
+
+/// Archivo and Archivo Black, bundled in Contents/Resources/Fonts (copied by build.sh).
+/// Without the bundle (a bare `swift run`), SwiftUI falls back to the system font.
+enum OrtusFont {
+    enum Weight { case regular, medium, semibold, bold, extraBold }
+
+    /// Call once at launch, before any view draws.
+    static func register() {
+        guard let directory = Bundle.main.resourceURL?.appendingPathComponent("Fonts", isDirectory: true),
+              let files = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else { return }
+        for url in files where ["woff2", "ttf", "otf"].contains(url.pathExtension) {
+            CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+        }
+    }
+
+    static let displayName = "ArchivoBlack-Regular"
+
+    /// The named instances of the Archivo variable font.
+    static func name(_ weight: Weight) -> String {
+        switch weight {
+        case .regular: "ArchivoRoman-Regular"
+        case .medium: "ArchivoRoman-Medium"
+        case .semibold: "ArchivoSemiBold-Regular"
+        case .bold: "ArchivoRoman-Bold"
+        case .extraBold: "ArchivoRoman-ExtraBold"
+        }
+    }
+
+    static func display(_ size: CGFloat) -> Font { .custom(displayName, fixedSize: size) }
+    static func text(_ size: CGFloat, _ weight: Weight = .regular) -> Font { .custom(name(weight), fixedSize: size) }
+
+    /// For AppKit text views.
+    static func nsText(_ size: CGFloat, _ weight: Weight = .regular) -> NSFont {
+        NSFont(name: name(weight), size: size) ?? .systemFont(ofSize: size, weight: weight == .regular ? .regular : weight == .medium ? .medium : .bold)
+    }
+}
+
+extension Color {
+    init(hex: UInt32, alpha: Double = 1) {
+        self.init(.sRGB, red: Double((hex >> 16) & 0xFF) / 255, green: Double((hex >> 8) & 0xFF) / 255,
+                  blue: Double(hex & 0xFF) / 255, opacity: alpha)
+    }
+}
+
+extension NSColor {
+    convenience init(hex: UInt32, alpha: CGFloat = 1) {
+        self.init(srgbRed: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255,
+                  blue: CGFloat(hex & 0xFF) / 255, alpha: alpha)
+    }
+}
+
+// MARK: - On a card
+
+private struct OnCardKey: EnvironmentKey { static let defaultValue = false }
+extension EnvironmentValues {
+    /// True inside a card or sheet. Fills that are ash on the ink ground (secondary
+    /// buttons, fields, switch tracks) turn ink there, so they don't vanish into the ash card.
+    var ortusOnCard: Bool {
+        get { self[OnCardKey.self] }
+        set { self[OnCardKey.self] = newValue }
+    }
+}
+
+extension OrtusTheme {
+    /// Secondary buttons, fields and switch tracks: `fill` on the ground, `cardChip` on a card.
+    static func controlFill(onCard: Bool) -> Color { onCard ? cardChip : fill }
+}
+
+// MARK: - Free / locked
+
+extension View {
+    /// Pins the panel to bone (free) or ink (locked), whatever macOS is set to. Also sets
+    /// the hosting window's appearance, so AppKit controls inside (text fields, text
+    /// views, scrollers) resolve the same colours.
+    func ortusLockAppearance(locked: Bool) -> some View {
+        environment(\.colorScheme, locked ? .dark : .light)
+            .background(WindowAppearance(locked: locked))
+    }
+}
+
+private struct WindowAppearance: NSViewRepresentable {
+    let locked: Bool
+
+    final class Probe: NSView {
+        var appearanceName: NSAppearance.Name = .aqua {
+            didSet { apply() }
+        }
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            apply()
+        }
+        private func apply() {
+            guard let window, window.appearance?.name != appearanceName else { return }
+            window.appearance = NSAppearance(named: appearanceName)
+        }
+    }
+
+    func makeNSView(context: Context) -> Probe { Probe() }
+    func updateNSView(_ view: Probe, context: Context) {
+        view.appearanceName = locked ? .darkAqua : .aqua
+    }
+}
+
+// MARK: - Card
 
 struct OrtusCardModifier: ViewModifier {
-    var tinted: Color? = nil
-
+    var padding: CGFloat = OrtusTheme.spacingMD
     func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous)
-        return content
+        content
+            .environment(\.ortusOnCard, true)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(OrtusTheme.spacingMD)
-            .background(shape.fill(OrtusTheme.cardSurface))
-            .background(shape.fill((tinted ?? .clear).opacity(0.10)))
-            .overlay(shape.strokeBorder(OrtusTheme.hairline, lineWidth: 1))
-            .overlay(
-                // Top-edge highlight — visible in dark mode (gives lit-from-above feel),
-                // invisible in light mode where the hairline carries the definition.
-                shape.strokeBorder(
-                    LinearGradient(
-                        colors: [OrtusTheme.innerHighlight, .clear],
-                        startPoint: .top,
-                        endPoint: .center
-                    ),
-                    lineWidth: 1
-                )
-            )
-            .clipShape(shape)
-            .shadow(color: .black.opacity(0.12), radius: 14, y: 5)
-            .shadow(color: .black.opacity(0.05), radius: 2, y: 1)
+            .padding(padding)
+            .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).fill(OrtusTheme.cardSurface))
     }
 }
 
 extension View {
-    func ortusCard() -> some View {
-        modifier(OrtusCardModifier())
-    }
-
-    func ortusCard(tint: Color) -> some View {
-        modifier(OrtusCardModifier(tinted: tint))
+    func ortusCard(padding: CGFloat = OrtusTheme.spacingMD) -> some View {
+        modifier(OrtusCardModifier(padding: padding))
     }
 }
 
-// MARK: - Primary Button (warm amber CTA)
+// MARK: - Buttons
 
-struct OrtusPrimaryButtonStyle: ButtonStyle {
+enum OrtusButtonSize {
+    case small, medium, large
+    var height: CGFloat { switch self { case .small: OrtusTheme.controlHeightSM; case .medium: OrtusTheme.controlHeight; case .large: OrtusTheme.controlHeightLG } }
+    var padding: CGFloat { switch self { case .small: 12; case .medium: 18; case .large: 24 } }
+    var font: Font { switch self { case .small: OrtusTheme.Typo.buttonSmall; case .medium: OrtusTheme.Typo.button; case .large: OrtusTheme.Typo.buttonPrimary } }
+}
+
+/// The squircle every button shares; the styles below only pick its colours.
+private struct OrtusButtonBody: View {
+    let configuration: ButtonStyleConfiguration
+    let size: OrtusButtonSize
+    let background: Color
+    let foreground: Color
+    var outline: Color? = nil
+    var sun = false
+    var fullWidth = false
     @Environment(\.isEnabled) private var isEnabled
     @State private var isHovering = false
 
-    func makeBody(configuration: Configuration) -> some View {
-        let pressed = configuration.isPressed
-        let active = isHovering || pressed
-        return configuration.label
-            .font(OrtusTheme.Typo.buttonPrimary)
-            .foregroundStyle(OrtusTheme.onAccent)
-            .padding(.horizontal, 24)
-            .padding(.vertical, 12)
-            .background(
-                Capsule()
-                    .fill(active ? OrtusTheme.accentInkHover : OrtusTheme.accentInk)
-            )
-            .overlay(
-                Capsule()
-                    .strokeBorder(OrtusTheme.innerHighlightStrong, lineWidth: 1)
-            )
-            .clipShape(Capsule())
-            .shadow(color: OrtusTheme.accent.opacity(active ? 0.50 : 0.30), radius: active ? 14 : 8, y: active ? 4 : 2)
-            .opacity(isEnabled ? 1 : 0.45)
-            .scaleEffect(pressed ? 0.96 : 1.0)
-            .animation(.easeOut(duration: 0.14), value: pressed)
-            .animation(.easeOut(duration: 0.18), value: isHovering)
-            .onHover { isHovering = $0 }
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
+        HStack(spacing: 9) {
+            if sun { OrtusMark(width: size == .large ? 20 : 16, color: OrtusTheme.accent) }
+            configuration.label
+        }
+        .frame(maxWidth: fullWidth ? .infinity : nil)
+        .font(size.font)
+        .lineLimit(1)
+        .foregroundStyle(foreground)
+        .padding(.horizontal, size.padding)
+        .frame(minHeight: size.height)
+        .background(shape.fill(background))
+        .overlay { if let outline { shape.strokeBorder(outline, lineWidth: 2) } }
+        .contentShape(shape)
+        .opacity(!isEnabled ? 0.35 : isHovering || configuration.isPressed ? 0.86 : 1)
+        .scaleEffect(configuration.isPressed && isEnabled ? 0.98 : 1)
+        .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+        .animation(.easeOut(duration: 0.15), value: isHovering)
+        .onHover { isHovering = $0 }
     }
 }
 
-// MARK: - Secondary Button (glass capsule)
+/// The one primary action per screen: ink on bone, bone on ink. `sun` puts the
+/// persimmon mark before the label ("Lock in · 90 min").
+struct OrtusPrimaryButtonStyle: ButtonStyle {
+    var size: OrtusButtonSize = .medium
+    var sun = false
+    var fullWidth = false
+    func makeBody(configuration: Configuration) -> some View {
+        OrtusButtonBody(configuration: configuration, size: size, background: OrtusTheme.strong, foreground: OrtusTheme.onStrong,
+                        sun: sun, fullWidth: fullWidth)
+    }
+}
 
+/// Sand on bone, ash on ink.
 struct OrtusSecondaryButtonStyle: ButtonStyle {
-    @State private var isHovering = false
-
+    var size: OrtusButtonSize = .medium
+    var fullWidth = false
     func makeBody(configuration: Configuration) -> some View {
-        let pressed = configuration.isPressed
-        let active = isHovering || pressed
-        return configuration.label
-            .font(OrtusTheme.Typo.button)
-            .foregroundStyle(.primary)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
-            .frame(minHeight: OrtusTheme.controlHeight)
-            .background(Capsule().fill(OrtusTheme.cardSurface))
-            .background(Capsule().fill(active ? Color.primary.opacity(0.06) : .clear))
-            .overlay(
-                Capsule().strokeBorder(OrtusTheme.hairline, lineWidth: 1)
-            )
-            .clipShape(Capsule())
-            .scaleEffect(pressed ? 0.96 : 1.0)
-            .animation(.easeOut(duration: 0.14), value: pressed)
-            .animation(.easeOut(duration: 0.18), value: isHovering)
-            .onHover { isHovering = $0 }
+        SecondaryBody(configuration: configuration, size: size, fullWidth: fullWidth)
+    }
+
+    private struct SecondaryBody: View {
+        let configuration: ButtonStyleConfiguration
+        let size: OrtusButtonSize
+        let fullWidth: Bool
+        @Environment(\.ortusOnCard) private var onCard
+        var body: some View {
+            OrtusButtonBody(configuration: configuration, size: size, background: OrtusTheme.controlFill(onCard: onCard),
+                            foreground: OrtusTheme.text, fullWidth: fullWidth)
+        }
     }
 }
 
-// MARK: - Ghost Button (borderless)
+/// A row's trailing action: 2 pt outline in the text colour.
+struct OrtusRowButtonStyle: ButtonStyle {
+    var role: ButtonRole? = nil
+    func makeBody(configuration: Configuration) -> some View {
+        OrtusButtonBody(configuration: configuration, size: .small, background: .clear, foreground: OrtusTheme.text, outline: OrtusTheme.text)
+    }
+}
 
+/// Text actions: underlined, in the text colour.
 struct OrtusGhostButtonStyle: ButtonStyle {
-    @State private var isHovering = false
-
+    var size: OrtusButtonSize = .small
     func makeBody(configuration: Configuration) -> some View {
-        let pressed = configuration.isPressed
-        let active = isHovering || pressed
-        return configuration.label
-            .font(OrtusTheme.Typo.button)
-            .foregroundStyle(active ? OrtusTheme.accentInkHover : OrtusTheme.accentInk)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 7)
-            .background(
-                Capsule().fill(active ? Color.primary.opacity(0.06) : .clear)
-            )
-            .clipShape(Capsule())
-            .scaleEffect(pressed ? 0.96 : 1.0)
-            .animation(.easeOut(duration: 0.14), value: pressed)
-            .animation(.easeOut(duration: 0.18), value: isHovering)
-            .onHover { isHovering = $0 }
+        GhostBody(configuration: configuration, size: size)
+    }
+
+    private struct GhostBody: View {
+        let configuration: ButtonStyleConfiguration
+        let size: OrtusButtonSize
+        @Environment(\.isEnabled) private var isEnabled
+        @State private var isHovering = false
+        var body: some View {
+            configuration.label
+                .font(size.font)
+                .underline(true, pattern: .solid)
+                .foregroundStyle(OrtusTheme.text)
+                .padding(.horizontal, 6)
+                .frame(minHeight: size == .small ? 28 : size.height)
+                .contentShape(Rectangle())
+                .opacity(!isEnabled ? 0.35 : isHovering || configuration.isPressed ? 0.7 : 1)
+                .onHover { isHovering = $0 }
+        }
     }
 }
 
-// MARK: - Text Field (nested input — slightly recessed)
+// MARK: - Toggle
+
+/// A squircle switch: ink (bone) or persimmon (ink) when on, sand or ash when off.
+struct OrtusToggleStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        ToggleBody(configuration: configuration)
+    }
+
+    private struct ToggleBody: View {
+        let configuration: ToggleStyleConfiguration
+        @Environment(\.colorScheme) private var scheme
+        @Environment(\.isEnabled) private var isEnabled
+        @Environment(\.ortusOnCard) private var onCard
+        var body: some View {
+            let locked = scheme == .dark
+            let on = configuration.isOn
+            let track = on ? (locked ? OrtusTheme.accent : OrtusTheme.ink) : OrtusTheme.controlFill(onCard: onCard)
+            let knob = on || locked ? OrtusTheme.bone : OrtusTheme.white
+            Button { configuration.isOn.toggle() } label: {
+                ZStack(alignment: on ? .trailing : .leading) {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous).fill(track)
+                    RoundedRectangle(cornerRadius: 6, style: .continuous).fill(knob)
+                        .frame(width: 19, height: 19).padding(3)
+                }
+                .frame(width: 42, height: 25)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .opacity(isEnabled ? 1 : 0.4)
+            .animation(.easeOut(duration: 0.15), value: on)
+            .accessibilityElement()
+            .accessibilityAddTraits(.isButton)
+            .accessibilityValue(on ? "On" : "Off")
+        }
+    }
+}
+
+// MARK: - Text field
 
 struct OrtusTextFieldStyle: TextFieldStyle {
+    var monospaced = false
     @FocusState private var isFocused: Bool
+    @Environment(\.ortusOnCard) private var onCard
 
     func _body(configuration: TextField<Self._Label>) -> some View {
         let shape = RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
         return configuration
             .textFieldStyle(.plain)
-            .font(OrtusTheme.Typo.body)
+            .font(monospaced ? .system(size: 14, design: .monospaced) : OrtusFont.text(15, .medium))
+            .foregroundStyle(OrtusTheme.text)
             .padding(.horizontal, 14)
-            .padding(.vertical, 10)
+            .frame(minHeight: OrtusTheme.controlHeight)
             .focused($isFocused)
-            .background(shape.fill(OrtusTheme.inputSurface))
-            .overlay(
-                shape.strokeBorder(isFocused ? OrtusTheme.accent : OrtusTheme.hairline, lineWidth: isFocused ? 1.5 : 1)
-            )
-            .clipShape(shape)
-            .shadow(color: isFocused ? OrtusTheme.accent.opacity(0.30) : .clear, radius: 4, y: 0)
-            .animation(.easeOut(duration: 0.18), value: isFocused)
+            .background(shape.fill(OrtusTheme.controlFill(onCard: onCard)))
+            .overlay(shape.strokeBorder(OrtusTheme.text.opacity(isFocused ? 1 : 0), lineWidth: 2))
+            .animation(.easeOut(duration: 0.15), value: isFocused)
     }
 }
 
-// MARK: - Floating Toolbar (bottom input bars)
-
-struct OrtusFloatingToolbarModifier: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .padding(.horizontal, OrtusTheme.spacingMD)
-            .padding(.vertical, OrtusTheme.spacingSM)
-            .background(Capsule().fill(OrtusTheme.cardSurface))
-            .overlay(
-                Capsule().strokeBorder(OrtusTheme.hairline, lineWidth: 1)
-            )
-            .clipShape(Capsule())
-            .shadow(color: .black.opacity(0.12), radius: 14, y: 4)
-            .padding(.horizontal, OrtusTheme.spacingMD)
-            .padding(.bottom, OrtusTheme.spacingSM)
-    }
-}
-
-extension View {
-    func ortusFloatingToolbar() -> some View {
-        modifier(OrtusFloatingToolbarModifier())
-    }
-}
-
-// MARK: - Empty State
+// MARK: - Empty state
 
 struct OrtusEmptyState: View {
-    let icon: String
+    let icon: OrtusIcon.Name
     let title: String
     let message: String
 
     var body: some View {
         VStack(spacing: OrtusTheme.spacingMD) {
             Spacer()
-            Image(systemName: icon)
-                .font(.system(size: 44, weight: .light))
-                .foregroundStyle(OrtusTheme.accent)
-                .symbolRenderingMode(.hierarchical)
+            OrtusIcon(icon, size: 36).foregroundStyle(OrtusTheme.text)
             Text(title)
-                .font(OrtusTheme.Typo.title)
+                .font(OrtusTheme.Typo.titleSmall)
+                .tracking(-1)
+                .multilineTextAlignment(.center)
             Text(message)
-                .font(OrtusTheme.Typo.body)
+                .font(OrtusTheme.Typo.callout)
                 .foregroundStyle(OrtusTheme.textMuted)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, OrtusTheme.spacingLG)
@@ -417,40 +474,60 @@ struct OrtusEmptyState: View {
     }
 }
 
-// MARK: - Popover Background
+// MARK: - Panel background
 
-/// Solid adaptive canvas for the MenuBarExtra popover, with a subtle sunrise-glow gradient
-/// at the top for warmth. Does NOT use NSVisualEffectView — translucent materials let the
-/// desktop wallpaper bleed through and shift the popover's color unpredictably. A solid
-/// canvas keeps the appearance consistent regardless of what's behind the menu bar.
+/// The solid ground of the panel: bone or ink. No material, so the wallpaper never
+/// tints it.
 struct VibrantBackground: View {
     var body: some View {
-        ZStack {
-            OrtusTheme.canvas
-            // Subtle warm glow at the top — the "first light on a horizon" cue.
-            LinearGradient(
-                colors: [
-                    OrtusTheme.accentSoft.opacity(0.5),
-                    OrtusTheme.accentSoft.opacity(0.15),
-                    .clear
-                ],
-                startPoint: .top,
-                endPoint: .center
-            )
-        }
-        .ignoresSafeArea()
+        OrtusTheme.canvas.ignoresSafeArea()
     }
 }
 
-// MARK: - Section Header
+// MARK: - Section header
 
 struct OrtusSectionHeader: View {
     let title: String
+    var color: Color = OrtusTheme.textMuted
 
     var body: some View {
         Text(title.uppercased())
             .font(OrtusTheme.Typo.section)
-            .tracking(1.4)
-            .foregroundStyle(OrtusTheme.textMuted)
+            .tracking(1.3)
+            .foregroundStyle(color)
+    }
+}
+
+// MARK: - The line
+
+/// A straight, square-ended progress bar: a persimmon bar over a thin track.
+struct OrtusLineProgress: View {
+    let fraction: Double
+    var height: CGFloat = 12
+    var trackHeight: CGFloat = 4
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .leading) {
+                Rectangle().fill(OrtusTheme.line).frame(height: trackHeight)
+                Rectangle().fill(OrtusTheme.accent)
+                    .frame(width: max(0, min(1, fraction)) * proxy.size.width, height: height)
+            }
+            .frame(maxHeight: .infinity)
+        }
+        .frame(height: height)
+        .accessibilityElement()
+        .accessibilityValue("\(Int((max(0, min(1, fraction)) * 100).rounded())) percent")
+    }
+}
+
+// MARK: - Problem marker
+
+/// A problem: the persimmon warning triangle with the bang cut out. Counts as the
+/// screen's one orange.
+struct OrtusProblemIcon: View {
+    var size: CGFloat = 22
+    var body: some View {
+        OrtusIcon(.warn, size: size).foregroundStyle(OrtusTheme.accent).accessibilityLabel("Problem")
     }
 }

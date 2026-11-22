@@ -43,7 +43,10 @@ mv "$STAGING/OrtusBrowserBridge" "$APP/Contents/MacOS/OrtusBrowserBridge"
 chmod +x "$APP/Contents/MacOS/Ortus" "$APP/Contents/MacOS/OrtusBrowserBridge"
 cp Ortus/Info.plist "$APP/Contents/Info.plist"
 mkdir -p "$APP/Contents/Resources/BrowserExtension"
-cp BrowserExtension/*.js BrowserExtension/*.html BrowserExtension/*.css BrowserExtension/*.png BrowserExtension/manifest.json BrowserExtension/identity.json "$APP/Contents/Resources/BrowserExtension/"
+cp BrowserExtension/*.js BrowserExtension/*.html BrowserExtension/*.css BrowserExtension/*.png BrowserExtension/*.svg BrowserExtension/*.woff2 BrowserExtension/*.txt BrowserExtension/manifest.json BrowserExtension/identity.json "$APP/Contents/Resources/BrowserExtension/"
+# Archivo and Archivo Black (SIL Open Font License), registered at launch by OrtusFont.
+mkdir -p "$APP/Contents/Resources/Fonts"
+cp Ortus/Fonts/* "$APP/Contents/Resources/Fonts/"
 # SwiftPM resource bundles may be consulted by the app or a dependency at runtime.
 for RESOURCE in "$BIN_DIR"/*.bundle; do
     [[ -d "$RESOURCE" ]] && cp -R "$RESOURCE" "$APP/Contents/Resources/"

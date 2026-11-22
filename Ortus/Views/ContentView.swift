@@ -18,10 +18,10 @@ struct ContentView: View {
     /// clipping bounds out of sync during presentation.
     private static let designSize = CGSize(width: 420, height: 560)
 
-    private let tabs: [(String, String, Int)] = [
-        ("Focus", "sunrise.fill", 0),
-        ("Schedule", "calendar", 1),
-        ("Chat", "bubble.left.fill", 2),
+    private let tabs: [(String, OrtusIcon.Name, Int)] = [
+        ("Focus", .focus, 0),
+        ("Schedule", .schedule, 1),
+        ("Chat", .chat, 2),
     ]
 
     var body: some View {
@@ -42,8 +42,12 @@ struct ContentView: View {
             .transition(.opacity)
         }
         .frame(width: size.width, height: size.height)
+        .foregroundStyle(OrtusTheme.text)
+        .font(OrtusTheme.Typo.body)
         .background(VibrantBackground())
         .overlay { modal }
+        // Bone while free, ink while locked, whatever macOS is set to.
+        .ortusLockAppearance(locked: focusManager.isInFocus)
         .onAppear {
             claudeCodeService.detectIfNeeded()
             Task { await updateService.checkForUpdates() }
@@ -64,8 +68,9 @@ struct ContentView: View {
             FocusIntroModal(selection: selection, minutes: minutes, onConfirm: onConfirm)
         case let .modeEditor(mode, onSave): ModeEditor(mode: mode, onSave: onSave)
         case .endFocusEarly:
-            OrtusAlert(title: "End focus early?", message: "Everything unlocks now. You can do this once a week.",
-                       confirm: "End focus", onCancel: { router.modal = nil }) {
+            OrtusAlert(title: "End focus early?",
+                       message: "Everything unlocks now. You have 1 early end left this week.",
+                       cancel: "Keep going", confirm: "End now", onCancel: { router.modal = nil }) {
                 router.modal = nil
                 focusManager.emergencyEndFocusSession()
             }
@@ -97,18 +102,15 @@ struct ContentView: View {
                 }
             }
 
-            SettingsGearButton(isSelected: selectedTab == 3) {
+            SettingsTabButton(isSelected: selectedTab == 3) {
                 withAnimation(.easeOut(duration: 0.18)) { selectedTab = 3 }
             }
         }
         .padding(4)
-        .background(Capsule().fill(OrtusTheme.cardSurface))
-        .overlay(Capsule().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
-        .clipShape(Capsule())
-        .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(OrtusTheme.fill))
         .padding(.horizontal, OrtusTheme.spacingMD)
-        .padding(.top, OrtusTheme.spacingLG)
-        .padding(.bottom, OrtusTheme.spacingSM)
+        .padding(.top, 14)
+        .padding(.bottom, 2)
     }
 }
 
@@ -116,7 +118,7 @@ struct ContentView: View {
 
 private struct TabButton: View {
     let title: String
-    let icon: String
+    let icon: OrtusIcon.Name
     let isSelected: Bool
     let action: () -> Void
 
@@ -124,33 +126,29 @@ private struct TabButton: View {
 
     var body: some View {
         Button(action: action) {
-            Label(title, systemImage: icon)
-                .labelStyle(.titleAndIcon)
-                .font(OrtusTheme.Typo.bodyMedium)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 4)
-                .background(
-                    Capsule()
-                        .fill(isSelected ? OrtusTheme.accent.opacity(0.18) : (isHovering ? Color.primary.opacity(0.05) : .clear))
-                )
-                .overlay(
-                    Capsule()
-                        .strokeBorder(isSelected ? OrtusTheme.accent.opacity(0.30) : .clear, lineWidth: 1)
-                )
-                .clipShape(Capsule())
-                .contentShape(Capsule())
-                .foregroundStyle(isSelected ? OrtusTheme.accentInk : OrtusTheme.textMuted)
+            HStack(spacing: 7) {
+                OrtusIcon(icon, size: 16)
+                Text(title).font(OrtusFont.text(13, isSelected ? .bold : .semibold))
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 36)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(isSelected ? OrtusTheme.strong : (isHovering ? OrtusTheme.text.opacity(0.06) : .clear))
+            )
+            .contentShape(Rectangle())
+            .foregroundStyle(isSelected ? OrtusTheme.onStrong : OrtusTheme.textMuted)
         }
         .buttonStyle(OrtusPressableStyle(highlight: false))
         .accessibilityLabel(title)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .onHover { isHovering = $0 }
     }
 }
 
-// MARK: - Settings Gear
+// MARK: - Settings
 
-private struct SettingsGearButton: View {
+private struct SettingsTabButton: View {
     let isSelected: Bool
     let action: () -> Void
 
@@ -158,23 +156,18 @@ private struct SettingsGearButton: View {
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: isSelected ? "gearshape.fill" : "gearshape")
-                .font(.system(size: 14, weight: .medium))
-                .frame(width: 38, height: 32)
+            OrtusIcon(.settings, size: 16)
+                .frame(width: 44, height: 36)
                 .background(
-                    Capsule()
-                        .fill(isSelected ? OrtusTheme.accent.opacity(0.18) : (isHovering ? Color.primary.opacity(0.05) : .clear))
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(isSelected ? OrtusTheme.strong : (isHovering ? OrtusTheme.text.opacity(0.06) : .clear))
                 )
-                .overlay(
-                    Capsule()
-                        .strokeBorder(isSelected ? OrtusTheme.accent.opacity(0.30) : .clear, lineWidth: 1)
-                )
-                .clipShape(Capsule())
-                .contentShape(Capsule())
-                .foregroundStyle(isSelected ? OrtusTheme.accentInk : OrtusTheme.textMuted)
+                .contentShape(Rectangle())
+                .foregroundStyle(isSelected ? OrtusTheme.onStrong : OrtusTheme.textMuted)
         }
         .buttonStyle(OrtusPressableStyle(highlight: false))
         .accessibilityLabel("Settings")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .onHover { isHovering = $0 }
     }
 }

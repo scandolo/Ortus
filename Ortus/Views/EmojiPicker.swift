@@ -28,7 +28,7 @@ struct EmojiPickerButton: View {
                         .foregroundStyle(OrtusTheme.textMuted)
                         .lineLimit(1)
                 }
-                Image(systemName: "chevron.down")
+                OrtusIcon(.chevronDown, size: 10)
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(OrtusTheme.textMuted)
             }
@@ -36,11 +36,11 @@ struct EmojiPickerButton: View {
             .padding(.vertical, 7)
             .background(
                 RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous)
-                    .fill(OrtusTheme.inputSurface)
+                    .fill(OrtusTheme.fill)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous)
-                    .strokeBorder(OrtusTheme.hairline, lineWidth: 1)
+                    .strokeBorder(OrtusTheme.line, lineWidth: 1)
             )
         }
         .buttonStyle(OrtusPressableStyle())
@@ -75,11 +75,11 @@ struct EmojiPickerPopover: View {
             .padding(.vertical, 7)
             .background(
                 RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous)
-                    .fill(OrtusTheme.inputSurface)
+                    .fill(OrtusTheme.fill)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous)
-                    .strokeBorder(OrtusTheme.hairline, lineWidth: 1)
+                    .strokeBorder(OrtusTheme.line, lineWidth: 1)
             )
 
             ScrollView {
@@ -135,7 +135,7 @@ struct EmojiPickerPopover: View {
                 .frame(width: 34, height: 34)
                 .background(
                     RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous)
-                        .fill(isSelected ? OrtusTheme.accentSoft : .clear)
+                        .fill(isSelected ? OrtusTheme.cardChip : .clear)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous)
@@ -182,7 +182,7 @@ struct EmojiPickerPopover: View {
                         Text("Use a custom code")
                     }
                     .font(OrtusTheme.Typo.caption)
-                    .foregroundStyle(OrtusTheme.accentInk)
+                    .foregroundStyle(OrtusTheme.text)
                 }
                 .buttonStyle(OrtusPressableStyle(inset: 4))
                 Spacer()

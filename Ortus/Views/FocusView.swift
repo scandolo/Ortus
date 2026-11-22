@@ -11,48 +11,59 @@ struct FocusView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-        GeometryReader { proxy in
-        ScrollView {
-            VStack(spacing: OrtusTheme.spacingLG) {
-                // Before a session, the setup problem sits on the mode it affects (idle state).
-                ClosingBrowserRow(service: focusManager.websites,
-                                  showSetupProblem: focusManager.isInFocus && !focusManager.activeSelection.websites.isEmpty
-                                      && focusManager.websites.connectedBrowsers.isEmpty && snapshotState != "browser-connected")
-                if inGracePeriod {
-                    gracePeriodState
-                } else if focusManager.isInFocus {
-                    activeFocusState
-                } else {
-                    idleState
-                }
-            }
-            .padding(OrtusTheme.spacingMD)
-            // The grace countdown sits in the middle of the panel, not at the top.
-            .frame(maxWidth: .infinity, minHeight: inGracePeriod ? proxy.size.height : nil)
-        }
-        }
-            // The primary action stays pinned and visible, like "Add schedule".
-            if !focusManager.isInFocus {
-                VStack(spacing: OrtusTheme.spacingSM) {
-                    if blocksNothing {
-                        // A locked session that blocks nothing is the worst first impression.
-                        Button { router.modal = .browserSetup } label: {
-                            Text("Set up website blocking").frame(maxWidth: .infinity)
+            GeometryReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        // During a session, a browser problem sits on top, where it bites.
+                        ClosingBrowserRow(service: focusManager.websites,
+                                          showSetupProblem: focusManager.isInFocus && !focusManager.activeSelection.websites.isEmpty
+                                              && focusManager.websites.connectedBrowsers.isEmpty && snapshotState != "browser-connected")
+                        if inGracePeriod {
+                            gracePeriodState
+                        } else if focusManager.isInFocus {
+                            activeFocusState
+                        } else {
+                            idleState
                         }
-                        .buttonStyle(OrtusPrimaryButtonStyle())
-                        Button("Start anyway") { requestStart() }
-                            .buttonStyle(OrtusGhostButtonStyle())
-                    } else {
-                        Button { requestStart() } label: {
-                            Text(startLabel).frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(OrtusPrimaryButtonStyle())
-                        .disabled(focusManager.manualSelection.isEmpty)
                     }
+                    .padding(OrtusTheme.spacingMD)
+                    // The grace countdown sits in the middle of the panel, not at the top.
+                    .frame(maxWidth: .infinity, minHeight: inGracePeriod ? proxy.size.height : nil, alignment: .leading)
                 }
-                .padding(.horizontal, OrtusTheme.spacingMD)
-                .padding(.bottom, OrtusTheme.spacingSM)
+                .scrollIndicators(.never)
             }
+            footer
+        }
+    }
+
+    // MARK: - Footer
+
+    /// The primary action stays pinned and visible, like "Add schedule".
+    @ViewBuilder private var footer: some View {
+        if inGracePeriod {
+            HStack(spacing: OrtusTheme.spacingSM) {
+                Button(genZ ? "nvm" : "Never mind") { focusManager.revertFocusSession() }
+                    .buttonStyle(OrtusPrimaryButtonStyle(fullWidth: true))
+                Button(genZ ? "lock in now" : "Lock in now") { focusManager.skipGracePeriod() }
+                    .buttonStyle(OrtusSecondaryButtonStyle(fullWidth: true))
+                    .help("End the cancellation window and lock in this session now")
+            }
+            .padding([.horizontal, .bottom], OrtusTheme.spacingMD)
+        } else if !focusManager.isInFocus {
+            VStack(spacing: OrtusTheme.spacingSM) {
+                if blocksNothing {
+                    // A locked session that blocks nothing is the worst first impression.
+                    Button("Set up website blocking") { router.modal = .browserSetup }
+                        .buttonStyle(OrtusPrimaryButtonStyle(size: .large, fullWidth: true))
+                    Button(genZ ? "start anyway fr" : "Start anyway") { requestStart() }
+                        .buttonStyle(OrtusGhostButtonStyle())
+                } else {
+                    Button(startLabel) { requestStart() }
+                        .buttonStyle(OrtusPrimaryButtonStyle(size: .large, sun: true, fullWidth: true))
+                        .disabled(focusManager.manualSelection.isEmpty)
+                }
+            }
+            .padding([.horizontal, .bottom], OrtusTheme.spacingMD)
         }
     }
 
@@ -63,6 +74,7 @@ struct FocusView: View {
     /// The chosen mode blocks websites, but no browser is connected to block them.
     private var needsBrowser: Bool {
         let connected = !focusManager.websites.connectedBrowsers.isEmpty && !(snapshotState?.hasPrefix("no-browser") ?? false)
+            || snapshotState == "browser-connected"
         return !focusManager.manualSelection.websites.isEmpty && !connected
     }
 
@@ -71,110 +83,150 @@ struct FocusView: View {
         needsBrowser && focusManager.manualSelection.applications.isEmpty
     }
 
-    /// The first session explains the lock before it starts.
+    /// The first session states the lock once, before it starts. That session then skips
+    /// the 30 second grace window: the modal already was the moment to back out.
     private func requestStart() {
         guard didStartFocusSession else {
-            router.modal = .focusIntro(selection: focusManager.manualSelection, minutes: manualDuration) { startSession() }
+            router.modal = .focusIntro(selection: focusManager.manualSelection, minutes: manualDuration) {
+                startSession(skipGrace: true)
+            }
             return
         }
         startSession()
     }
 
-    private func startSession() {
+    private func startSession(skipGrace: Bool = false) {
         didStartFocusSession = true
         focusManager.startFocusSession(name: "Focus", duration: manualDuration * 60)
+        if skipGrace, focusManager.isInGracePeriod { focusManager.skipGracePeriod() }
     }
 
-    /// The start button gets bolder as the session gets longer.
+    /// "Lock in · 90 min". Gen Z mode keeps its own words.
     private var startLabel: String {
-        switch manualDuration {
-        case 180...: genZ ? "start winter arc" : "Enter monk mode"
-        case 90...: genZ ? "lock in fr fr" : "Go all in"
-        case 60...: genZ ? "lock in fr" : "Go deep"
-        default: genZ ? "lock in" : "Start focus"
+        let length = Self.lengthLabel(minutes: manualDuration)
+        guard genZ else { return "Lock in · \(length)" }
+        let words = switch manualDuration {
+        case 180...: "start winter arc"
+        case 90...: "lock in fr fr"
+        case 60...: "lock in fr"
+        default: "lock in"
         }
+        return "\(words) · \(length)"
+    }
+
+    /// "45 min", "90 min", "2 h", "2 h 30".
+    static func lengthLabel(minutes: Double) -> String {
+        let m = Int(minutes)
+        if m < 120 { return "\(m) min" }
+        return m % 60 == 0 ? "\(m / 60) h" : "\(m / 60) h \(m % 60)"
     }
 
     // MARK: - Grace Period
 
     private var gracePeriodState: some View {
-        VStack(spacing: OrtusTheme.spacingMD) {
+        VStack(alignment: .leading, spacing: 14) {
+            Spacer(minLength: 0)
             if let graceEnd = focusManager.gracePeriodEndTime {
                 TimelineView(.periodic(from: .now, by: 0.1)) { context in
                     let remaining = max(0, graceEnd.timeIntervalSince(context.date))
-                    ZStack {
-                        Circle()
-                            .stroke(OrtusTheme.accent.opacity(0.15), lineWidth: 4)
-                            .frame(width: 120, height: 120)
-
-                        Circle()
-                            .trim(from: 0, to: remaining / 30)
-                            .stroke(OrtusTheme.accent, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                            .frame(width: 120, height: 120)
-                            .rotationEffect(.degrees(-90))
-
+                    VStack(alignment: .leading, spacing: 14) {
                         Text("\(Int(ceil(remaining)))")
-                            .font(OrtusTheme.Typo.display)
-                            .foregroundStyle(.primary)
+                            .font(OrtusTheme.Typo.countdown)
+                            .tracking(-5)
                             .monospacedDigit()
+                            .foregroundStyle(OrtusTheme.accent)
+                            .contentTransition(.numericText(countsDown: true))
+                            .animation(.easeOut(duration: 0.28), value: Int(ceil(remaining)))
+                            .accessibilityLabel("\(Int(ceil(remaining))) seconds to change your mind")
+                        Text(genZ ? "having second thoughts?" : "Changed your mind?")
+                            .font(OrtusTheme.Typo.titleSmall).tracking(-1)
+                        Text(genZ ? "you've got 30 seconds. then it's locked till \(endTimeLabel)."
+                                  : "You have 30 seconds. Then it's locked until \(endTimeLabel).")
+                            .font(OrtusTheme.Typo.body)
+                            .foregroundStyle(OrtusTheme.textMuted)
+                            .fixedSize(horizontal: false, vertical: true)
+                        OrtusLineProgress(fraction: remaining / 30)
                     }
                 }
             }
-
-            Text(genZ ? "locking in…" : "Focus starting")
-                .font(OrtusTheme.Typo.title)
-
-            Text(genZ ? "forgot smth? you can still dip" : "Forgot something? You can still go back.")
-                .font(OrtusTheme.Typo.body)
-                .foregroundStyle(OrtusTheme.textMuted)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, OrtusTheme.spacingLG)
-
-            HStack(spacing: OrtusTheme.spacingMD) {
-                Button(genZ ? "nvm" : "Never mind") {
-                    focusManager.revertFocusSession()
-                }
-                .buttonStyle(OrtusPrimaryButtonStyle())
-
-                Button("Skip and focus") {
-                    focusManager.skipGracePeriod()
-                }
-                .buttonStyle(OrtusSecondaryButtonStyle())
-                .help("End the cancellation window and lock in this session now")
-            }
+            Spacer(minLength: 0)
         }
+        .padding(.horizontal, 4)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    }
+
+    private var endTimeLabel: String {
+        (focusManager.focusEndTime ?? Date()).formatted(date: .omitted, time: .shortened)
     }
 
     // MARK: - Active Focus
 
+    private var hasSessionProblem: Bool {
+        focusManager.websites.closingBrowser != nil || snapshotState == "closing-browser"
+            || (!focusManager.activeSelection.websites.isEmpty && focusManager.websites.connectedBrowsers.isEmpty && snapshotState != "browser-connected")
+    }
+
     private var activeFocusState: some View {
-        VStack(spacing: OrtusTheme.spacingLG) {
+        VStack(alignment: .leading, spacing: 14) {
             if let endTime = focusManager.focusEndTime {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     let remaining = max(0, endTime.timeIntervalSince(context.date))
-                    let totalDuration = totalSessionDuration(endingAt: endTime)
-                    let progress = totalDuration > 0 ? remaining / totalDuration : 0
-                    timerHero(remaining: remaining, progress: progress)
+                    let total = totalSessionDuration(endingAt: endTime)
+                    VStack(alignment: .leading, spacing: 14) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack(spacing: 8) {
+                                OrtusIcon(.locked, size: 14)
+                                Text("Locked in · \(focusManager.currentSessionName ?? "Focus")".uppercased())
+                                    .font(OrtusFont.text(12, .bold)).tracking(1.3)
+                            }
+                            .foregroundStyle(OrtusTheme.accent)
+                            Text(remaining > 0 ? Self.formatDuration(remaining) : (genZ ? "wrapping up" : "Ending"))
+                                .font(OrtusFont.display(hasSessionProblem ? 92 : 104))
+                                .tracking(-5)
+                                .monospacedDigit()
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.5)
+                                .contentTransition(.numericText(countsDown: true))
+                                .animation(.easeOut(duration: 0.28), value: Int(remaining))
+                                .accessibilityLabel("\(Self.spokenDuration(remaining)) left")
+                        }
+                        .padding(.top, hasSessionProblem ? 4 : 18)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            OrtusLineProgress(fraction: total > 0 ? 1 - remaining / total : 0)
+                            HStack {
+                                Spacer()
+                                Text("ends \(endTime.formatted(date: .omitted, time: .shortened))")
+                            }
+                            .font(OrtusTheme.Typo.caption)
+                            .foregroundStyle(OrtusTheme.textMuted)
+                        }
+                    }
                 }
             }
 
-            VStack(spacing: OrtusTheme.spacingSM) {
-                Text(focusManager.currentSessionName ?? "Focus")
-                    .font(OrtusTheme.Typo.headline)
-                BlockedTags(selection: focusManager.activeSelection)
+            let items = BlockedItem.all(in: focusManager.activeSelection)
+            if !items.isEmpty {
+                HStack(spacing: 12) {
+                    BlockedStack(items: items, ground: OrtusTheme.canvas, size: 30, limit: 6, showsMore: false)
+                    Text(items.count == 1 ? items[0].name : "\(items.count) blocked")
+                        .font(OrtusFont.text(14, .semibold))
+                }
+                .padding(.top, 4)
             }
 
             Button {
                 focusManager.extendFocus(by: 15 * 60)
             } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 10, weight: .bold))
+                HStack(spacing: 8) {
+                    OrtusIcon(.addTime, size: 16)
                     Text("15 min")
                 }
             }
-            .buttonStyle(OrtusSecondaryButtonStyle())
-            .help("Add 15 minutes to this focus session")
+            .buttonStyle(OrtusSecondaryButtonStyle(fullWidth: true))
+            .help("Add 15 minutes to this session")
+            .accessibilityLabel("Add 15 minutes")
+            .padding(.top, 4)
 
             if focusManager.developerModeEnabled {
                 Button("End focus (dev)") {
@@ -183,71 +235,7 @@ struct FocusView: View {
                 .buttonStyle(OrtusGhostButtonStyle())
             }
         }
-    }
-
-    private func timerHero(remaining: TimeInterval, progress: Double) -> some View {
-        ZStack {
-            // Static glow: never start a repeating layout transaction as the menu panel opens.
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            OrtusTheme.accentSoft.opacity(0.32),
-                            .clear
-                        ],
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: 110
-                    )
-                )
-                .frame(width: 220, height: 220)
-                .blur(radius: 10)
-
-            // Glass disc — strong contrast against canvas
-            Circle()
-                .fill(OrtusTheme.cardSurface)
-                .frame(width: 190, height: 190)
-                .overlay(
-                    Circle().strokeBorder(OrtusTheme.innerHighlight, lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.16), radius: 20, y: 6)
-
-            // Track + progress ring
-            Circle()
-                .stroke(OrtusTheme.accent.opacity(0.12), lineWidth: 3)
-                .frame(width: 190, height: 190)
-
-            Circle()
-                .trim(from: 0, to: progress)
-                .stroke(
-                    AngularGradient(
-                        colors: [OrtusTheme.accent, OrtusTheme.accentHover, OrtusTheme.accent],
-                        center: .center
-                    ),
-                    style: StrokeStyle(lineWidth: 3, lineCap: .round)
-                )
-                .frame(width: 190, height: 190)
-                .rotationEffect(.degrees(-90))
-                .animation(.linear(duration: 1), value: progress)
-
-            // Hero timer
-            if remaining > 0 {
-                Text(Self.formatDuration(remaining))
-                    .font(OrtusTheme.Typo.hero)
-                    .tracking(-2)
-                    .foregroundStyle(.primary)
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                    .frame(width: 164)
-            } else {
-                Text("Ending")
-                    .font(OrtusTheme.Typo.hero)
-                    .tracking(-2)
-                    .foregroundStyle(OrtusTheme.textMuted)
-            }
-        }
-        .frame(width: 220, height: 220)
+        .padding(.horizontal, 4)
     }
 
     private func totalSessionDuration(endingAt end: Date) -> TimeInterval {
@@ -260,55 +248,50 @@ struct FocusView: View {
     // MARK: - Idle
 
     private var idleState: some View {
-        VStack(spacing: OrtusTheme.spacingMD) {
-            ZStack {
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [OrtusTheme.accentSoft.opacity(0.7), .clear],
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: 36
-                        )
-                    )
-                    .frame(width: 72, height: 72)
-
-                Image(systemName: "sunrise.fill")
-                    .font(.system(size: 34))
-                    .foregroundStyle(OrtusTheme.accent)
-                    .symbolRenderingMode(.hierarchical)
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 10) {
+                OrtusMark(width: 46)
+                Text(genZ ? "ready to lock in?" : "Ready when you are")
+                    .font(OrtusTheme.Typo.title)
+                    .tracking(-1.2)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
-
-            Text(genZ ? "ready to lock in?" : "Ready when you are")
-                .font(OrtusTheme.Typo.title)
+            .padding(.horizontal, 4)
+            .padding(.top, 14)
+            .padding(.bottom, 4)
 
             // How long and what to block: one decision, one card.
-            VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(Self.lengthLabel(minutes: manualDuration))
+                        .font(OrtusTheme.Typo.display)
+                        .tracking(-1)
+                        .monospacedDigit()
+                        .contentTransition(.numericText(value: manualDuration))
+                    Spacer()
+                    TimelineView(.periodic(from: .now, by: 30)) { context in
+                        Text("ends \(context.date.addingTimeInterval(manualDuration * 60).formatted(date: .omitted, time: .shortened))")
+                            .font(OrtusTheme.Typo.caption)
+                            .foregroundStyle(OrtusTheme.textMuted)
+                    }
+                }
                 OrtusDurationSlider(
                     minutes: $manualDuration,
                     range: 15...240,
                     ticks: [15, 30, 60, 90, 120, 180, 240],
                     step: 15
                 )
-                Rectangle().fill(OrtusTheme.hairline).frame(height: 1)
-                ModePicker(selection: $focusManager.manualSelection, boxed: false)
-                    // On the corner of the mode's 46pt icon cluster: the things that won't be blocked.
-                    .overlay(alignment: .topLeading) {
-                        if needsBrowser {
-                            ProblemBadge(message: problemMessage, action: { router.modal = .browserSetup },
-                                         showsHint: snapshotState == "no-browser-hint")
-                                .offset(x: 30, y: -6)
-                        }
-                    }
+                Rectangle().fill(OrtusTheme.strong).frame(height: 2)
+                ModePicker(selection: $focusManager.manualSelection, boxed: false,
+                           problem: needsBrowser ? (message: problemMessage, action: { router.modal = .browserSetup }) : nil)
             }
             .ortusCard()
-
         }
     }
 
     private var problemMessage: String {
-        blocksNothing ? "Blocks nothing until your browser is connected."
-            : "Websites stay open until your browser is connected."
+        genZ ? "website blocking's off. connect a browser" : "Website blocking off. Connect a browser"
     }
 
     // MARK: - Helpers
@@ -322,12 +305,18 @@ struct FocusView: View {
         }
         return String(format: "%d:%02d", m, s)
     }
+
+    /// "47 minutes", for VoiceOver.
+    static func spokenDuration(_ seconds: TimeInterval) -> String {
+        let minutes = Int((seconds / 60).rounded(.up))
+        return minutes >= 60 ? "\(minutes / 60) hours \(minutes % 60) minutes" : "\(minutes) minutes"
+    }
 }
 
 // MARK: - First session
 
-/// Shown before the first session: what this session will do, and that there's no
-/// way out once it starts, drawn from the user's own targets and duration.
+/// Shown once, at a new user's first Lock in: what this session blocks, how long, and
+/// that there's no way out once it starts, drawn from their own targets and length.
 struct FocusIntroModal: View {
     @EnvironmentObject var router: PanelRouter
     let selection: BlockSelection
@@ -337,126 +326,41 @@ struct FocusIntroModal: View {
     var body: some View {
         let items = BlockedItem.all(in: selection)
         let until = Date().addingTimeInterval(minutes * 60).formatted(date: .omitted, time: .shortened)
-        OrtusModal(title: "No end button", onClose: { router.modal = nil }) {
-            VStack(spacing: OrtusTheme.spacingLG) {
+        OrtusModal(title: "No end button.", largeTitle: true, onClose: { router.modal = nil }) {
+            VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
                 // What gets blocked: their own apps and websites, names on hover.
-                HStack(spacing: OrtusTheme.spacingSM) {
-                    BlockedFacepile(items: items, limit: 5, size: 34, ring: OrtusTheme.cardSurface)
-                    if items.count > 5 {
-                        Text("+\(items.count - 5)").font(OrtusTheme.Typo.badge).foregroundStyle(OrtusTheme.textMuted)
-                    }
-                }
-                .help(items.map(\.name).joined(separator: ", "))
+                BlockedStack(items: items, ground: OrtusTheme.cardSurface, size: 32, limit: 5)
 
-                // How it goes: a short window to undo, then locked until the end.
-                VStack(spacing: 6) {
-                    HStack(spacing: 4) {
-                        // Open while you can still undo, solid once locked.
-                        Capsule().strokeBorder(OrtusTheme.accent.opacity(0.6), style: StrokeStyle(lineWidth: 1.5, dash: [4, 3])).frame(width: 64)
-                            .overlay(Image(systemName: "arrow.uturn.backward").font(.system(size: 11, weight: .bold)).foregroundStyle(OrtusTheme.accentInk))
-                        Capsule().fill(OrtusTheme.accentSoft)
-                            .overlay(Label("\(Int(minutes)) min", systemImage: "lock.fill").font(OrtusTheme.Typo.badge).foregroundStyle(OrtusTheme.accentInk))
+                // How it goes: locked from the start until the end.
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        OrtusIcon(.locked, size: 15).foregroundStyle(OrtusTheme.accent)
+                        Text("\(Int(minutes)) min, locked").font(OrtusFont.text(14, .bold)).foregroundStyle(OrtusTheme.bone)
                     }
-                    .frame(height: 28)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 40)
+                    .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(OrtusTheme.ink))
                     HStack {
-                        Text("30 s to undo")
+                        Text("starts now")
                         Spacer()
-                        Text("Ends \(until)")
+                        Text("ends \(until)")
                     }
                     .font(OrtusTheme.Typo.meta).foregroundStyle(OrtusTheme.textMuted)
                 }
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel("30 seconds to undo, then locked for \(Int(minutes)) minutes, until \(until)")
+                .accessibilityLabel("Locked for \(Int(minutes)) minutes, from now until \(until)")
 
-                Text("For real emergencies, one early end a week in Settings.")
-                    .font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
-                    .multilineTextAlignment(.center)
+                Text("Nothing opens until \(until). For a real emergency, you get one early end a week, in Settings.")
+                    .font(OrtusTheme.Typo.callout)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                Button("Understood, start") {
+                Button("Lock in · \(FocusView.lengthLabel(minutes: minutes))") {
                     router.modal = nil
                     onConfirm()
                 }
-                .buttonStyle(OrtusPrimaryButtonStyle())
+                .buttonStyle(OrtusPrimaryButtonStyle(size: .large, sun: true, fullWidth: true))
                 .keyboardShortcut(.defaultAction)
             }
-            .frame(maxWidth: .infinity)
-        }
-    }
-}
-
-// MARK: - Blocked tags
-
-/// One mark per preset the selection touches (Gmail, Slack), then one per other website or app.
-private struct BlockedItem: Identifiable {
-    let id: String; let glyph: String; let name: String; let isApp: Bool
-
-    @MainActor static func all(in selection: BlockSelection) -> [BlockedItem] {
-        var items: [BlockedItem] = []
-        var websites = selection.websites
-        var apps = selection.applications
-        for preset in BlockingPreset.all where selection.contains(preset) {
-            let name = preset.id == "slack" && !selection.fullyContains(preset)
-                ? (selection.blocksSlack ? "Slack app" : "Slack website") : preset.title
-            items.append(BlockedItem(id: preset.id, glyph: preset.id, name: name, isApp: false))
-            websites.removeAll { preset.selection.websites.contains($0) }
-            apps.removeAll { app in preset.selection.applications.contains { $0.id == app.id } }
-        }
-        items += websites.map { BlockedItem(id: $0, glyph: BrandGlyph.websiteID(for: $0) ?? "", name: $0, isApp: false) }
-        items += apps.map { BlockedItem(id: $0.id, glyph: BrandGlyph.applicationID(for: $0) ?? "", name: $0.name, isApp: true) }
-        return items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-    }
-}
-
-/// Overlapping brand marks.
-private struct BlockedFacepile: View {
-    let items: [BlockedItem]
-    /// Marks shown; the rest are left to a count or the names next to it.
-    var limit = 6
-    var size: CGFloat = 24
-    /// The gap between marks: the colour of whatever they sit on.
-    var ring = OrtusTheme.canvas
-
-    var body: some View {
-        HStack(spacing: -size * 0.3) {
-            ForEach(Array(items.prefix(limit).enumerated()), id: \.element.id) { index, item in
-                glyph(item).opacity(0.85)
-                    .frame(width: size, height: size)
-                    .background(Circle().fill(OrtusTheme.cardSurface))
-                    .overlay(Circle().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
-                    .padding(2)
-                    .background(Circle().fill(ring))
-                    .zIndex(Double(-index))
-            }
-        }
-    }
-
-    @ViewBuilder private func glyph(_ item: BlockedItem) -> some View {
-        if item.glyph.isEmpty && item.isApp {
-            Image(systemName: "app").resizable().scaledToFit().frame(width: size / 2, height: size / 2).foregroundStyle(OrtusTheme.ink)
-        } else {
-            BrandGlyph(id: item.glyph, size: size / 2)
-        }
-    }
-}
-
-/// What a focus session is blocking: overlapping brand marks plus a count, on one
-/// line however long the list. Names show on hover.
-private struct BlockedTags: View {
-    let selection: BlockSelection
-
-    var body: some View {
-        let items = BlockedItem.all(in: selection)
-        let names = items.map(\.name).joined(separator: ", ")
-        if !items.isEmpty {
-            HStack(spacing: OrtusTheme.spacingSM) {
-                BlockedFacepile(items: items)
-                Text(items.count == 1 ? items[0].name : "\(items.count) blocked")
-                    .font(OrtusTheme.Typo.caption)
-                    .foregroundStyle(OrtusTheme.textMuted)
-            }
-            .help(names)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Blocked: " + names)
         }
     }
 }
