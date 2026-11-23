@@ -13,7 +13,7 @@ struct ScheduleView: View {
                 OrtusEmptyState(
                     icon: .schedule,
                     title: "No schedules yet",
-                    message: "A schedule locks you in at the same time each day, with no way to skip it."
+                    message: "Choose the apps and websites to set aside during each focus window."
                 )
             } else {
                 ScrollView {
@@ -116,7 +116,7 @@ struct ScheduleRow: View {
                     HStack(spacing: 6) {
                         OrtusIcon(isLocked ? .locked : .blocked, size: 12)
                             .foregroundStyle(isLocked ? OrtusTheme.accent : OrtusTheme.textMuted)
-                        Text(isLocked ? "Locked until \(activeEndTimeString) · \(modeDescription)" : modeDescription)
+                        Text(isLocked ? "Active until \(activeEndTimeString) · \(modeDescription)" : modeDescription)
                     }
                     .font(OrtusTheme.Typo.caption)
                     .foregroundStyle(OrtusTheme.textMuted)
@@ -194,6 +194,7 @@ struct ScheduleInlineEditor: View {
 
             TextField("", text: $schedule.name, prompt: Text("Name").foregroundStyle(OrtusTheme.textMuted))
                 .textFieldStyle(OrtusTextFieldStyle())
+                .accessibilityLabel("Name")
 
             HStack(spacing: 10) {
                 TimeStepper(time: $startTime, label: "Start")
@@ -220,14 +221,16 @@ struct ScheduleInlineEditor: View {
             ModePicker(selection: $schedule.blocked)
 
             HStack(spacing: 4) {
-                Button("Cancel", action: onCancel)
-                    .buttonStyle(OrtusGhostButtonStyle(size: .medium))
+                // Delete stands apart on the left, away from Cancel and Save.
                 if let onDelete {
                     Button("Delete", action: onDelete)
                         .buttonStyle(OrtusGhostButtonStyle(size: .medium))
                 }
 
                 Spacer()
+
+                Button("Cancel", action: onCancel)
+                    .buttonStyle(OrtusGhostButtonStyle(size: .medium))
 
                 Button("Save") {
                     let calendar = Calendar.current
@@ -247,13 +250,14 @@ struct ScheduleInlineEditor: View {
 // MARK: - Time stepper
 
 /// A time of day as one big number on sand, with up and down arrows that move it by
-/// 15 minutes. Click the number to type a time.
+/// 15 minutes. The number is a field: type "9:30", "2130" or "9pm". What's on screen is
+/// always what gets saved, even without pressing Return.
 struct TimeStepper: View {
     @Binding var time: Date
     let label: String
-    @State private var isEditing = false
-    @State private var draft = ""
-    @FocusState private var fieldFocused: Bool
+    @State private var text = ""
+    @FocusState private var focused: Bool
+    @Environment(\.ortusOnCard) private var onCard
 
     private var minutes: Int {
         let c = Calendar.current.dateComponents([.hour, .minute], from: time)
@@ -265,57 +269,76 @@ struct TimeStepper: View {
         time = Calendar.current.date(bySettingHour: wrapped / 60, minute: wrapped % 60, second: 0, of: time) ?? time
     }
 
+    /// One 15-minute step, landing on the quarter hour.
+    private func step(_ direction: Int) {
+        set(direction > 0 ? (minutes / 15 + 1) * 15 : (minutes % 15 == 0 ? minutes - 15 : minutes / 15 * 15))
+        text = label24
+    }
+
     private var label24: String { String(format: "%02d:%02d", minutes / 60, minutes % 60) }
 
     var body: some View {
-        HStack(spacing: 10) {
-            if isEditing {
-                TextField("", text: $draft)
-                    .textFieldStyle(.plain)
-                    .font(OrtusFont.text(17, .bold)).monospacedDigit()
-                    .frame(width: 52)
-                    .focused($fieldFocused)
-                    .onSubmit(commit)
-                    .onChange(of: fieldFocused) { _, focused in if !focused { commit() } }
-            } else {
-                Text(label24)
-                    .font(OrtusFont.text(17, .bold)).monospacedDigit()
-                    .frame(width: 52, alignment: .leading)
-                    .contentShape(Rectangle())
-                    .onTapGesture { draft = label24; isEditing = true; fieldFocused = true }
-            }
-            VStack(spacing: 2) {
-                Button { set((minutes / 15 + 1) * 15) } label: {
-                    OrtusIcon(.chevronDown, size: 10).rotationEffect(.degrees(180)).frame(width: 16, height: 12).contentShape(Rectangle())
+        HStack(spacing: 8) {
+            TextField("", text: $text)
+                .textFieldStyle(.plain)
+                .font(OrtusFont.text(17, .bold)).monospacedDigit()
+                .frame(width: 56)
+                .focused($focused)
+                .onAppear { text = label24 }
+                .onChange(of: text) { _, new in if let parsed = Self.parse(new) { set(parsed) } }
+                .onChange(of: minutes) { _, _ in if !focused { text = label24 } }
+                // Tidy "930" into "09:30", or put back the time if what was typed can't be read.
+                .onChange(of: focused) { _, isFocused in if !isFocused { text = label24 } }
+                .onSubmit { text = label24 }
+                .onExitCommand { text = label24; focused = false }
+                .onKeyPress(.upArrow) { step(1); return .handled }
+                .onKeyPress(.downArrow) { step(-1); return .handled }
+                .help("Type a time, like 9:30 or 21:00")
+                .accessibilityLabel("\(label) time")
+                .accessibilityValue(label24)
+                .accessibilityAdjustableAction { direction in step(direction == .increment ? 1 : -1) }
+            VStack(spacing: 0) {
+                Button { step(1) } label: {
+                    OrtusIcon(.chevronDown, size: 10).rotationEffect(.degrees(180)).frame(width: 22, height: 15).contentShape(Rectangle())
                 }
-                .accessibilityLabel("Later")
-                Button { set(minutes % 15 == 0 ? minutes - 15 : minutes / 15 * 15) } label: {
-                    OrtusIcon(.chevronDown, size: 10).frame(width: 16, height: 12).contentShape(Rectangle())
+                .accessibilityLabel("\(label) 15 minutes later")
+                Button { step(-1) } label: {
+                    OrtusIcon(.chevronDown, size: 10).frame(width: 22, height: 15).contentShape(Rectangle())
                 }
-                .accessibilityLabel("Earlier")
+                .accessibilityLabel("\(label) 15 minutes earlier")
             }
-            .buttonStyle(OrtusPressableStyle(cornerRadius: 4, highlight: false))
+            .buttonStyle(OrtusPressableStyle(cornerRadius: 5))
             .foregroundStyle(OrtusTheme.textMuted)
         }
-        .padding(.horizontal, 14)
+        .padding(.leading, 14).padding(.trailing, 8)
         .frame(height: OrtusTheme.controlHeight)
-        .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous).fill(OrtusTheme.fill))
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(label) time, \(label24)")
+        .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous).fill(OrtusTheme.controlFill(onCard: onCard)))
+        .overlay {
+            if focused { RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous).strokeBorder(OrtusTheme.text, lineWidth: 2) }
+        }
+        .animation(.easeOut(duration: 0.15), value: focused)
     }
 
-    /// Accepts "9", "930", "9:30", "09.30".
-    private func commit() {
-        guard isEditing else { return }
-        isEditing = false
-        let digits = draft.filter(\.isNumber)
-        let parts = draft.split(whereSeparator: { ":.h ".contains($0) }).map(String.init)
+    /// Minutes after midnight for "9", "930", "9:30", "09.30", "21:00", "9pm", "9:30 am".
+    /// Nil when it isn't a time (yet).
+    static func parse(_ raw: String) -> Int? {
+        let lower = raw.lowercased()
+        let pm = lower.contains("p"), am = lower.contains("a")
+        let parts = lower.split(whereSeparator: { !$0.isNumber }).map(String.init)
         var hour: Int?, minute = 0
-        if parts.count >= 2 { hour = Int(parts[0]); minute = Int(parts[1]) ?? 0 }
-        else if digits.count <= 2 { hour = Int(digits) }
-        else if digits.count <= 4 { hour = Int(digits.dropLast(2)); minute = Int(digits.suffix(2)) ?? 0 }
-        guard let hour, (0..<24).contains(hour), (0..<60).contains(minute) else { return }
-        set(hour * 60 + minute)
+        if parts.count >= 2 {
+            hour = Int(parts[0]); minute = Int(parts[1]) ?? -1
+        } else if let digits = parts.first {
+            if digits.count <= 2 { hour = Int(digits) }
+            else if digits.count <= 4 { hour = Int(digits.dropLast(2)); minute = Int(digits.suffix(2)) ?? -1 }
+        }
+        guard var h = hour, (0..<60).contains(minute) else { return nil }
+        if am || pm {
+            guard (1...12).contains(h) else { return nil }
+            h = h % 12 + (pm ? 12 : 0)
+        }
+        guard (0..<24).contains(h) else { return nil }
+        return h * 60 + minute
     }
 }
 
@@ -339,7 +362,7 @@ struct DayToggleButton: View {
                 .foregroundStyle(isSelected ? OrtusTheme.onStrong : OrtusTheme.text)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(OrtusPressableStyle(cornerRadius: 10, highlight: false))
+        .buttonStyle(OrtusPressableStyle(cornerRadius: 10))
         .accessibilityLabel(day.shortName)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
