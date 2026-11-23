@@ -8,6 +8,10 @@ struct FocusView: View {
     @AppStorage("genZMode") private var genZ = false
     @AppStorage("didStartFocusSession") private var didStartFocusSession = false
     @State private var manualDuration: Double = 90
+    /// Drives "ends 15:24". A timer kept in state, because TimelineView froze in the
+    /// menu bar panel once it had been closed and reopened.
+    @State private var now = Date()
+    @State private var clock = Timer.publish(every: 15, on: .main, in: .common).autoconnect()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -269,11 +273,11 @@ struct FocusView: View {
                         .monospacedDigit()
                         .contentTransition(.numericText(value: manualDuration))
                     Spacer()
-                    TimelineView(.periodic(from: .now, by: 30)) { context in
-                        Text("ends \(context.date.addingTimeInterval(manualDuration * 60).formatted(date: .omitted, time: .shortened))")
-                            .font(OrtusTheme.Typo.caption)
-                            .foregroundStyle(OrtusTheme.textMuted)
-                    }
+                    Text("ends \(now.addingTimeInterval(manualDuration * 60).formatted(date: .omitted, time: .shortened))")
+                        .font(OrtusTheme.Typo.caption)
+                        .foregroundStyle(OrtusTheme.textMuted)
+                        .onReceive(clock) { now = $0 }
+                        .onAppear { now = Date() }
                 }
                 OrtusDurationSlider(
                     minutes: $manualDuration,
