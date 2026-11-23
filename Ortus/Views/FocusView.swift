@@ -134,12 +134,10 @@ struct FocusView: View {
                             .tracking(-5)
                             .monospacedDigit()
                             .foregroundStyle(OrtusTheme.accent)
-                            .contentTransition(.numericText(countsDown: true))
-                            .animation(.easeOut(duration: 0.28), value: Int(ceil(remaining)))
                             .accessibilityLabel("\(Int(ceil(remaining))) seconds to change your mind")
-                        Text(genZ ? "having second thoughts?" : "Changed your mind?")
+                        Text(genZ ? "forgot smth?" : "Changed your mind?")
                             .font(OrtusTheme.Typo.titleSmall).tracking(-1)
-                        Text(genZ ? "you've got 30 seconds. then it's locked till \(endTimeLabel)."
+                        Text(genZ ? "you can still dip for 30s. then it's locked till \(endTimeLabel)."
                                   : "You have 30 seconds. Then it's locked until \(endTimeLabel).")
                             .font(OrtusTheme.Typo.body)
                             .foregroundStyle(OrtusTheme.textMuted)
@@ -185,8 +183,6 @@ struct FocusView: View {
                                 .monospacedDigit()
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.5)
-                                .contentTransition(.numericText(countsDown: true))
-                                .animation(.easeOut(duration: 0.28), value: Int(remaining))
                                 .accessibilityLabel("\(Self.spokenDuration(remaining)) left")
                         }
                         .padding(.top, hasSessionProblem ? 4 : 18)
@@ -211,6 +207,10 @@ struct FocusView: View {
                     Text(items.count == 1 ? items[0].name : "\(items.count) blocked")
                         .font(OrtusFont.text(14, .semibold))
                 }
+                .contentShape(Rectangle())
+                .help(items.map(\.name).joined(separator: ", "))
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Blocked: " + items.map(\.name).joined(separator: ", "))
                 .padding(.top, 4)
             }
 
@@ -308,7 +308,10 @@ struct FocusView: View {
     /// "47 minutes", for VoiceOver.
     static func spokenDuration(_ seconds: TimeInterval) -> String {
         let minutes = Int((seconds / 60).rounded(.up))
-        return minutes >= 60 ? "\(minutes / 60) hours \(minutes % 60) minutes" : "\(minutes) minutes"
+        func unit(_ n: Int, _ word: String) -> String { "\(n) \(word)\(n == 1 ? "" : "s")" }
+        guard minutes >= 60 else { return unit(minutes, "minute") }
+        let (h, m) = (minutes / 60, minutes % 60)
+        return m == 0 ? unit(h, "hour") : "\(unit(h, "hour")) \(unit(m, "minute"))"
     }
 }
 
@@ -334,7 +337,7 @@ struct FocusIntroModal: View {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
                         OrtusIcon(.locked, size: 15).foregroundStyle(OrtusTheme.accent)
-                        Text("\(Int(minutes)) min, locked").font(OrtusFont.text(14, .bold)).foregroundStyle(OrtusTheme.bone)
+                        Text("\(FocusView.lengthLabel(minutes: minutes)), locked").font(OrtusFont.text(14, .bold)).foregroundStyle(OrtusTheme.bone)
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 40)

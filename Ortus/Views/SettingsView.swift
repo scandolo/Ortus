@@ -100,7 +100,7 @@ struct SettingsView: View {
             OrtusIcon(.hash, size: 18)
         } trailing: {
             if slackOAuthService.isConnected {
-                Button("Disconnect") { slackOAuthService.disconnect() }.buttonStyle(OrtusRowButtonStyle(role: .destructive))
+                Button("Disconnect") { slackOAuthService.disconnect() }.buttonStyle(OrtusRowButtonStyle())
             } else {
                 Button("Connect") { router.modal = .slackSetup }.buttonStyle(OrtusRowButtonStyle())
             }
@@ -124,6 +124,7 @@ struct SettingsView: View {
                     EmojiPickerButton(code: $focusManager.slackStatusEmoji).frame(width: 22)
                     TextField("", text: $focusManager.slackStatusText, prompt: Text("Ortus mode").foregroundStyle(OrtusTheme.textMuted))
                         .textFieldStyle(.plain).font(OrtusTheme.Typo.bodyMedium)
+                        .accessibilityLabel("Status text")
                     Button(showSlackPreview ? "Hide preview" : "Preview") { showSlackPreview.toggle() }.buttonStyle(OrtusRowButtonStyle())
                 }
                 .padding(.horizontal, OrtusTheme.spacingMD).padding(.vertical, 11)
@@ -218,7 +219,13 @@ struct SettingsView: View {
             return AnyView(OrtusListRow(title: "Update not installed", subtitle: message) {
                 OrtusProblemIcon(size: 18)
             } trailing: {
-                Button("Try again") { Task { await updateService.checkForUpdates() } }
+                // Fetch the release again and install it, rather than only checking.
+                Button("Try again") {
+                    Task {
+                        await updateService.checkForUpdates()
+                        await updateService.downloadAndInstall(isInFocus: focusManager.isInFocus)
+                    }
+                }
                     .buttonStyle(OrtusRowButtonStyle())
             })
         case .upToDate:
@@ -306,7 +313,7 @@ struct ChatSetupModal: View {
         guard path.isEmpty || (path.hasPrefix("/")
             && FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory)
             && !isDirectory.boolValue && FileManager.default.isExecutableFile(atPath: path)) else {
-            pathError = "No executable found at this location. Check the path or clear it to detect automatically."
+            pathError = "No executable found at this location. Check the path or clear it to find it automatically."
             return false
         }
         if path != initialBinaryPath {
@@ -352,7 +359,9 @@ struct SlackSetupModal: View {
                     OrtusStepRow(number: 3, title: "Paste the Client ID and Secret", detail: "Basic Information → App Credentials") { EmptyView() }
                 }
                 TextField("", text: $clientID, prompt: Text("Client ID").foregroundStyle(OrtusTheme.textMuted)).textFieldStyle(OrtusTextFieldStyle())
+                    .accessibilityLabel("Client ID")
                 SecureField("", text: $clientSecret, prompt: Text("Client Secret").foregroundStyle(OrtusTheme.textMuted)).textFieldStyle(OrtusTextFieldStyle())
+                    .accessibilityLabel("Client Secret")
                 if let error = slackOAuthService.error {
                     HStack(alignment: .top, spacing: 8) {
                         OrtusProblemIcon(size: 16)

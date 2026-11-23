@@ -190,11 +190,22 @@ struct OrtusApp: App {
         } else if focusManager.isInFocus, let end = focusManager.focusEndTime {
             Image(nsImage: Self.countdownImage(FocusView.formatDuration(max(0, end.timeIntervalSince(menuBarClock.now)))))
         } else {
-            Image(nsImage: Self.countdownImage(nil, icon: focusManager.isInFocus ? .locked : .free, description: BuildProfile.name))
+            Image(nsImage: Self.restingImage(focusManager.isInFocus ? .locked : .free))
         }
     }
 
     enum MenuBarIcon { case free, locked, warning }
+
+    /// The tile with no time: rendered once per state and screen scale, since the
+    /// label is rebuilt every second.
+    @MainActor private static var restingImages: [String: NSImage] = [:]
+    @MainActor private static func restingImage(_ icon: MenuBarIcon) -> NSImage {
+        let key = "\(icon)-\(NSScreen.main?.backingScaleFactor ?? 2)"
+        if let image = restingImages[key] { return image }
+        let image = countdownImage(nil, icon: icon, description: BuildProfile.name)
+        restingImages[key] = image
+        return image
+    }
 
     /// The menu bar drops font modifiers from a label's Text, so proportional digits
     /// would nudge every item to its left each second. Render it as one template image
@@ -234,12 +245,13 @@ struct OrtusApp: App {
             case "browser-setup", "browser-setup-folder": .browserSetup
             case "slack-setup": .slackSetup
             case "chat-setup": .chatSetup
-            case "chat-intro": .chatIntro
+            case "chat-intro", "chat-intro-no-agent": .chatIntro
             case "focus-intro": .focusIntro(selection: focusManager.manualSelection, minutes: 90) {}
             case "mode-editor": .modeEditor(FocusMode(name: focusManager.nextCustomModeName, blocked: focusManager.manualSelection)) { _ in }
             case "end-focus-early": .endFocusEarly
             default: nil
             }
+            claudeCodeService.missingForSnapshot = state == "chat-no-agent" || state == "chat-intro-no-agent"
             switch state {
             case "up-to-date": updateService.pinForSnapshot(.upToDate)
             case "update-available": updateService.pinForSnapshot(.available(version: "1.2.0"))

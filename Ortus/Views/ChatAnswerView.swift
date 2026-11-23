@@ -65,8 +65,13 @@ struct ChatAnswerView: View {
         }
     }
 
+    /// Links are underlined, so they read as links in the text colour (quotes, cards).
     static func inline(_ text: String) -> AttributedString {
-        (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
+        var parsed = (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
+        for range in parsed.runs.filter({ $0.link != nil }).map(\.range) {
+            parsed[range].underlineStyle = .single
+        }
+        return parsed
     }
 }
 
@@ -140,7 +145,15 @@ private struct ProseText: NSViewRepresentable {
     /// the item's text starts there.
     static func text(_ blocks: [ChatBlock], scale: CGFloat) -> NSAttributedString {
         let font = OrtusFont.nsText(15)
-        let markerFont = OrtusFont.nsText(15)
+        // Tabular digits, so "1." to "9." line up.
+        let markerFont: NSFont = {
+            let base = OrtusFont.nsText(15)
+            let tabular = base.fontDescriptor.addingAttributes([.featureSettings: [[
+                NSFontDescriptor.FeatureKey.typeIdentifier: kNumberSpacingType,
+                NSFontDescriptor.FeatureKey.selectorIdentifier: kMonospacedNumbersSelector,
+            ]]])
+            return NSFont(descriptor: tabular, size: 15) ?? base
+        }()
         let text = NSMutableAttributedString()
         for (blockIndex, block) in blocks.enumerated() {
             let rows: [(marker: String?, text: String)]
@@ -397,6 +410,7 @@ private struct DraftCard: View {
                             OrtusIcon(.edit, size: 13)
                             Text("Edit").font(OrtusFont.text(13, .semibold))
                         }
+                        .foregroundStyle(isEditing ? OrtusTheme.text : OrtusTheme.textMuted)
                     }
                     .buttonStyle(OrtusPressableStyle(inset: 4))
                     .help("Change the text before sending")

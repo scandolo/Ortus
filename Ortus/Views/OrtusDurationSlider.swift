@@ -30,8 +30,12 @@ struct OrtusDurationSlider: View {
                     .offset(x: x - thumbWidth / 2)
             }
             .frame(width: width, height: thumbHeight)
+            // A taller grab area than the line itself, like the old slider, without
+            // changing the layout.
+            .padding(.vertical, 14)
             .contentShape(Rectangle())
             .gesture(dragGesture(width: width))
+            .padding(.vertical, -14)
             .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isDragging)
         }
         .frame(height: thumbHeight)

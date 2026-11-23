@@ -52,6 +52,8 @@ enum SnapshotHarness {
             await render("schedule-editor", tab: 1, height: 860, state: "new-schedule")
             await render("chat", tab: 2, state: "empty")
             await render("chat-intro", tab: 2, state: "chat-intro")
+            await render("chat-no-agent", tab: 2, state: "chat-no-agent")
+            await render("chat-intro-no-agent", tab: 2, state: "chat-intro-no-agent")
             await render("chat-answer", tab: 2, state: "chat-answer")
             await render("chat-prose", tab: 2, height: 760, state: "chat-prose")
             await render("chat-steps",tab: 2, height: 760, state: "chat-steps")

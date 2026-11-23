@@ -301,7 +301,7 @@ private struct OrtusButtonBody: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
         HStack(spacing: 9) {
-            if sun { OrtusMark(width: size == .large ? 20 : 16, color: OrtusTheme.accent) }
+            if sun { OrtusMark(width: size == .large ? 20 : 16, color: OrtusTheme.accent).accessibilityHidden(true) }
             configuration.label
         }
         .frame(maxWidth: fullWidth ? .infinity : nil)
@@ -355,7 +355,6 @@ struct OrtusSecondaryButtonStyle: ButtonStyle {
 
 /// A row's trailing action: 2 pt outline in the text colour.
 struct OrtusRowButtonStyle: ButtonStyle {
-    var role: ButtonRole? = nil
     func makeBody(configuration: Configuration) -> some View {
         OrtusButtonBody(configuration: configuration, size: .small, background: .clear, foreground: OrtusTheme.text, outline: OrtusTheme.text)
     }
@@ -382,6 +381,9 @@ struct OrtusGhostButtonStyle: ButtonStyle {
                 .frame(minHeight: size == .small ? 28 : size.height)
                 .contentShape(Rectangle())
                 .opacity(!isEnabled ? 0.35 : isHovering || configuration.isPressed ? 0.7 : 1)
+                .scaleEffect(configuration.isPressed && isEnabled ? 0.96 : 1)
+                .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+                .animation(.easeOut(duration: 0.15), value: isHovering)
                 .onHover { isHovering = $0 }
         }
     }
@@ -405,21 +407,23 @@ struct OrtusToggleStyle: ToggleStyle {
             let on = configuration.isOn
             let track = on ? (locked ? OrtusTheme.accent : OrtusTheme.ink) : OrtusTheme.controlFill(onCard: onCard)
             let knob = on || locked ? OrtusTheme.bone : OrtusTheme.white
-            Button { configuration.isOn.toggle() } label: {
-                ZStack(alignment: on ? .trailing : .leading) {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous).fill(track)
-                    RoundedRectangle(cornerRadius: 6, style: .continuous).fill(knob)
-                        .frame(width: 19, height: 19).padding(3)
+            HStack(spacing: 10) {
+                configuration.label
+                Button { configuration.isOn.toggle() } label: {
+                    ZStack(alignment: on ? .trailing : .leading) {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous).fill(track)
+                        RoundedRectangle(cornerRadius: 6, style: .continuous).fill(knob)
+                            .frame(width: 19, height: 19).padding(3)
+                    }
+                    .frame(width: 42, height: 25)
+                    .contentShape(Rectangle())
                 }
-                .frame(width: 42, height: 25)
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
+                .opacity(isEnabled ? 1 : 0.4)
+                .animation(.easeOut(duration: 0.15), value: on)
             }
-            .buttonStyle(.plain)
-            .opacity(isEnabled ? 1 : 0.4)
-            .animation(.easeOut(duration: 0.15), value: on)
-            .accessibilityElement()
-            .accessibilityAddTraits(.isButton)
-            .accessibilityValue(on ? "On" : "Off")
+            // VoiceOver hears a real switch, with the caller's label and accessibility label.
+            .accessibilityRepresentation { Toggle(isOn: configuration.$isOn) { configuration.label } }
         }
     }
 }
@@ -528,6 +532,8 @@ struct OrtusLineProgress: View {
 struct OrtusProblemIcon: View {
     var size: CGFloat = 22
     var body: some View {
-        OrtusIcon(.warn, size: size).foregroundStyle(OrtusTheme.accent).accessibilityLabel("Problem")
+        ZStack { OrtusIcon(.warn, size: size).foregroundStyle(OrtusTheme.accent) }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Problem")
     }
 }

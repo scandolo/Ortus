@@ -40,6 +40,8 @@ final class ClaudeCodeService: ObservableObject {
     /// (nvm/fnm/asdf, custom npm prefixes, anything on the user's PATH). Published so
     /// the chat/settings UI unlocks the moment detection succeeds.
     @Published private var shellResolvedPath: String?
+    /// True while the login-shell probe runs, so the UI can wait for the answer.
+    @Published private(set) var isDetecting = false
     private var hasRunDetection = false
 
     /// Common install locations to probe when the user hasn't set an explicit path.
@@ -70,8 +72,16 @@ final class ClaudeCodeService: ObservableObject {
     }
 
     var isConfigured: Bool {
-        resolvedBinaryPath != nil
+        #if DEBUG
+        if missingForSnapshot { return false }
+        #endif
+        return resolvedBinaryPath != nil
     }
+
+    #if DEBUG
+    /// Snapshot harness: show Chat as if Claude Code weren't installed.
+    @Published var missingForSnapshot = false
+    #endif
 
     /// Probe the user's login shell for `claude` once, off the main thread. Static
     /// paths are checked first (synchronous, instant); the shell probe only runs as a
@@ -82,10 +92,12 @@ final class ClaudeCodeService: ObservableObject {
         hasRunDetection = true
         // A static path (or user override) already resolves — no need to spawn a shell.
         if resolvedBinaryPath != nil { return }
+        isDetecting = true
         Task.detached(priority: .utility) {
             let path = Self.resolveViaLoginShell()
-            if let path {
-                await MainActor.run { self.shellResolvedPath = path }
+            await MainActor.run {
+                if let path { self.shellResolvedPath = path }
+                self.isDetecting = false
             }
         }
     }

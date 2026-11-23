@@ -6,6 +6,7 @@ struct ChatView: View {
     @EnvironmentObject var router: PanelRouter
     @Environment(\.snapshotState) private var snapshotState
     @AppStorage("didSeeChatIntro") private var didSeeChatIntro = false
+    @AppStorage("chatIntroSentToSetup") private var chatIntroSentToSetup = false
     @State private var inputText = ""
     @AppStorage("genZMode") private var genZ = false
     @FocusState private var isInputFocused: Bool
@@ -18,7 +19,7 @@ struct ChatView: View {
                 OrtusEmptyState(
                     icon: .agent,
                     title: "Your agent needs Claude Code.",
-                    message: "Chat runs the Claude Code on your Mac. Set it up once, then ask from here."
+                    message: "Chat uses Claude Code on your Mac. Set it up once, then ask from here."
                 )
                 Button("Set up agent") { router.modal = .chatSetup }
                     .buttonStyle(OrtusPrimaryButtonStyle())
@@ -41,9 +42,12 @@ struct ChatView: View {
                 inputText = "Go through my Slack DMs from this morning, pull out anything that needs a reply today, and draft short answers I can send when the session ends"
             }
         }
-        // The first visit explains what Chat is, set up or not.
-        .onAppear {
-            if !didSeeChatIntro, snapshotState == nil, router.modal == nil {
+        // The first visit explains what Chat is, set up or not, once detection has
+        // settled so it doesn't flip from "Set up agent" to "Get started". Someone sent to
+        // setup from it sees it again once Claude Code works.
+        .onChange(of: claudeCodeService.isDetecting, initial: true) {
+            if !claudeCodeService.isDetecting, !didSeeChatIntro, !chatIntroSentToSetup || claudeCodeService.isConfigured,
+               snapshotState == nil, router.modal == nil {
                 router.modal = .chatIntro
             }
         }
@@ -55,11 +59,11 @@ struct ChatView: View {
         VStack(spacing: OrtusTheme.spacingMD) {
             Spacer()
             OrtusIcon(.agent, size: 36)
-            Text(genZ ? "ask your agent.\nnothing opens." : "Ask your agent.\nNothing opens.")
+            Text(genZ ? "stay locked in,\nstill in the loop" : "Ask your agent.\nNothing opens.")
                 .font(OrtusTheme.Typo.titleSmall)
                 .tracking(-1)
                 .multilineTextAlignment(.center)
-            Text("It reads the apps Ortus blocks, so you don’t have to.")
+            Text(genZ ? "it reads the apps ortus blocks so you don’t have to" : "It reads the apps Ortus blocks, so you don’t have to.")
                 .font(OrtusTheme.Typo.callout)
                 .foregroundStyle(OrtusTheme.textMuted)
                 .multilineTextAlignment(.center)
@@ -130,7 +134,8 @@ struct ChatView: View {
         }
         .frame(minHeight: 50)
         .background(inputBarShape.fill(OrtusTheme.cardSurface))
-        .overlay(inputBarShape.strokeBorder(OrtusTheme.text.opacity(isInputFocused ? 1 : 0), lineWidth: 2))
+        .overlay(inputBarShape.strokeBorder(OrtusTheme.text.opacity(isInputFocused ? 1 : isBarHovering ? 0.25 : 0), lineWidth: 2))
+        .animation(.easeOut(duration: 0.15), value: isBarHovering)
         .background(GeometryReader { proxy in
             Color.clear
                 .onAppear { barWidth = proxy.size.width }
@@ -230,7 +235,7 @@ private struct ChatSendButton: View {
                 .frame(width: 34, height: 34)
                 .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(canSend ? OrtusTheme.strong : OrtusTheme.cardChip))
         }
-        .buttonStyle(OrtusPressableStyle(cornerRadius: 10, highlight: false))
+        .buttonStyle(OrtusPressableStyle(cornerRadius: 10))
         .disabled(!canSend)
         .help("Send message")
         .accessibilityLabel("Send")
@@ -248,7 +253,7 @@ private struct ChatStopButton: View {
                 .frame(width: 34, height: 34)
                 .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(OrtusTheme.strong))
         }
-        .buttonStyle(OrtusPressableStyle(cornerRadius: 10, highlight: false))
+        .buttonStyle(OrtusPressableStyle(cornerRadius: 10))
         .help("Stop")
         .accessibilityLabel("Stop")
     }
@@ -332,7 +337,8 @@ private struct ActivityRow: View {
                     }
                     Text(step.status == .failed ? "\(step.progress) failed" : step.title)
                         .italic(step.kind != .tool)
-                        .foregroundStyle(OrtusTheme.textMuted)
+                        // Thinking reads quieter than tool steps (Archivo has no italic).
+                        .foregroundStyle(OrtusTheme.textMuted.opacity(step.kind != .tool ? 0.7 : 1))
                         .lineLimit(3)
                 }
             }
@@ -412,6 +418,7 @@ struct ChatIntroModal: View {
     @EnvironmentObject var router: PanelRouter
     @EnvironmentObject var claudeCodeService: ClaudeCodeService
     @AppStorage("didSeeChatIntro") private var didSeeChatIntro = false
+    @AppStorage("chatIntroSentToSetup") private var chatIntroSentToSetup = false
 
     var body: some View {
         OrtusModal(title: "Chat while you focus", largeTitle: true, onClose: close) {
@@ -421,7 +428,7 @@ struct ChatIntroModal: View {
                     .fixedSize(horizontal: false, vertical: true)
                 OrtusGroup {
                     OrtusListRow(title: "Runs on Claude Code",
-                                 subtitle: claudeCodeService.isConfigured ? "Already on this Mac, so there’s nothing to install." : "Install it once, and Chat uses it from then on.") {
+                                 subtitle: claudeCodeService.isConfigured ? "Already on this Mac, so there’s nothing to set up." : "Install it once, and Chat uses it from then on.") {
                         OrtusIcon(.terminal, size: 18)
                     } trailing: { EmptyView() }
                     OrtusGroupDivider()
@@ -433,14 +440,14 @@ struct ChatIntroModal: View {
                         OrtusIcon(.shield, size: 18)
                     } trailing: { EmptyView() }
                 }
-                .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).strokeBorder(OrtusTheme.line, lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).strokeBorder(OrtusTheme.line, lineWidth: 1))
                 HStack {
                     Spacer()
                     if claudeCodeService.isConfigured {
                         Button("Get started", action: close).buttonStyle(OrtusPrimaryButtonStyle())
                     } else {
                         Button("Set up agent") {
-                            didSeeChatIntro = true
+                            chatIntroSentToSetup = true
                             router.modal = .chatSetup
                         }
                         .buttonStyle(OrtusPrimaryButtonStyle())

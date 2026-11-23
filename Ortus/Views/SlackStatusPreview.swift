@@ -147,7 +147,7 @@ struct SlackStatusPreview: View {
 
     // MARK: - Slack-like palette
     //
-    // Adaptive light/dark to match the user's macOS appearance, but tuned to read
+    // Follows Ortus's own light (free) and dark (locked) look, not macOS's, but tuned to read
     // as "this is Slack" — white-ish in light mode, near-black in dark mode, with
     // the muted gray Slack uses for timestamps and metadata.
 

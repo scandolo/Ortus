@@ -22,17 +22,25 @@ struct ModePicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                BlockedStack(items: BlockedItem.all(in: selection), ground: boxed ? OrtusTheme.inset : OrtusTheme.cardSurface, size: 26)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Block: \(current?.name ?? "Custom")").font(OrtusFont.text(14, .bold)).lineLimit(1)
-                    Text(BlockedItem.countLabel(for: selection)).font(OrtusTheme.Typo.meta).foregroundStyle(OrtusTheme.textMuted).lineLimit(1)
+            // The whole row opens the list, as before; "Change" is its visible handle.
+            Button { withAnimation(.easeOut(duration: 0.18)) { expanded.toggle() } } label: {
+                HStack(spacing: 12) {
+                    BlockedStack(items: BlockedItem.all(in: selection), ground: boxed ? OrtusTheme.inset : OrtusTheme.cardSurface, size: 26)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Block: \(current?.name ?? "Custom")").font(OrtusFont.text(14, .bold)).lineLimit(2)
+                        Text(BlockedItem.countLabel(for: selection)).font(OrtusTheme.Typo.meta).foregroundStyle(OrtusTheme.textMuted).lineLimit(1)
+                    }
+                    Spacer(minLength: 8)
+                    Text(expanded ? "Done" : "Change")
+                        .font(OrtusTheme.Typo.buttonSmall).foregroundStyle(OrtusTheme.text)
+                        .padding(.horizontal, 12).frame(minHeight: OrtusTheme.controlHeightSM)
+                        .overlay(RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous).strokeBorder(OrtusTheme.text, lineWidth: 2))
                 }
-                Spacer(minLength: 8)
-                Button(expanded ? "Done" : "Change") { withAnimation(.easeOut(duration: 0.18)) { expanded.toggle() } }
-                    .buttonStyle(OrtusRowButtonStyle())
-                    .accessibilityLabel(expanded ? "Done choosing a mode" : "Change mode, now \(current?.name ?? "Custom")")
+                .contentShape(Rectangle())
             }
+            .buttonStyle(OrtusPressableStyle(inset: 6, cornerRadius: 12))
+            .accessibilityLabel(expanded ? "Done choosing a mode" : "Mode: \(current?.name ?? "Custom"), \(BlockedItem.countLabel(for: selection)). Change")
 
             if let problem {
                 OrtusProblemNote(message: problem.message, action: problem.action)
@@ -197,7 +205,7 @@ struct BlockingTargetsEditor: View {
                 }
                 .buttonStyle(OrtusPressableStyle(cornerRadius: 0))
             }
-            .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).strokeBorder(OrtusTheme.line, lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).strokeBorder(OrtusTheme.line, lineWidth: 1))
 
             if let inputError {
                 HStack(alignment: .top, spacing: 8) {
@@ -241,7 +249,7 @@ struct BlockingTargetsEditor: View {
                     .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(OrtusTheme.fill))
                     .contentShape(Rectangle())
             }
-            .buttonStyle(OrtusPressableStyle(cornerRadius: 8, highlight: false)).accessibilityLabel("Remove \(title)")
+            .buttonStyle(OrtusPressableStyle(cornerRadius: 8)).accessibilityLabel("Remove \(title)")
         }
     }
 
@@ -371,7 +379,7 @@ struct BrowserSetupModal: View {
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.leading, 54)
+                            .padding(.leading, 52)
                             .padding(.trailing, OrtusTheme.spacingMD)
                             .padding(.bottom, 12)
                         }
@@ -418,7 +426,7 @@ struct BrowserSetupModal: View {
                                             }
                                         }
                                         .frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(.leading, 54)
+                                        .padding(.leading, 52)
                                         .padding(.trailing, OrtusTheme.spacingMD)
                                         .padding(.bottom, 12)
                                     }

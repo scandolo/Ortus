@@ -45,9 +45,9 @@ struct OrtusModal<Content: View>: View {
                     Button(action: onClose) {
                         OrtusIcon(.close, size: 12).foregroundStyle(OrtusTheme.textMuted)
                             .frame(width: 30, height: 30)
-                            .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(OrtusTheme.fill))
+                            .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(OrtusTheme.controlFill(onCard: true)))
                     }
-                    .buttonStyle(OrtusPressableStyle(cornerRadius: 9, highlight: false)).keyboardShortcut(.cancelAction).accessibilityLabel("Close")
+                    .buttonStyle(OrtusPressableStyle(cornerRadius: 9)).keyboardShortcut(.cancelAction).accessibilityLabel("Close")
                 }
                 .padding([.horizontal, .top], 20)
                 .padding(.bottom, 16)
@@ -151,8 +151,8 @@ struct OrtusStepNumber: View {
         Text("\(number)")
             .font(OrtusTheme.Typo.badge).monospacedDigit()
             .foregroundStyle(OrtusTheme.onStrong)
-            .frame(width: 24, height: 24)
-            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(OrtusTheme.strong))
+            .frame(width: 22, height: 22)
+            .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(OrtusTheme.strong))
     }
 }
 
@@ -193,7 +193,8 @@ struct OrtusProblemNote: View {
             .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous).fill(OrtusTheme.inset))
             .contentShape(Rectangle())
         }
-        .buttonStyle(OrtusPressableStyle(cornerRadius: OrtusTheme.radiusMD, highlight: false))
+        .buttonStyle(OrtusPressableStyle(cornerRadius: OrtusTheme.radiusMD))
+        .help(actionLabel ?? "Click to fix")
         .accessibilityLabel(message)
         .accessibilityHint(actionLabel ?? "Opens the fix")
     }
@@ -247,7 +248,8 @@ struct OrtusPressableStyle: ButtonStyle {
             let fill = !highlight || !isEnabled ? 0 : configuration.isPressed ? 0.09 : isHovering ? 0.05 : 0
             configuration.label
                 .padding(inset)
-                .background(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous).fill(OrtusTheme.text.opacity(fill)))
+                // On top, so it also shows on labels that draw their own fill (chips).
+                .overlay(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous).fill(OrtusTheme.text.opacity(fill)).allowsHitTesting(false))
                 .contentShape(Rectangle())
                 .padding(-inset)
                 .scaleEffect(configuration.isPressed && isEnabled ? 0.97 : 1)
