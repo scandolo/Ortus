@@ -31,7 +31,7 @@ async function render() {
     setText(label, `Locked in · until ${end}`);
     setText(title, genZ ? 'not today bestie.' : 'Not yet.');
     setText(status, genZ ? `${name}? back at ${end}.` : `${name} is closed until ${end}.`);
-    setText(left, genZ ? 'lock in.' : `${timeLeft(rule.expiresAt - now)} to go.`);
+    setText(left, genZ ? `${timeLeft(rule.expiresAt - now)} to go. lock in.` : `${timeLeft(rule.expiresAt - now)} to go.`);
     setText(help, genZ ? `need something from ${name}? ask your agent in Ortus.` : `Need something from ${name}? Ask your agent in Ortus.`);
     document.title = `${name} is closed · Ortus`;
   } else {
