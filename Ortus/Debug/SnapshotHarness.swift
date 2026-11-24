@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import OrtusCore
 
 /// Lets the snapshot harness open a view in a specific state (an expanded editor,
 /// a setup form). Always nil in normal use.
@@ -71,6 +72,11 @@ enum SnapshotHarness {
             await render("browser-setup-folder-error", tab: 0, height: 760, state: "browser-setup-folder-error")
             await render("schedule", tab: 1)
             await render("schedule-editor", tab: 1, height: 860, state: "new-schedule")
+            // Modes and schedules. A copy of Socials, as older versions could save one.
+            let copy = FocusMode(name: "Socials copy", blocked: FocusMode.social.blocked)
+            focusManager.customModes.append(copy)
+            await render("focus-modes-duplicate", tab: 0, height: 760, state: "modes")
+            focusManager.customModes.removeAll { $0.id == copy.id }
             await render("chat", tab: 2, state: "empty")
             await render("chat-intro", tab: 2, state: "chat-intro")
             await render("chat-no-agent", tab: 2, state: "chat-no-agent")

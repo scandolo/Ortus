@@ -103,12 +103,14 @@ final class FocusManager: ObservableObject {
     func mode(for selection: BlockSelection) -> FocusMode? { FocusMode.matching(selection, in: modes) }
     var nextCustomModeName: String { FocusMode.nextCustomName(in: customModes) }
 
-    /// Saves a custom mode. Anything that used the mode's previous targets follows the edit.
+    /// Saves a custom mode, unless another mode has the same targets. Anything that used
+    /// the mode's previous targets follows the edit, unless another mode still has them.
     func saveMode(_ mode: FocusMode) {
-        guard !mode.isBuiltIn, !mode.blocked.isEmpty else { return }
+        guard !mode.isBuiltIn, !mode.blocked.isEmpty, FocusMode.duplicate(of: mode, in: modes) == nil else { return }
         let previous = customModes.first { $0.id == mode.id }
         if let index = customModes.firstIndex(where: { $0.id == mode.id }) { customModes[index] = mode } else { customModes.append(mode) }
-        guard let previous, previous.blocked != mode.blocked else { return }
+        // A copy of Socials saved by an older version must not drag Socials' schedules along.
+        guard let previous, previous.blocked != mode.blocked, self.mode(for: previous.blocked) == nil else { return }
         if manualSelection == previous.blocked { manualSelection = mode.blocked }
         for schedule in schedules where schedule.blocked == previous.blocked {
             var updated = schedule; updated.blocked = mode.blocked; updateSchedule(updated)

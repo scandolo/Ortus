@@ -235,6 +235,18 @@ struct BlockingTests {
         expect(FocusMode.nextCustomName(in: upgraded) == "Custom 2")
     }
 
+    func aListNamesOneMode() {
+        // A copy of Socials saved by an older version: Socials stays the one chosen.
+        let copy = FocusMode(name: "Custom 1", blocked: FocusMode.social.blocked)
+        let modes = FocusMode.builtIn + [copy]
+        expect(FocusMode.matching(copy.blocked, in: modes)?.id == FocusMode.social.id)
+        expect(FocusMode.duplicate(of: copy, in: modes)?.name == "Socials")
+        // Editing a mode without changing its list is fine; copying another custom mode isn't.
+        let mine = FocusMode(name: "Mine", blocked: .slackOnly)
+        expect(FocusMode.duplicate(of: mine, in: modes + [mine]) == nil)
+        expect(FocusMode.duplicate(of: FocusMode(name: "Custom 2", blocked: .slackOnly), in: modes + [mine])?.name == "Mine")
+    }
+
     func storeAndUnpackedExtensionsAreBothAllowed() throws {
         expect(BrowserCompanion.storeExtensionID == "lheanmgemlbnpeonkdbbinmankaineao")
         expect(BrowserCompanion.storeListingURL().absoluteString == "https://chromewebstore.google.com/detail/lheanmgemlbnpeonkdbbinmankaineao")
@@ -295,6 +307,7 @@ struct CoreChecks {
         checks.partialPresetsDescribeActualCoverage()
         checks.builtInModesAreNamedAndRecognised()
         checks.onlyUpgradersGetCustomModesFromSchedules()
+        checks.aListNamesOneMode()
         let chat = ChatTests()
         chat.hidesPlumbingAndNamesSteps()
         chat.parallelCallsKeepOneLabelAndMatchResultsByID()
@@ -314,6 +327,6 @@ struct CoreChecks {
         try companion.hostManifestsDoNotWaitForTheUnpackedFolder()
         try companion.registrationCopiesTheExtensionAndFollowsAMovedApp()
         BuildProfileTests().developerModeIsPreviewOnly()
-        print("PASS: 33 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, store extension, framing, modes, mode migration, chat stream, chat blocks, Claude Code location, update feed, update verification, credential migration, companion registration, preview-only developer mode)")
+        print("PASS: 34 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, store extension, framing, modes, mode migration, duplicate modes, chat stream, chat blocks, Claude Code location, update feed, update verification, credential migration, companion registration, preview-only developer mode)")
     }
 }

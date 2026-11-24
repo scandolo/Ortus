@@ -138,9 +138,16 @@ public struct FocusMode: Codable, Equatable, Identifiable, Sendable {
     /// `social` is the default for new sessions.
     public static let builtIn = [social, messages, everything]
 
-    /// The mode whose targets are exactly `selection`, if any.
+    /// The mode whose targets are exactly `selection`, if any. Older versions could save
+    /// two modes with one list; the first is the one a picker shows as chosen.
     public static func matching(_ selection: BlockSelection, in modes: [Self]) -> Self? {
         modes.first { $0.blocked == selection }
+    }
+
+    /// Another mode with exactly `mode`'s targets. A custom mode that has one can't be
+    /// saved: two modes with one list can't be told apart in a picker.
+    public static func duplicate(of mode: Self, in modes: [Self]) -> Self? {
+        modes.first { $0.id != mode.id && $0.blocked == mode.blocked }
     }
 
     /// "Custom 1", "Custom 2"…: the first such name no custom mode uses.

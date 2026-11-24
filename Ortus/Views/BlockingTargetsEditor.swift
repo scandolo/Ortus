@@ -66,7 +66,9 @@ struct ModePicker: View {
     }
 
     private func modeRow(_ mode: FocusMode) -> some View {
-        let isCurrent = mode.blocked == selection
+        // Only the first mode with this list, as in the row above, even if an older
+        // version saved two modes with the same list.
+        let isCurrent = mode.id == current?.id
         let select = {
             selection = mode.blocked
             withAnimation(.easeOut(duration: 0.18)) { expanded = false }
@@ -124,12 +126,21 @@ struct ModeEditor: View {
     let onSave: (FocusMode) -> Void
 
     private var isExisting: Bool { focusManager.customModes.contains { $0.id == mode.id } }
+    /// A mode that already blocks exactly this list. Saving would make a copy of it.
+    private var duplicate: FocusMode? { FocusMode.duplicate(of: mode, in: focusManager.modes) }
 
     var body: some View {
         OrtusModal(title: isExisting ? "Edit mode" : "New mode", largeTitle: true, onClose: { router.modal = nil }) {
             VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
                 TextField("Mode name", text: $mode.name).textFieldStyle(OrtusTextFieldStyle())
                 BlockingTargetsEditor(selection: $mode.blocked)
+                if let duplicate {
+                    HStack(alignment: .top, spacing: 8) {
+                        OrtusProblemIcon(size: 16)
+                        Text("Same as \(duplicate.name). Change the list to save it.").font(OrtusTheme.Typo.caption)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
                 HStack {
                     if isExisting {
                         Button("Delete mode") { focusManager.deleteMode(mode); router.modal = nil }
@@ -142,7 +153,7 @@ struct ModeEditor: View {
                         router.modal = nil
                     }
                     .buttonStyle(OrtusPrimaryButtonStyle())
-                    .disabled(mode.name.trimmingCharacters(in: .whitespaces).isEmpty || mode.blocked.isEmpty)
+                    .disabled(mode.name.trimmingCharacters(in: .whitespaces).isEmpty || mode.blocked.isEmpty || duplicate != nil)
                 }
             }
         }
