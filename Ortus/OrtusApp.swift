@@ -44,14 +44,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         statusWindows.lazy.compactMap { button(in: $0.contentView) }.first?.performClick(nil)
     }
 
-    /// Earlier versions turned launch at login on silently at first run. Users who updated
-    /// keep that; fresh installs choose on the welcome page instead.
+    /// Open at login is on by default: schedules only run while Ortus is open. It's set
+    /// once, at first run; macOS says so with its "Login item added" notice. The welcome
+    /// page's box starts ticked to match, and unticking it (or the switch in Settings)
+    /// turns it off. Users who already made a choice keep it. Previews never register.
     private func enableLaunchAtLoginByDefault() {
         guard Bundle.main.object(forInfoDictionaryKey: "OrtusPreviewBuild") as? Bool != true else { return }
         let key = "didSetDefaultLoginItem"
         guard !UserDefaults.standard.bool(forKey: key) else { return }
         UserDefaults.standard.set(true, forKey: key)
-        guard !Self.isFreshInstall else { return }
         try? SMAppService.mainApp.register()
     }
 
