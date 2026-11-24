@@ -110,7 +110,7 @@ struct SettingsView: View {
     }
 
     private var chatRow: some View {
-        OrtusListRow(title: "Chat", subtitle: claudeCodeService.isConfigured ? "Claude Code detected" : "Claude Code not found") {
+        OrtusListRow(title: "Agent", subtitle: claudeCodeService.isConfigured ? "Claude Code detected" : "Claude Code not found") {
             if claudeCodeService.isConfigured { OrtusIcon(.agent, size: 18) } else { OrtusProblemIcon(size: 18) }
         } trailing: {
             Button(claudeCodeService.isConfigured ? "Configure" : "Set up") { router.modal = .chatSetup }.buttonStyle(OrtusRowButtonStyle())
@@ -279,7 +279,7 @@ struct SettingsView: View {
     }
 }
 
-// MARK: - Chat setup
+// MARK: - Agent setup
 
 struct ChatSetupModal: View {
     @EnvironmentObject var claudeCodeService: ClaudeCodeService
@@ -289,7 +289,7 @@ struct ChatSetupModal: View {
     @State private var pathError: String?
 
     var body: some View {
-        OrtusModal(title: "Chat setup", onClose: { router.modal = nil }) {
+        OrtusModal(title: "Agent setup", onClose: { router.modal = nil }) {
             VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
                 HStack(spacing: 8) {
                     if claudeCodeService.isConfigured { OrtusIcon(.check, size: 14) } else { OrtusProblemIcon(size: 16) }

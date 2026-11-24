@@ -19,7 +19,7 @@ struct ChatView: View {
                 OrtusEmptyState(
                     icon: .agent,
                     title: "Your agent needs Claude Code.",
-                    message: "Chat uses Claude Code on your Mac. Set it up once, then ask from here."
+                    message: "Your agent uses Claude Code on your Mac. Set it up once, then ask from here."
                 )
                 Button("Set up agent") { router.modal = .chatSetup }
                     .buttonStyle(OrtusPrimaryButtonStyle())
@@ -421,14 +421,14 @@ struct ChatIntroModal: View {
     @AppStorage("chatIntroSentToSetup") private var chatIntroSentToSetup = false
 
     var body: some View {
-        OrtusModal(title: "Chat while you focus", largeTitle: true, onClose: close) {
+        OrtusModal(title: "Your agent while you focus", largeTitle: true, onClose: close) {
             VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
                 Text("Ask about the apps Ortus blocks, without opening them.")
                     .font(OrtusTheme.Typo.callout).foregroundStyle(OrtusTheme.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
                 OrtusGroup {
                     OrtusListRow(title: "Runs on Claude Code",
-                                 subtitle: claudeCodeService.isConfigured ? "Already on this Mac, so there’s nothing to set up." : "Install it once, and Chat uses it from then on.") {
+                                 subtitle: claudeCodeService.isConfigured ? "Already on this Mac, so there’s nothing to set up." : "Install it once, and your agent uses it from then on.") {
                         OrtusIcon(.terminal, size: 18)
                     } trailing: { EmptyView() }
                     OrtusGroupDivider()
