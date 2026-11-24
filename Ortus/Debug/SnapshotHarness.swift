@@ -36,6 +36,26 @@ enum SnapshotHarness {
             window.contentView = nil
         }
 
+        /// A change as it animates: one view, changed once, captured at each time in ms.
+        func renderFrames(_ name: String, tab: Int, state: String? = nil, frames: [Int], change: () -> Void) async {
+            let hosting = NSHostingView(rootView: panel(tab, 560, state))
+            hosting.frame = NSRect(x: 0, y: 0, width: 420, height: 560)
+            let window = NSWindow(contentRect: hosting.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+            window.contentView = hosting
+            try? await Task.sleep(for: .milliseconds(900))
+            change()
+            var elapsed = 0
+            for (index, time) in frames.enumerated() {
+                try? await Task.sleep(for: .milliseconds(time - elapsed))
+                elapsed = time
+                hosting.layoutSubtreeIfNeeded()
+                guard let rep = hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds) else { continue }
+                hosting.cacheDisplay(in: hosting.bounds, to: rep)
+                try? rep.representation(using: .png, properties: [:])?.write(to: directory.appendingPathComponent("\(name)-\(index + 1).png"))
+            }
+            window.contentView = nil
+        }
+
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(1))
             await render("focus-idle", tab: 0)
@@ -89,6 +109,11 @@ enum SnapshotHarness {
                 await render("chat-answer-locked", tab: 2, state: "chat-answer")
                 await render("chat-compose-locked", tab: 2, state: "chat-compose")
                 await render("schedule-locked", tab: 1)
+                // +15 min as it rolls, ending where it settles. Last, so the states above
+                // keep the one-hour session.
+                await renderFrames("focus-extending", tab: 0, state: "browser-connected", frames: [80, 220, 1200]) {
+                    focusManager.extendFocus(by: 15 * 60)
+                }
             }
             exit(0)
         }
