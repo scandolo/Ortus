@@ -66,6 +66,8 @@ final class FocusManager: ObservableObject {
 
     init() {
         Self.current = self
+        // Read before load(), which saves the default schedule on a fresh install.
+        let freshInstall = !ScheduleStore.hasSaved()
         schedules = ScheduleStore.load()
         if let data = UserDefaults.standard.data(forKey: "manualBlockSelection"), let selection = try? JSONDecoder().decode(BlockSelection.self, from: data) { manualSelection = selection }
         if let data = UserDefaults.standard.data(forKey: "activeFocusTimeline"), let saved = try? JSONDecoder().decode(FocusTimeline.self, from: data) { timeline = saved }
@@ -73,7 +75,7 @@ final class FocusManager: ObservableObject {
             timeline.suppressedUntil = Date(timeIntervalSince1970: emergencyScheduleSuppressUntil)
         }
         if let data = UserDefaults.standard.data(forKey: "customFocusModes"), let saved = try? JSONDecoder().decode([FocusMode].self, from: data) { customModes = saved }
-        migrateToModesIfNeeded()
+        migrateToModesIfNeeded(freshInstall: freshInstall)
         websites.registerCompanion()
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
@@ -99,11 +101,7 @@ final class FocusManager: ObservableObject {
 
     var modes: [FocusMode] { FocusMode.builtIn + customModes }
     func mode(for selection: BlockSelection) -> FocusMode? { FocusMode.matching(selection, in: modes) }
-    var nextCustomModeName: String {
-        var n = customModes.count + 1
-        while customModes.contains(where: { $0.name == "Custom \(n)" }) { n += 1 }
-        return "Custom \(n)"
-    }
+    var nextCustomModeName: String { FocusMode.nextCustomName(in: customModes) }
 
     /// Saves a custom mode. Anything that used the mode's previous targets follows the edit.
     func saveMode(_ mode: FocusMode) {
@@ -121,15 +119,14 @@ final class FocusManager: ObservableObject {
         if manualSelection == mode.blocked { manualSelection = FocusMode.social.blocked }
     }
 
-    /// One-time move to modes: new sessions default to Social, and any schedule whose
-    /// targets match no built-in mode keeps them as a named custom mode.
-    private func migrateToModesIfNeeded() {
+    /// One-time move to modes: new sessions default to Social, and an upgrader's schedule
+    /// whose targets match no mode keeps them as a named custom mode. Runs on fresh
+    /// installs too, which only set the flag (`AppDelegate.isFreshInstall` reads it).
+    private func migrateToModesIfNeeded(freshInstall: Bool) {
         let key = "focusModesMigrated"
         guard !UserDefaults.standard.bool(forKey: key) else { return }
         UserDefaults.standard.set(true, forKey: key)
-        for schedule in schedules where !schedule.blocked.isEmpty && mode(for: schedule.blocked) == nil {
-            customModes.append(FocusMode(name: nextCustomModeName, blocked: schedule.blocked))
-        }
+        customModes = FocusMode.migrated(schedules: schedules, custom: customModes, freshInstall: freshInstall)
         manualSelection = FocusMode.social.blocked
     }
 

@@ -65,6 +65,10 @@ public struct FocusSchedule: Identifiable, Codable, Equatable, Sendable {
 }
 
 public enum ScheduleStore {
+    /// False until the first launch saves the default schedule: a fresh install.
+    public static func hasSaved(defaults: UserDefaults = .standard) -> Bool {
+        defaults.data(forKey: "focusSchedules") != nil
+    }
     public static func load(defaults: UserDefaults = .standard) -> [FocusSchedule] {
         guard let data = defaults.data(forKey: "focusSchedules") else {
             // First-run schedules are offered as drafts, never activated silently.

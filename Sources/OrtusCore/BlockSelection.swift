@@ -142,4 +142,23 @@ public struct FocusMode: Codable, Equatable, Identifiable, Sendable {
     public static func matching(_ selection: BlockSelection, in modes: [Self]) -> Self? {
         modes.first { $0.blocked == selection }
     }
+
+    /// "Custom 1", "Custom 2"…: the first such name no custom mode uses.
+    public static func nextCustomName(in custom: [Self]) -> String {
+        var n = custom.count + 1
+        while custom.contains(where: { $0.name == "Custom \(n)" }) { n += 1 }
+        return "Custom \(n)"
+    }
+
+    /// Custom modes after the one-time move to modes: each schedule whose targets match
+    /// no mode keeps them as a named mode. A fresh install adds none, because its
+    /// default schedule is the app's suggestion, not a list the user made.
+    public static func migrated(schedules: [FocusSchedule], custom: [Self], freshInstall: Bool) -> [Self] {
+        guard !freshInstall else { return custom }
+        var custom = custom
+        for schedule in schedules where !schedule.blocked.isEmpty && matching(schedule.blocked, in: builtIn + custom) == nil {
+            custom.append(Self(name: nextCustomName(in: custom), blocked: schedule.blocked))
+        }
+        return custom
+    }
 }

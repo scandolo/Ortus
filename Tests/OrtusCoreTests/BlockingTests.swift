@@ -25,7 +25,9 @@ struct BlockingTests {
         let key = "Ortus.tests" // one fixed name: each run would otherwise leave an empty plist behind
         let defaults = UserDefaults(suiteName: key)!
         defer { defaults.removePersistentDomain(forName: key) }
+        expect(!ScheduleStore.hasSaved(defaults: defaults)) // a fresh install
         let firstLoad = ScheduleStore.load(defaults: defaults)
+        expect(ScheduleStore.hasSaved(defaults: defaults))
         expect(firstLoad.first?.blocked == .standard)
         expect(firstLoad.first?.isEnabled == false)
         expect(ScheduleStore.load(defaults: defaults) == firstLoad) // stable IDs across restarts
@@ -221,6 +223,18 @@ struct BlockingTests {
         expect(FocusMode.builtIn.allSatisfy(\.isBuiltIn) && !FocusMode(name: "Mine", blocked: .slackOnly).isBuiltIn)
     }
 
+    func onlyUpgradersGetCustomModesFromSchedules() {
+        let standard = FocusSchedule(blocked: .standard)
+        // A fresh install's default schedule is the app's suggestion: no "Custom 1".
+        expect(FocusMode.migrated(schedules: [standard], custom: [], freshInstall: true).isEmpty)
+        // An upgrader keeps each list that matches no mode, once.
+        let writing = FocusSchedule(name: "Writing", blocked: .standard)
+        let socials = FocusSchedule(name: "Mornings", blocked: FocusMode.social.blocked)
+        let upgraded = FocusMode.migrated(schedules: [standard, writing, socials], custom: [], freshInstall: false)
+        expect(upgraded.map(\.name) == ["Custom 1"] && upgraded.first?.blocked == .standard)
+        expect(FocusMode.nextCustomName(in: upgraded) == "Custom 2")
+    }
+
     func storeAndUnpackedExtensionsAreBothAllowed() throws {
         expect(BrowserCompanion.storeExtensionID == "lheanmgemlbnpeonkdbbinmankaineao")
         expect(BrowserCompanion.storeListingURL().absoluteString == "https://chromewebstore.google.com/detail/lheanmgemlbnpeonkdbbinmankaineao")
@@ -280,6 +294,7 @@ struct CoreChecks {
         checks.presetEditingPreservesUnrelatedTargets()
         checks.partialPresetsDescribeActualCoverage()
         checks.builtInModesAreNamedAndRecognised()
+        checks.onlyUpgradersGetCustomModesFromSchedules()
         let chat = ChatTests()
         chat.hidesPlumbingAndNamesSteps()
         chat.parallelCallsKeepOneLabelAndMatchResultsByID()
@@ -299,6 +314,6 @@ struct CoreChecks {
         try companion.hostManifestsDoNotWaitForTheUnpackedFolder()
         try companion.registrationCopiesTheExtensionAndFollowsAMovedApp()
         BuildProfileTests().developerModeIsPreviewOnly()
-        print("PASS: 32 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, store extension, framing, modes, chat stream, chat blocks, Claude Code location, update feed, update verification, credential migration, companion registration, preview-only developer mode)")
+        print("PASS: 33 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, store extension, framing, modes, mode migration, chat stream, chat blocks, Claude Code location, update feed, update verification, credential migration, companion registration, preview-only developer mode)")
     }
 }
