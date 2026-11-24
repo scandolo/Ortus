@@ -1,0 +1,25 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Ortus dmg background</title>
+<!-- The Finder window of Ortus.dmg, 600x340. Rendered to background.png (1x) and
+     background@2x.png by scripts/dmg/render-background.sh. Icon positions live in
+     settings.py and must match the arrow here (icons at x=170 and x=430, y=215). -->
+<style>
+  @font-face { font-family: "Archivo Black"; src: url("../../BrowserExtension/archivo-black.woff2") format("woff2"); }
+  @font-face { font-family: "Archivo"; src: url("../../BrowserExtension/archivo.woff2") format("woff2"); }
+  :root { --bone: #F2EEE8; --ink: #1C1C19; --bone-muted: #5E5C55; }
+  * { margin: 0; box-sizing: border-box; }
+  html, body { width: 600px; height: 340px; background: var(--bone); overflow: hidden; }
+  .sun { position: absolute; left: 282px; top: 30px; width: 36px; }
+  h1 { position: absolute; top: 74px; width: 100%; text-align: center;
+       font: 26px/1.1 "Archivo Black", sans-serif; color: var(--ink); }
+  p { position: absolute; top: 112px; width: 100%; text-align: center;
+      font: 13px/1.3 "Archivo", sans-serif; color: var(--bone-muted); }
+  svg.arrow { position: absolute; left: 245px; top: 205px; width: 110px; height: 20px; }
+</style>
+<img class="sun" src="../../BrowserExtension/ortus-mark.svg" alt="">
+<h1>Drag Ortus to Applications.</h1>
+<p>Then open it. The rest is yours.</p>
+<svg class="arrow" viewBox="0 0 110 20" fill="none" stroke="#1C1C19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M4 10H104M94 2L104 10L94 18"/>
+</svg>

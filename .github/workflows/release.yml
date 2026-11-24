@@ -111,6 +111,15 @@ jobs:
           fi
           ./build.sh release
 
+      - name: Install dmgbuild for the designed dmg window
+        if: env.SIGNED == 'true'
+        # Optional: if this fails, scripts/make-dmg.sh makes the plain dmg instead.
+        continue-on-error: true
+        run: |
+          python3 -m venv "$RUNNER_TEMP/dmgbuild"
+          "$RUNNER_TEMP/dmgbuild/bin/pip" install dmgbuild==2.0.0
+          echo "DMGBUILD=$RUNNER_TEMP/dmgbuild/bin/dmgbuild" >> "$GITHUB_ENV"
+
       - name: Notarize and package the dmg
         if: env.SIGNED == 'true'
         env:

@@ -49,17 +49,9 @@ staple "$APP"
 rm -f Ortus-macOS.zip
 ditto -c -k --keepParent "$APP" Ortus-macOS.zip
 
-# 2. The dmg around the stapled app, with an Applications shortcut to drag onto.
-mkdir "$WORK/dmg"
-ditto "$APP" "$WORK/dmg/$APP"
-ln -s /Applications "$WORK/dmg/Applications"
-rm -f Ortus.dmg
-# hdiutil sometimes fails with "Resource busy" on CI runners; a retry clears it.
-for attempt in 1 2 3; do
-    hdiutil create -volname Ortus -srcfolder "$WORK/dmg" -fs HFS+ -format UDZO Ortus.dmg && break
-    [[ $attempt == 3 ]] && exit 1
-    sleep 5
-done
+# 2. The dmg around the stapled app: the designed drag-to-Applications window when
+# dmgbuild is installed, the plain one otherwise (see scripts/make-dmg.sh).
+scripts/make-dmg.sh "$APP" Ortus.dmg
 codesign --force --sign "$ORTUS_SIGNING_IDENTITY" --timestamp Ortus.dmg
 notarize Ortus.dmg
 staple Ortus.dmg
