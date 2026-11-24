@@ -13,34 +13,33 @@ struct BrandGlyph: View {
 
     var body: some View {
         let parts = Self.parts(for: id)
-        ZStack {
-            if parts.isEmpty { OrtusIcon(.globe, size: size) }
-            ForEach(parts.indices, id: \.self) { index in render(parts[index]) }
+        Group {
+            if parts.isEmpty { OrtusIcon(.globe, size: size) } else { Self.mark(parts, size: size).fill(color) }
         }
         .foregroundStyle(color)
         .frame(width: size, height: size)
-        .compositingGroup()
         .accessibilityHidden(true)
     }
 
-    @ViewBuilder private func render(_ part: Part) -> some View {
-        let shape = UnitShape(path: part.path)
-        let style = StrokeStyle(lineWidth: part.width * size, lineCap: .round, lineJoin: .round)
-        switch (part.width > 0, part.cut) {
-        case (false, false): shape.fill()
-        case (true, false): shape.stroke(style: style)
-        case (false, true): shape.fill().blendMode(.destinationOut)
-        case (true, true): shape.stroke(style: style).blendMode(.destinationOut)
+    /// The mark as one shape, with the cuts subtracted geometrically. A blend mode
+    /// (destinationOut) erased whatever sat under the whole panel, not just the mark,
+    /// so the "f" or "in" showed the background instead of the circle behind the mark.
+    private static func mark(_ parts: [Part], size: CGFloat) -> Path {
+        let scale = CGAffineTransform(scaleX: size, y: size)
+        var result = Path()
+        for part in parts {
+            let scaled = part.path.applying(scale)
+            let shape = part.width > 0
+                ? scaled.strokedPath(StrokeStyle(lineWidth: part.width * size, lineCap: .round, lineJoin: .round))
+                : scaled
+            result = part.cut ? result.subtracting(shape) : result.union(shape)
         }
+        return result
     }
 
     /// A path in a 0…1 square; `width` > 0 strokes it, `cut` punches it out of the mark.
     private struct Part { var path: Path; var width: CGFloat = 0; var cut = false }
 
-    private struct UnitShape: Shape {
-        let path: Path
-        func path(in rect: CGRect) -> Path { path.applying(CGAffineTransform(scaleX: rect.width, y: rect.height)) }
-    }
 
     private static func lines(_ points: [(CGFloat, CGFloat)]) -> Path {
         var path = Path(); path.addLines(points.map { CGPoint(x: $0.0, y: $0.1) }); return path
