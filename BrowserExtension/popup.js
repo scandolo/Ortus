@@ -43,7 +43,9 @@ async function render() {
     }));
     list.dataset.signature = signature;
   }
-  setText(sitesHeading, `${groups.length} ${groups.length === 1 ? 'site' : 'sites'} closed`);
+  // As in the app: one site is named, more are counted after the circles.
+  setText(sitesHeading, groups.length === 1 ? groups[0].name : `${groups.length} blocked`);
+  sitesHeading.title = groups.map(group => group.name).join(', ');
   blockedSites.hidden = !groups.length;
   reconnect.hidden = connected;
 }
