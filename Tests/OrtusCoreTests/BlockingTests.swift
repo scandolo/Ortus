@@ -287,6 +287,7 @@ struct CoreChecks {
         chat.hidesSavedResultReadsAndReportsFailures()
         chat.parsesAnswersIntoBlocksAndQuoteCards()
         chat.labelsTimesRelativeToNow()
+        try chat.claudeLocationMustBeARunnableFile()
         let update = UpdateTests()
         update.feedOnlyPointsAtOurHosts()
         update.versionsCompareNumerically()
@@ -298,6 +299,6 @@ struct CoreChecks {
         try companion.hostManifestsDoNotWaitForTheUnpackedFolder()
         try companion.registrationCopiesTheExtensionAndFollowsAMovedApp()
         BuildProfileTests().developerModeIsPreviewOnly()
-        print("PASS: 31 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, store extension, framing, modes, chat stream, chat blocks, update feed, update verification, credential migration, companion registration, preview-only developer mode)")
+        print("PASS: 32 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, store extension, framing, modes, chat stream, chat blocks, Claude Code location, update feed, update verification, credential migration, companion registration, preview-only developer mode)")
     }
 }

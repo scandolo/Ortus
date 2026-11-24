@@ -27,6 +27,9 @@ struct ChatView: View {
             }
         }
         .onAppear {
+            #if DEBUG
+            ChatFixtures.applySetup(snapshotState, to: claudeCodeService, router: router)
+            #endif
             if ChatFixtures.apply(snapshotState, to: claudeCodeService) { return }
             if snapshotState == "chat-draft" {
                 claudeCodeService.messages = [
