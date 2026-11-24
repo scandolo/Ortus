@@ -17,6 +17,8 @@ struct SettingsView: View {
     @State private var taglineIndex = 0
     @AppStorage("genZMode") private var genZ = false
     @AppStorage(Analytics.consentKey) private var shareUsage = false
+    /// Experimental features sit in a section that starts closed.
+    @AppStorage("showExperimentalSettings") private var showExperimental = false
 
     /// Tapping the mark cycles these. "Latin for rising" lives here and nowhere else.
     private let taglines = [
@@ -30,12 +32,8 @@ struct SettingsView: View {
                 section("Connections") {
                     BrowserStatusRow(service: focusManager.websites)
                     OrtusGroupDivider()
-                    slackRow
-                    OrtusGroupDivider()
                     chatRow
                 }
-
-                if slackOAuthService.isConnected { slackStatusSection }
 
                 if focusManager.isInFocus && !focusManager.isInGracePeriod {
                     section("Emergency") { emergencyRow }
@@ -69,10 +67,14 @@ struct SettingsView: View {
                     OrtusGroupDivider()
                     aboutRow
                 }
+
+                experimentalSection
             }
             .padding(OrtusTheme.spacingMD)
         }
         .onAppear {
+            // Snapshots show the section closed, except the one state that opens it.
+            if snapshotState != nil { showExperimental = snapshotState == "settings-experimental" }
             claudeCodeService.detectIfNeeded()
             // Read the real login-item state; the toggle must never guess.
             launchAtLogin = SMAppService.mainApp.status == .enabled
@@ -115,28 +117,57 @@ struct SettingsView: View {
         }
     }
 
-    private var slackStatusSection: some View {
-        section("Slack status") {
-            OrtusListRow(title: "Set my status") { OrtusIcon(.chat, size: 18) } trailing: { toggle($focusManager.slackStatusEnabled) }
-            if focusManager.slackStatusEnabled {
-                OrtusGroupDivider()
-                HStack(spacing: 14) {
-                    EmojiPickerButton(code: $focusManager.slackStatusEmoji).frame(width: 22)
-                    TextField("", text: $focusManager.slackStatusText, prompt: Text("Ortus mode").foregroundStyle(OrtusTheme.textMuted))
-                        .textFieldStyle(.plain).font(OrtusTheme.Typo.bodyMedium)
-                        .accessibilityLabel("Status text")
-                    Button(showSlackPreview ? "Hide preview" : "Preview") { showSlackPreview.toggle() }.buttonStyle(OrtusRowButtonStyle())
+    // MARK: - Experimental
+
+    /// Closed by default: a header that opens to features that may still change.
+    private var experimentalSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button { withAnimation(.easeOut(duration: 0.18)) { showExperimental.toggle() } } label: {
+                HStack(spacing: 6) {
+                    OrtusSectionHeader(title: "Experimental")
+                    OrtusIcon(.chevronDown, size: 9).foregroundStyle(OrtusTheme.textMuted)
+                        .rotationEffect(.degrees(showExperimental ? 0 : -90))
+                    Spacer()
                 }
-                .padding(.horizontal, OrtusTheme.spacingMD).padding(.vertical, 11)
-                if showSlackPreview {
-                    SlackStatusPreview(statusText: focusManager.slackStatusText, emojiCode: focusManager.slackStatusEmoji,
-                                       userName: "Example user", dndEnabled: focusManager.slackDndEnabled)
-                        .padding([.horizontal, .bottom], OrtusTheme.spacingMD)
+                .padding(.horizontal, 4).padding(.vertical, 4)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(OrtusPressableStyle(cornerRadius: 8))
+            .accessibilityLabel("Experimental")
+            .accessibilityValue(showExperimental ? "Expanded" : "Collapsed")
+
+            if showExperimental {
+                OrtusGroup {
+                    slackRow
+                    if slackOAuthService.isConnected {
+                        OrtusGroupDivider()
+                        slackStatusRows
+                    }
                 }
             }
-            OrtusGroupDivider()
-            OrtusListRow(title: "Do Not Disturb") { OrtusIcon(.hide, size: 18) } trailing: { toggle($focusManager.slackDndEnabled) }
         }
+    }
+
+    @ViewBuilder private var slackStatusRows: some View {
+        OrtusListRow(title: "Set my status") { OrtusIcon(.chat, size: 18) } trailing: { toggle($focusManager.slackStatusEnabled) }
+        if focusManager.slackStatusEnabled {
+            OrtusGroupDivider()
+            HStack(spacing: 14) {
+                EmojiPickerButton(code: $focusManager.slackStatusEmoji).frame(width: 22)
+                TextField("", text: $focusManager.slackStatusText, prompt: Text("Ortus mode").foregroundStyle(OrtusTheme.textMuted))
+                    .textFieldStyle(.plain).font(OrtusTheme.Typo.bodyMedium)
+                    .accessibilityLabel("Status text")
+                Button(showSlackPreview ? "Hide preview" : "Preview") { showSlackPreview.toggle() }.buttonStyle(OrtusRowButtonStyle())
+            }
+            .padding(.horizontal, OrtusTheme.spacingMD).padding(.vertical, 11)
+            if showSlackPreview {
+                SlackStatusPreview(statusText: focusManager.slackStatusText, emojiCode: focusManager.slackStatusEmoji,
+                                   userName: "Example user", dndEnabled: focusManager.slackDndEnabled)
+                    .padding([.horizontal, .bottom], OrtusTheme.spacingMD)
+            }
+        }
+        OrtusGroupDivider()
+        OrtusListRow(title: "Do Not Disturb") { OrtusIcon(.hide, size: 18) } trailing: { toggle($focusManager.slackDndEnabled) }
     }
 
     // MARK: - Emergency
