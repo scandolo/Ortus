@@ -7,6 +7,9 @@ struct FocusView: View {
     @Environment(\.snapshotState) private var snapshotState
     @AppStorage("genZMode") private var genZ = false
     @AppStorage("didStartFocusSession") private var didStartFocusSession = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Counts "+15 min" presses, to give each one a springy press reaction.
+    @State private var extensions = 0
     @State private var manualDuration: Double = 90
     /// Drives "ends 15:24". A timer kept in state, because TimelineView froze in the
     /// menu bar panel once it had been closed and reopened.
@@ -189,6 +192,7 @@ struct FocusView: View {
                                 .monospacedDigit()
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.5)
+                                .contentTransition(.numericText(value: remaining))
                                 .accessibilityLabel("\(Self.spokenDuration(remaining)) left")
                         }
                         .padding(.top, hasSessionProblem ? 4 : 18)
@@ -198,11 +202,15 @@ struct FocusView: View {
                             HStack {
                                 Spacer()
                                 Text("ends \(endTime.formatted(date: .omitted, time: .shortened))")
+                                    .contentTransition(.numericText(value: endTime.timeIntervalSince1970))
                             }
                             .font(OrtusTheme.Typo.caption)
                             .foregroundStyle(OrtusTheme.textMuted)
                         }
                     }
+                    // Only a new end time animates (+15 min): the digits roll up and the line
+                    // eases back. The per-second tick doesn't change endTime, so it never animates.
+                    .animation(reduceMotion ? nil : .spring(duration: 0.6, bounce: 0.2), value: endTime)
                 }
             }
 
@@ -221,6 +229,7 @@ struct FocusView: View {
             }
 
             Button {
+                extensions += 1
                 focusManager.extendFocus(by: 15 * 60)
             } label: {
                 HStack(spacing: 8) {
@@ -229,6 +238,12 @@ struct FocusView: View {
                 }
             }
             .buttonStyle(OrtusSecondaryButtonStyle(fullWidth: true))
+            // A short squeeze, then a spring back past full size.
+            .phaseAnimator([1.0, 0.94], trigger: reduceMotion ? 0 : extensions) { button, scale in
+                button.scaleEffect(scale)
+            } animation: { scale in
+                scale < 1 ? .easeOut(duration: 0.07) : .spring(duration: 0.4, bounce: 0.55)
+            }
             .help("Add 15 minutes to this session")
             .accessibilityLabel("Add 15 minutes")
             .padding(.top, 4)
