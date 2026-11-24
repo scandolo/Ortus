@@ -16,21 +16,15 @@ struct ChatView: View {
     var body: some View {
         VStack(spacing: 0) {
             if !claudeCodeService.isConfigured {
-                OrtusEmptyState(
-                    icon: .agent,
-                    title: "Your agent needs Claude Code.",
-                    message: "Your agent uses Claude Code on your Mac. Set it up once, then ask from here."
-                )
-                Button("Set up agent") { router.modal = .chatSetup }
-                    .buttonStyle(OrtusPrimaryButtonStyle())
-                    .padding(.bottom, OrtusTheme.spacingMD)
-            } else if claudeCodeService.messages.isEmpty {
-                emptyState
+                setupState
             } else {
-                messageList
+                if claudeCodeService.messages.isEmpty {
+                    emptyState
+                } else {
+                    messageList
+                }
+                inputBar
             }
-
-            inputBar
         }
         .onAppear {
             if ChatFixtures.apply(snapshotState, to: claudeCodeService) { return }
@@ -54,6 +48,31 @@ struct ChatView: View {
     }
 
     // MARK: - Empty state
+
+    /// Before Claude Code is found the tab is only the setup, centred, with no text box
+    /// to type into yet.
+    private var setupState: some View {
+        VStack(spacing: OrtusTheme.spacingMD) {
+            Spacer()
+            OrtusIcon(.agent, size: 36)
+            Text("Your agent needs Claude Code.")
+                .font(OrtusTheme.Typo.titleSmall)
+                .tracking(-1)
+                .multilineTextAlignment(.center)
+            Text("Your agent uses Claude Code on your Mac. Set it up once, then ask from here.")
+                .font(OrtusTheme.Typo.callout)
+                .foregroundStyle(OrtusTheme.textMuted)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, OrtusTheme.spacingLG)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("Set up agent") { router.modal = .chatSetup }
+                .buttonStyle(OrtusPrimaryButtonStyle())
+                .padding(.top, OrtusTheme.spacingSM)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .padding(OrtusTheme.spacingMD)
+    }
 
     private var emptyState: some View {
         VStack(spacing: OrtusTheme.spacingMD) {
