@@ -461,6 +461,6 @@ struct BrowserSetupModal: View {
                 }
             }
         }
-        .onAppear { if snapshotState == "browser-setup-folder" { showFolderInstall = true } }
+        .onAppear { if snapshotState?.hasPrefix("browser-setup-folder") == true { showFolderInstall = true } }
     }
 }

@@ -108,8 +108,12 @@ final class WebsiteBlockingService: ObservableObject {
         if closingBrowser != next { closingBrowser = next }
     }
 
+    /// Why the Load unpacked folder couldn't be updated. Only a folder install needs it, so it shows on Show folder.
+    private var folderError: String?
+
     /// User-level registration only. Re-running updates the executable path after moving a build.
     func registerCompanion() {
+        folderError = nil
         do {
             guard let extensionDirectory, let bundledExtension = Bundle.main.resourceURL?.appendingPathComponent("BrowserExtension", isDirectory: true),
                   let bundle = Bundle.main.executableURL?.deletingLastPathComponent(),
@@ -120,37 +124,28 @@ final class WebsiteBlockingService: ObservableObject {
             guard FileManager.default.isExecutableFile(atPath: bridge.path) else {
                 throw NSError(domain: "Ortus", code: 2, userInfo: [NSLocalizedDescriptionKey: "The browser connection helper is missing."])
             }
-            let files = FileManager.default
-            if files.fileExists(atPath: extensionDirectory.path),
-               !(try files.contentsOfDirectory(atPath: extensionDirectory.path)).isEmpty {
-                let existingData = try Data(contentsOf: extensionDirectory.appendingPathComponent("identity.json"))
-                let existing = try JSONSerialization.jsonObject(with: existingData) as? [String: String]
-                guard existing?["id"] == id else {
-                    throw NSError(domain: "Ortus", code: 3, userInfo: [NSLocalizedDescriptionKey: "A different folder already uses the browser companion's name."])
-                }
-            }
-            try files.createDirectory(at: extensionDirectory, withIntermediateDirectories: true)
-            for item in try files.contentsOfDirectory(at: bundledExtension, includingPropertiesForKeys: [.isRegularFileKey]) {
-                guard try item.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile == true else { continue }
-                let destination = extensionDirectory.appendingPathComponent(item.lastPathComponent)
-                let contents = try Data(contentsOf: item)
-                if (try? Data(contentsOf: destination)) != contents {
-                    try contents.write(to: destination, options: [.atomic])
-                }
-            }
             // The unpacked build (manifest key) and the Chrome Web Store build have different ids.
-            let origins = BrowserCompanion.allowedOrigins(unpackedID: id, storeID: identity["storeID"])
-            let manifest: [String: Any] = ["name": hostName, "description": "Ortus focus rules", "path": bridge.path,
-                                          "type": "stdio", "allowed_origins": origins]
-            let json = try JSONSerialization.data(withJSONObject: manifest, options: [.prettyPrinted, .sortedKeys])
-            for path in ["Google/Chrome", "Arc/User Data", "Microsoft Edge", "BraveSoftware/Brave-Browser", "Chromium"] {
-                let folder = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/\(path)/NativeMessagingHosts")
-                try BrowserPaths.prepare(folder)
-                try json.write(to: folder.appendingPathComponent(hostName + ".json"), options: [.atomic])
-            }
+            let result = CompanionRegistration.register(hostName: hostName, bridge: bridge, unpackedID: id, storeID: identity["storeID"],
+                                                        bundledExtension: bundledExtension, unpackedFolder: extensionDirectory)
+            folderError = result.folder.map { Self.folderMessage($0.localizedDescription, folder: extensionDirectory.lastPathComponent, preview: preview) }
+            if let error = result.manifests { throw error }
             setupError = nil
         } catch { setupError = "Browser setup: \(error.localizedDescription)" }
     }
+
+    /// A preview connects only to its own folder, so only the release can point at the store instead.
+    static func folderMessage(_ reason: String, folder: String, preview: Bool) -> String {
+        "Load unpacked can't use the “\(folder)” folder: \(reason)" + (preview ? "" : " Add Ortus from the Chrome Web Store instead.")
+    }
+
+    #if DEBUG
+    /// The snapshot harness shows the message a folder owned by another macOS user gives.
+    func pinFolderErrorForSnapshot() {
+        guard let folder = extensionDirectory else { return }
+        let reason = CocoaError(.fileWriteNoPermission, userInfo: [NSFilePathErrorKey: folder.appendingPathComponent("background.js").path]).localizedDescription
+        setupError = Self.folderMessage(reason, folder: folder.lastPathComponent, preview: preview)
+    }
+    #endif
 
     /// The published listing. Uses the bundled store id when the app has one, so the
     /// button and the native host allow the same extension.
@@ -213,6 +208,8 @@ final class WebsiteBlockingService: ObservableObject {
 
     func revealCompanion() {
         registerCompanion()
-        if setupError == nil, let extensionDirectory { NSWorkspace.shared.activateFileViewerSelecting([extensionDirectory]) }
+        guard setupError == nil else { return }
+        if let folderError { setupError = folderError }
+        else if let extensionDirectory { NSWorkspace.shared.activateFileViewerSelecting([extensionDirectory]) }
     }
 }

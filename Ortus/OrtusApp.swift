@@ -242,7 +242,7 @@ struct OrtusApp: App {
         }
         SnapshotHarness.runIfRequested(focusManager: focusManager) { tab, height, state in
             let modal: PanelModal? = switch state {
-            case "browser-setup", "browser-setup-folder": .browserSetup
+            case "browser-setup", "browser-setup-folder", "browser-setup-folder-error": .browserSetup
             case "slack-setup": .slackSetup
             case "chat-setup": .chatSetup
             case "chat-intro", "chat-intro-no-agent": .chatIntro
@@ -256,6 +256,7 @@ struct OrtusApp: App {
             case "up-to-date": updateService.pinForSnapshot(.upToDate)
             case "update-available": updateService.pinForSnapshot(.available(version: "1.2.0"))
             case "update-unverified": updateService.pinForSnapshot(.failed(UpdateService.unverifiedMessage))
+            case "browser-setup-folder-error": focusManager.websites.pinFolderErrorForSnapshot()
             default: break
             }
             return AnyView(panel(tab: tab, height: height, state: state, router: PanelRouter(modal: modal)))
