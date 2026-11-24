@@ -1,7 +1,7 @@
 // PostHog, cookieless: events stay in memory, nothing is stored on the visitor's device,
 // so no cookie banner is needed. Empty key = no tracking and no network calls at all.
 (() => {
-  const KEY = '';                              // PostHog project API key (phc_…), EU cloud
+  const KEY = 'phc_AJfuPPimgTTkTBAq4piciZ5HpmfViM3jCRE98R7pUEqa';                              // PostHog project API key (public by design), EU cloud
   const HOST = 'https://eu.i.posthog.com';
   const queue = [];
   const track = (event, props) => (window.posthog && window.posthog.__loaded ? window.posthog.capture(event, props) : queue.push([event, props]));
