@@ -108,8 +108,12 @@ final class WebsiteBlockingService: ObservableObject {
         if closingBrowser != next { closingBrowser = next }
     }
 
+    /// Why the Load unpacked folder couldn't be updated. Only a folder install needs it, so it shows on Show folder.
+    private var folderError: String?
+
     /// User-level registration only. Re-running updates the executable path after moving a build.
     func registerCompanion() {
+        folderError = nil
         do {
             guard let extensionDirectory, let bundledExtension = Bundle.main.resourceURL?.appendingPathComponent("BrowserExtension", isDirectory: true),
                   let bundle = Bundle.main.executableURL?.deletingLastPathComponent(),
@@ -123,6 +127,10 @@ final class WebsiteBlockingService: ObservableObject {
             // The unpacked build (manifest key) and the Chrome Web Store build have different ids.
             let result = CompanionRegistration.register(hostName: hostName, bridge: bridge, unpackedID: id, storeID: identity["storeID"],
                                                         bundledExtension: bundledExtension, unpackedFolder: extensionDirectory)
+            folderError = result.folder.map {
+                "Load unpacked can't use the “\(extensionDirectory.lastPathComponent)” folder: \($0.localizedDescription)"
+                    + (preview ? "" : " Add Ortus from the Chrome Web Store instead.")
+            }
             if let error = result.manifests { throw error }
             setupError = nil
         } catch { setupError = "Browser setup: \(error.localizedDescription)" }
@@ -189,6 +197,8 @@ final class WebsiteBlockingService: ObservableObject {
 
     func revealCompanion() {
         registerCompanion()
-        if setupError == nil, let extensionDirectory { NSWorkspace.shared.activateFileViewerSelecting([extensionDirectory]) }
+        guard setupError == nil else { return }
+        if let folderError { setupError = folderError }
+        else if let extensionDirectory { NSWorkspace.shared.activateFileViewerSelecting([extensionDirectory]) }
     }
 }

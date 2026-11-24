@@ -9,27 +9,35 @@ public enum CompanionRegistration {
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support", isDirectory: true)
     }
 
-    /// Copies the bundled extension to `unpackedFolder` (for Load unpacked) and writes the host manifest
-    /// for every browser. Returns what went wrong with the manifests and with the folder.
+    /// Writes the host manifest for every browser, then copies the bundled extension to `unpackedFolder`
+    /// (for Load unpacked). The manifests are what let any installed extension reach the app, so they come
+    /// first and never wait on the folder, which can't be written when another macOS user owns it, a
+    /// non-admin account can't create it, or the app runs from the DMG. Returns each step's error.
     public static func register(hostName: String, bridge: URL, unpackedID: String, storeID: String?,
                                 bundledExtension: URL, unpackedFolder: URL,
                                 applicationSupport: URL = applicationSupport) -> (manifests: Error?, folder: Error?) {
+        var manifests: Error?, folder: Error?
         do {
-            try copyExtension(from: bundledExtension, to: unpackedFolder, unpackedID: unpackedID)
             try writeManifests(hostName: hostName, bridge: bridge, origins: BrowserCompanion.allowedOrigins(unpackedID: unpackedID, storeID: storeID), applicationSupport: applicationSupport)
-            return (nil, nil)
-        } catch { return (error, nil) }
+        } catch { manifests = error }
+        do { try copyExtension(from: bundledExtension, to: unpackedFolder, unpackedID: unpackedID) } catch { folder = error }
+        return (manifests, folder)
     }
 
+    /// One browser's folder failing doesn't stop the others.
     static func writeManifests(hostName: String, bridge: URL, origins: [String], applicationSupport: URL) throws {
         let manifest: [String: Any] = ["name": hostName, "description": "Ortus focus rules", "path": bridge.path,
                                       "type": "stdio", "allowed_origins": origins]
         let json = try JSONSerialization.data(withJSONObject: manifest, options: [.prettyPrinted, .sortedKeys])
+        var firstError: Error?
         for path in browserFolders {
-            let folder = applicationSupport.appendingPathComponent("\(path)/NativeMessagingHosts", isDirectory: true)
-            try BrowserPaths.prepare(folder)
-            try json.write(to: folder.appendingPathComponent(hostName + ".json"), options: [.atomic])
+            do {
+                let folder = applicationSupport.appendingPathComponent("\(path)/NativeMessagingHosts", isDirectory: true)
+                try BrowserPaths.prepare(folder)
+                try json.write(to: folder.appendingPathComponent(hostName + ".json"), options: [.atomic])
+            } catch { firstError = firstError ?? error }
         }
+        if let firstError { throw firstError }
     }
 
     static func copyExtension(from bundled: URL, to folder: URL, unpackedID: String) throws {
