@@ -270,7 +270,16 @@ struct FocusView: View {
     private var idleState: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 10) {
-                OrtusMark(width: 46)
+                HStack(spacing: 10) {
+                    OrtusMark(width: 46)
+                    // Testers should know they're on a beta. Sand and ink: orange stays for the sun.
+                    Text("Beta")
+                        .font(OrtusTheme.Typo.badge)
+                        .foregroundStyle(OrtusTheme.text)
+                        .padding(.horizontal, 7)
+                        .frame(height: 22)
+                        .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(OrtusTheme.fill))
+                }
                 Text(genZ ? "ready to lock in?" : "Ready when you are")
                     .font(OrtusTheme.Typo.title)
                     .tracking(-1.2)
