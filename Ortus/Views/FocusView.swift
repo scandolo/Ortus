@@ -337,15 +337,14 @@ struct FocusIntroModal: View {
                 // What gets blocked: their own apps and websites, names on hover.
                 BlockedStack(items: items, ground: OrtusTheme.cardSurface, size: 32, limit: 5)
 
-                // How it goes: locked from the start until the end.
+                // How it goes: locked from the start until the end. Plain text and a
+                // line, so the Lock in button below stays the only thing to press.
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
                         OrtusIcon(.locked, size: 15).foregroundStyle(OrtusTheme.accent)
-                        Text("\(FocusView.lengthLabel(minutes: minutes)), locked").font(OrtusFont.text(14, .bold)).foregroundStyle(OrtusTheme.bone)
+                        Text("\(FocusView.lengthLabel(minutes: minutes)), locked").font(OrtusFont.text(14, .bold)).foregroundStyle(OrtusTheme.text)
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 40)
-                    .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(OrtusTheme.ink))
+                    OrtusLineProgress(fraction: 1, height: 4)
                     HStack {
                         Text("starts now")
                         Spacer()
