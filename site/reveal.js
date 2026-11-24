@@ -1,7 +1,7 @@
 // Fades sections in as they enter the screen, once. CSS does the motion (transform and
 // opacity only); this only adds the "in" class. Reduced motion or no observer: show at once.
 (() => {
-  const els = document.querySelectorAll('.reveal, .timeline, .field');
+  const els = document.querySelectorAll('.reveal');
   const show = (el) => el.classList.add('in');
   if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) {
     els.forEach(show);
