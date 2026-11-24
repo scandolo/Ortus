@@ -36,7 +36,12 @@
   s.src = 'https://eu-assets.i.posthog.com/static/array.js';
   s.async = true;
   s.onload = () => {
-    window.posthog.init(KEY, { api_host: HOST, persistence: 'memory', autocapture: false, capture_pageview: true, capture_pageleave: true, disable_session_recording: true });
+    window.posthog.init(KEY, {
+      api_host: HOST, persistence: 'memory', autocapture: false, capture_pageview: true, capture_pageleave: true,
+      // Only what the privacy page lists: no recordings, heatmaps, performance data, dead clicks or surveys,
+      // even if they're switched on in the PostHog project.
+      disable_session_recording: true, capture_heatmaps: false, capture_performance: false, capture_dead_clicks: false, disable_surveys: true,
+    });
     queue.splice(0).forEach(([e, p]) => window.posthog.capture(e, p));
   };
   document.head.appendChild(s);
