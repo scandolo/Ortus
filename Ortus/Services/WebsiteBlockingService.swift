@@ -120,34 +120,10 @@ final class WebsiteBlockingService: ObservableObject {
             guard FileManager.default.isExecutableFile(atPath: bridge.path) else {
                 throw NSError(domain: "Ortus", code: 2, userInfo: [NSLocalizedDescriptionKey: "The browser connection helper is missing."])
             }
-            let files = FileManager.default
-            if files.fileExists(atPath: extensionDirectory.path),
-               !(try files.contentsOfDirectory(atPath: extensionDirectory.path)).isEmpty {
-                let existingData = try Data(contentsOf: extensionDirectory.appendingPathComponent("identity.json"))
-                let existing = try JSONSerialization.jsonObject(with: existingData) as? [String: String]
-                guard existing?["id"] == id else {
-                    throw NSError(domain: "Ortus", code: 3, userInfo: [NSLocalizedDescriptionKey: "A different folder already uses the browser companion's name."])
-                }
-            }
-            try files.createDirectory(at: extensionDirectory, withIntermediateDirectories: true)
-            for item in try files.contentsOfDirectory(at: bundledExtension, includingPropertiesForKeys: [.isRegularFileKey]) {
-                guard try item.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile == true else { continue }
-                let destination = extensionDirectory.appendingPathComponent(item.lastPathComponent)
-                let contents = try Data(contentsOf: item)
-                if (try? Data(contentsOf: destination)) != contents {
-                    try contents.write(to: destination, options: [.atomic])
-                }
-            }
             // The unpacked build (manifest key) and the Chrome Web Store build have different ids.
-            let origins = BrowserCompanion.allowedOrigins(unpackedID: id, storeID: identity["storeID"])
-            let manifest: [String: Any] = ["name": hostName, "description": "Ortus focus rules", "path": bridge.path,
-                                          "type": "stdio", "allowed_origins": origins]
-            let json = try JSONSerialization.data(withJSONObject: manifest, options: [.prettyPrinted, .sortedKeys])
-            for path in ["Google/Chrome", "Arc/User Data", "Microsoft Edge", "BraveSoftware/Brave-Browser", "Chromium"] {
-                let folder = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/\(path)/NativeMessagingHosts")
-                try BrowserPaths.prepare(folder)
-                try json.write(to: folder.appendingPathComponent(hostName + ".json"), options: [.atomic])
-            }
+            let result = CompanionRegistration.register(hostName: hostName, bridge: bridge, unpackedID: id, storeID: identity["storeID"],
+                                                        bundledExtension: bundledExtension, unpackedFolder: extensionDirectory)
+            if let error = result.manifests { throw error }
             setupError = nil
         } catch { setupError = "Browser setup: \(error.localizedDescription)" }
     }
