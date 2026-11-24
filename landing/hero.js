@@ -12,6 +12,8 @@
 
   // Size the window to the screen and centre the desktop in it. Once pinned, the window sits
   // in the middle of the screen with the same margin above and below.
+  // Notifications stay in the window's top-right corner, like on a real Mac (index.html offsets
+  // them by --scene-top).
   function fit() {
     const gap = phone.matches ? 16 : 28;
     const [w, h] = phone.matches ? [366, 460] : [1344, 560];
