@@ -44,10 +44,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         statusWindows.lazy.compactMap { button(in: $0.contentView) }.first?.performClick(nil)
     }
 
-    /// Open at login is on by default: schedules only run while Ortus is open. It's set
-    /// once, at first run; macOS says so with its "Login item added" notice. The welcome
-    /// page's box starts ticked to match, and unticking it (or the switch in Settings)
-    /// turns it off. Users who already made a choice keep it. Previews never register.
+    /// Open at login is on by default and nobody is asked: schedules only run while Ortus is
+    /// open. It's set once, at first run; macOS says so with its "Login item added" notice.
+    /// People turn it off in Settings → General. Users who already made a choice keep it.
+    /// Previews never register.
     private func enableLaunchAtLoginByDefault() {
         guard Bundle.main.object(forInfoDictionaryKey: "OrtusPreviewBuild") as? Bool != true else { return }
         let key = "didSetDefaultLoginItem"
@@ -71,8 +71,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         return (types?.first?["CFBundleURLSchemes"] as? [String])?.first
     }
 
-    /// The welcome page sends ortus://welcome?login=1&analytics=0. Any page can open this
-    /// link (after the browser asks), and it only changes these two settings.
+    /// The welcome page sends ortus://welcome?analytics=0 (older copies also sent login=1).
+    /// Any page can open this link (after the browser asks), and it only changes these two settings.
     func application(_ application: NSApplication, open urls: [URL]) {
         for url in urls where url.host == "welcome" {
             let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []

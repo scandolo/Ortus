@@ -46,17 +46,13 @@
       </section>
 
       <section class="doc-card" aria-labelledby="choices-title">
-        <h2 id="choices-title">Two choices</h2>
-        <label class="choice">
-          <input type="checkbox" id="login" checked />
-          <span><strong>Open Ortus when you log in</strong><br />Schedules only run while Ortus is open.</span>
-        </label>
+        <h2 id="choices-title">One choice</h2>
         <label class="choice">
           <input type="checkbox" id="analytics" />
           <span><strong>Share anonymous usage</strong><br />Which features get used, never your messages or the sites you visit. <a href="/privacy">Privacy policy</a></span>
         </label>
-        <a class="btn btn-primary" id="save" href="ortus://welcome?login=1&amp;analytics=0">Save choices</a>
-        <p class="small" id="save-note">Your browser will ask to open Ortus. You can change both anytime in Ortus → Settings.</p>
+        <a class="btn btn-primary" id="save" href="ortus://welcome?analytics=0">Save choice</a>
+        <p class="small" id="save-note">Your browser will ask to open Ortus. You can change it anytime in Ortus → Settings.</p>
       </section>
     </div>
   </main>
@@ -67,16 +63,14 @@
       var scheme = new URLSearchParams(location.search).get("scheme");
       if (scheme !== "ortus-preview") scheme = "ortus";
       var save = document.getElementById("save");
-      var login = document.getElementById("login");
       var analytics = document.getElementById("analytics");
       var update = function () {
-        save.href = scheme + "://welcome?login=" + (login.checked ? 1 : 0) + "&analytics=" + (analytics.checked ? 1 : 0);
+        save.href = scheme + "://welcome?analytics=" + (analytics.checked ? 1 : 0);
       };
-      login.addEventListener("change", update);
       analytics.addEventListener("change", update);
       update();
       save.addEventListener("click", function () {
-        document.getElementById("save-note").textContent = "Saved once you allow your browser to open Ortus. You can change both anytime in Ortus → Settings.";
+        document.getElementById("save-note").textContent = "Saved once you allow your browser to open Ortus. You can change it anytime in Ortus → Settings.";
       });
     })();
   </script>
