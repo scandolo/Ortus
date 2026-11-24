@@ -44,11 +44,13 @@ struct FocusView: View {
     /// The primary action stays pinned and visible, like "Add schedule".
     @ViewBuilder private var footer: some View {
         if inGracePeriod {
+            // An exception to "the safe choice is primary": the user just chose to lock in,
+            // so locking in now is the main action and backing out the secondary one.
             HStack(spacing: OrtusTheme.spacingSM) {
                 Button(genZ ? "nvm" : "Never mind") { focusManager.revertFocusSession() }
-                    .buttonStyle(OrtusPrimaryButtonStyle(fullWidth: true))
-                Button(genZ ? "lock in now" : "Lock in now") { focusManager.skipGracePeriod() }
                     .buttonStyle(OrtusSecondaryButtonStyle(fullWidth: true))
+                Button(genZ ? "lock in now" : "Lock in now") { focusManager.skipGracePeriod() }
+                    .buttonStyle(OrtusPrimaryButtonStyle(fullWidth: true))
                     .help("End the cancellation window and lock in this session now")
             }
             .padding([.horizontal, .bottom], OrtusTheme.spacingMD)
