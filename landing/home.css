@@ -180,6 +180,7 @@ a:focus-visible { outline: 3px solid var(--persimmon); outline-offset: 3px; bord
 .why-text strong { font-weight: 500; color: var(--bone); }
 .why-text sup a { font-size: .5em; color: inherit; }
 .why .footnote { font-size: 13px; line-height: 1.4; letter-spacing: 0; font-weight: 400; }
+.why .footnote a { text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
 
 /* 3 · How it works */
 .how .wrap { display: grid; grid-template-columns: minmax(0, 560px) minmax(0, 640px); justify-content: space-between; gap: 64px; align-items: start; }
@@ -221,7 +222,9 @@ a:focus-visible { outline: 3px solid var(--persimmon); outline-offset: 3px; bord
 .cta-band-title span { display: block; }
 .cta-band-action { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; flex: none; }
 .cta-ink { height: 56px; padding: 0 26px; font-size: 17px; background: var(--ink); color: var(--bone); }
-.cta-band-note { margin: 0; font-size: 13px; color: rgba(28, 28, 25, .75); }
+.cta-band-note { margin: 0; font-size: 13px; color: var(--ink); }
+/* Persimmon focus rings vanish on the orange band. */
+.cta-band a:focus-visible { outline-color: var(--ink); }
 .cta-band-note a { text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
 .footer { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 34px var(--gutter); background: var(--bone); color: var(--ink); font-size: 15px; font-weight: 500; }
 .footer-logo { display: block; width: 122px; height: 28px; }
