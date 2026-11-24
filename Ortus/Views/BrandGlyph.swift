@@ -220,7 +220,22 @@ struct BlockedStack: View {
     var limit = 3
     var showsMore = true
 
-    static let alphas: [Double] = [1, 0.84, 0.68, 0.54, 0.42, 0.32, 0.24]
+    @Environment(\.colorScheme) private var scheme
+
+    /// Solid fills from the strongest (front) to the faintest (back). Opaque, so a circle
+    /// never shows the one behind it, and every fill keeps the mark readable: ink to
+    /// bone-muted under bone marks when free, bone to stone under ink marks when locked.
+    static func fill(index: Int, locked: Bool) -> Color {
+        let from: UInt32 = locked ? 0xF2EEE8 : 0x1C1C19
+        let to: UInt32 = locked ? 0x9A978E : 0x5E5C55
+        let t = min(Double(index) / 5, 1)
+        func channel(_ value: UInt32, _ shift: UInt32) -> Double { Double((value >> shift) & 0xFF) }
+        let mixed = [16, 8, 0].reduce(UInt32(0)) { result, shift in
+            let c = channel(from, UInt32(shift)) + (channel(to, UInt32(shift)) - channel(from, UInt32(shift))) * t
+            return result | (UInt32(c.rounded()) << UInt32(shift))
+        }
+        return Color(hex: mixed)
+    }
 
     var body: some View {
         let shown = Array(items.prefix(limit))
@@ -229,7 +244,7 @@ struct BlockedStack: View {
                 ForEach(Array(shown.enumerated()), id: \.element.id) { index, item in
                     mark(item)
                         .frame(width: size, height: size)
-                        .background(Circle().fill(OrtusTheme.text.opacity(Self.alphas[min(index, Self.alphas.count - 1)])))
+                        .background(Circle().fill(Self.fill(index: index, locked: scheme == .dark)))
                         .overlay(Circle().strokeBorder(ground, lineWidth: 2))
                         .zIndex(Double(shown.count - index))
                 }
