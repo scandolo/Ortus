@@ -20,7 +20,7 @@ struct ChatAnswerView: View {
         }
         .font(OrtusTheme.Typo.body)
         .textSelection(.enabled)
-        .tint(OrtusTheme.accentInk)
+        .tint(OrtusTheme.text)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 4)
     }
@@ -45,16 +45,17 @@ struct ChatAnswerView: View {
         case .paragraph, .bullets, .numbered:
             ProseText(blocks: [block])
         case .blockquote(let text):
-            HStack(alignment: .top, spacing: 10) {
-                RoundedRectangle(cornerRadius: 1).fill(OrtusTheme.accent).frame(width: 2)
-                Text(Self.inline(text))
+            HStack(alignment: .top, spacing: 12) {
+                Rectangle().fill(OrtusTheme.text).frame(width: 2)
+                Text(Self.inline(text)).lineSpacing(4)
             }
+            .fixedSize(horizontal: false, vertical: true)
         case .code(let text):
             Text(text)
-                .font(.system(size: 12, design: .monospaced))
+                .font(.system(size: 13, design: .monospaced))
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(OrtusTheme.spacingSM)
-                .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous).fill(OrtusTheme.inputSurface))
+                .padding(.horizontal, 14).padding(.vertical, 12)
+                .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous).fill(OrtusTheme.fill))
         case .quote(let quote):
             QuoteCard(quote: quote)
         case .draft(let draft):
@@ -64,8 +65,13 @@ struct ChatAnswerView: View {
         }
     }
 
+    /// Links are underlined, so they read as links in the text colour (quotes, cards).
     static func inline(_ text: String) -> AttributedString {
-        (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
+        var parsed = (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
+        for range in parsed.runs.filter({ $0.link != nil }).map(\.range) {
+            parsed[range].underlineStyle = .single
+        }
+        return parsed
     }
 }
 
@@ -105,7 +111,8 @@ private struct ProseText: NSViewRepresentable {
         // SwiftUI sets the frame; the view never resizes itself.
         view.isVerticallyResizable = false
         view.isHorizontallyResizable = false
-        view.linkTextAttributes = [.foregroundColor: NSColor(OrtusTheme.accentInk), .cursor: NSCursor.pointingHand]
+        view.linkTextAttributes = [.foregroundColor: NSColor(OrtusTheme.text), .underlineStyle: NSUnderlineStyle.single.rawValue,
+                                   .cursor: NSCursor.pointingHand]
 
         let coordinator = context.coordinator
         coordinator.container.lineFragmentPadding = 0
@@ -117,6 +124,8 @@ private struct ProseText: NSViewRepresentable {
     func updateNSView(_ view: NSTextView, context: Context) {
         // Only when the text changed, so a selection survives other updates.
         let scale = context.environment.displayScale
+        // Bone or ink like the panel, not the system appearance.
+        view.appearance = NSAppearance(named: context.environment.colorScheme == .dark ? .darkAqua : .aqua)
         guard context.coordinator.blocks != blocks || context.coordinator.scale != scale else { return }
         context.coordinator.blocks = blocks
         context.coordinator.scale = scale
@@ -135,8 +144,16 @@ private struct ProseText: NSViewRepresentable {
     /// `scale` is the display's: SwiftUI rounds a marker's width up to whole pixels, so
     /// the item's text starts there.
     static func text(_ blocks: [ChatBlock], scale: CGFloat) -> NSAttributedString {
-        let font = NSFont.systemFont(ofSize: 13)
-        let markerFont = NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .regular)
+        let font = OrtusFont.nsText(15)
+        // Tabular digits, so "1." to "9." line up.
+        let markerFont: NSFont = {
+            let base = OrtusFont.nsText(15)
+            let tabular = base.fontDescriptor.addingAttributes([.featureSettings: [[
+                NSFontDescriptor.FeatureKey.typeIdentifier: kNumberSpacingType,
+                NSFontDescriptor.FeatureKey.selectorIdentifier: kMonospacedNumbersSelector,
+            ]]])
+            return NSFont(descriptor: tabular, size: 15) ?? base
+        }()
         let text = NSMutableAttributedString()
         for (blockIndex, block) in blocks.enumerated() {
             let rows: [(marker: String?, text: String)]
@@ -149,10 +166,11 @@ private struct ProseText: NSViewRepresentable {
             for (rowIndex, row) in rows.enumerated() {
                 let start = text.length
                 let style = NSMutableParagraphStyle()
+                style.lineSpacing = 4
                 if rowIndex < rows.count - 1 {
-                    style.paragraphSpacing = 3
+                    style.paragraphSpacing = 4
                 } else if blockIndex < blocks.count - 1 {
-                    style.paragraphSpacing = OrtusTheme.spacingSM
+                    style.paragraphSpacing = 10
                 }
                 if let marker = row.marker {
                     let width = (marker as NSString).size(withAttributes: [.font: markerFont]).width
@@ -180,14 +198,12 @@ private struct ProseText: NSViewRepresentable {
         let parsed = ChatAnswerView.inline(markdown)
         for run in parsed.runs {
             let intent = run.inlinePresentationIntent ?? []
-            var runFont = intent.contains(.code) ? NSFont.monospacedSystemFont(ofSize: font.pointSize, weight: .regular) : font
-            var traits: NSFontDescriptor.SymbolicTraits = []
-            if intent.contains(.stronglyEmphasized) { traits.insert(.bold) }
-            if intent.contains(.emphasized) { traits.insert(.italic) }
-            if !traits.isEmpty {
-                runFont = NSFont(descriptor: runFont.fontDescriptor.withSymbolicTraits(traits), size: font.pointSize) ?? runFont
-            }
-            var attributes: [NSAttributedString.Key: Any] = [.font: runFont, .foregroundColor: NSColor.labelColor]
+            // Archivo has no italic: emphasis leans the roman instead.
+            var runFont = intent.contains(.code) ? NSFont.monospacedSystemFont(ofSize: font.pointSize - 2, weight: .regular) : font
+            if intent.contains(.stronglyEmphasized) && !intent.contains(.code) { runFont = OrtusFont.nsText(font.pointSize, .bold) }
+            var attributes: [NSAttributedString.Key: Any] = [.font: runFont, .foregroundColor: NSColor(OrtusTheme.text)]
+            if intent.contains(.emphasized) { attributes[.obliqueness] = 0.18 }
+            if run.link != nil { attributes[.font] = OrtusFont.nsText(font.pointSize, .bold) }
             if intent.contains(.strikethrough) { attributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue }
             if let link = run.link { attributes[.link] = link }
             // A line break inside a paragraph, not a new paragraph with its spacing.
@@ -217,8 +233,8 @@ private struct QuoteCard: View {
     }
 
     private var header: some View {
-        HStack(spacing: 6) {
-            BrandGlyph(id: quote.source, size: 12)
+        HStack(spacing: 7) {
+            BrandGlyph(id: quote.source, size: 13, color: OrtusTheme.textMuted)
             Text(title).lineLimit(1)
             Spacer(minLength: 0)
             if quote.source == "gmail", let time = quote.messages.last?.time {
@@ -244,7 +260,7 @@ private struct QuoteCard: View {
             }
             entryView(entries[0])
             ExpandButton(title: "\(count) more \(count == 1 ? "reply" : "replies")") { showsAllReplies = true }
-                .padding(.leading, 29)
+                .padding(.leading, 36)
             ForEach(Array(entries.suffix(2).enumerated()), id: \.offset) { _, entry in entryView(entry) }
         } else {
             ForEach(Array(entries.enumerated()), id: \.offset) { _, entry in entryView(entry) }
@@ -256,15 +272,15 @@ private struct QuoteCard: View {
         case .skipped(let count):
             // Claude left these out, so there is nothing to open: plain text, not a control.
             Text("\(count) \(count == 1 ? "reply" : "replies") left out")
-                .font(OrtusTheme.Typo.caption.italic())
+                .font(OrtusTheme.Typo.caption)
                 .foregroundStyle(OrtusTheme.textMuted)
-                .padding(.leading, 29)
+                .padding(.leading, 36)
         case .message(let message):
-            HStack(alignment: .top, spacing: 9) {
+            HStack(alignment: .top, spacing: 10) {
                 avatar(message.from)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 3) {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text(message.from).font(OrtusTheme.Typo.bodyMedium.weight(.semibold))
+                        Text(message.from).font(OrtusFont.text(14, .bold))
                         if let time = message.time {
                             Text(ChatQuote.timeLabel(time, now: Date()))
                                 .font(OrtusTheme.Typo.meta)
@@ -274,7 +290,7 @@ private struct QuoteCard: View {
                     if let about = message.about {
                         Text(about).font(OrtusTheme.Typo.meta).foregroundStyle(OrtusTheme.textMuted)
                     }
-                    Text(ChatAnswerView.inline(message.text))
+                    Text(ChatAnswerView.inline(message.text)).font(OrtusFont.text(14)).lineSpacing(3)
                 }
             }
         }
@@ -283,18 +299,17 @@ private struct QuoteCard: View {
     private func avatar(_ name: String) -> some View {
         Text(name.first.map { String($0).uppercased() } ?? "?")
             .font(OrtusTheme.Typo.badge)
-            .foregroundStyle(OrtusTheme.textMuted)
-            .frame(width: 20, height: 20)
-            .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(OrtusTheme.inputSurface))
+            .frame(width: 26, height: 26)
+            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(OrtusTheme.cardChip))
     }
 
     // MARK: Email
 
     @ViewBuilder private var email: some View {
         let messages = quote.messages
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             if !quote.place.isEmpty {
-                Text(quote.place).font(OrtusTheme.Typo.bodyMedium.weight(.semibold))
+                Text(quote.place).font(OrtusFont.text(15, .bold))
             }
             // Earlier messages in the thread, one line each.
             ForEach(Array(messages.dropLast().enumerated()), id: \.offset) { _, message in
@@ -308,7 +323,9 @@ private struct QuoteCard: View {
                     .font(OrtusTheme.Typo.caption)
                     .foregroundStyle(OrtusTheme.textMuted)
                 Text(ChatAnswerView.inline(last.text))
-                    .lineLimit(showsFullEmail ? nil : 4)
+                    .font(OrtusFont.text(14))
+                    .lineSpacing(3)
+                    .lineLimit(showsFullEmail ? nil : 3)
                     .padding(.top, 2)
                 if last.text.count > 240 && !showsFullEmail {
                     ExpandButton(title: "Show more") { showsFullEmail = true }
@@ -332,21 +349,15 @@ private func appName(_ source: String) -> String {
 private extension View {
     /// The lifted card the quote and draft cards sit on, like OrtusGroup.
     func chatCard() -> some View {
-        let shape = RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
-        return padding(12)
+        environment(\.ortusOnCard, true)
+            .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(shape.fill(OrtusTheme.cardSurface))
-            .overlay(shape.strokeBorder(OrtusTheme.hairline, lineWidth: 1))
-            .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
+            .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).fill(OrtusTheme.cardSurface))
     }
 
-    /// The filled capsule for a draft card's one action.
-    func draftButton() -> some View {
-        buttonStyle(.plain)
-            .font(OrtusTheme.Typo.button)
-            .foregroundStyle(OrtusTheme.onAccent)
-            .padding(.horizontal, 16).padding(.vertical, 6)
-            .background(Capsule().fill(OrtusTheme.accentInk))
+    /// The primary button for a card's one action.
+    func draftButton(size: OrtusButtonSize = .small) -> some View {
+        buttonStyle(OrtusPrimaryButtonStyle(size: size))
     }
 }
 
@@ -378,32 +389,37 @@ private struct DraftCard: View {
     var body: some View {
         let sent = claudeCodeService.sentDrafts[id]
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 if draft.source == "email" {
-                    Image(systemName: "envelope").font(.system(size: 10)).foregroundStyle(OrtusTheme.textMuted)
+                    OrtusIcon(.mail, size: 14)
                 } else {
-                    BrandGlyph(id: draft.source, size: 12)
+                    BrandGlyph(id: draft.source, size: 14)
                 }
                 if sent == nil {
                     Text("DRAFT")
-                        .font(OrtusTheme.Typo.section).tracking(0.6)
-                        .foregroundStyle(OrtusTheme.accentInk)
-                        .padding(.horizontal, 7).padding(.vertical, 2)
-                        .background(Capsule().fill(OrtusTheme.accentSoft))
+                        .font(OrtusFont.text(11, .extraBold)).tracking(1.2)
+                        .padding(.horizontal, 8)
+                        .frame(height: 22)
+                        .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(OrtusTheme.cardChip))
                 }
                 Text(appName(draft.source)).foregroundStyle(OrtusTheme.textMuted)
                 Spacer(minLength: 0)
                 if sent == nil {
-                    Button { isEditing = true } label: { Label("Edit", systemImage: "pencil") }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(isEditing ? OrtusTheme.accentInk : OrtusTheme.textMuted)
-                        .help("Change the text before sending")
+                    Button { isEditing = true } label: {
+                        HStack(spacing: 6) {
+                            OrtusIcon(.edit, size: 13)
+                            Text("Edit").font(OrtusFont.text(13, .semibold))
+                        }
+                        .foregroundStyle(isEditing ? OrtusTheme.text : OrtusTheme.textMuted)
+                    }
+                    .buttonStyle(OrtusPressableStyle(inset: 4))
+                    .help("Change the text before sending")
                 }
             }
             .font(OrtusTheme.Typo.caption)
 
             if isEmail, !draft.place.isEmpty {
-                Text(draft.place).font(OrtusTheme.Typo.bodyMedium.weight(.semibold))
+                Text(draft.place).font(OrtusFont.text(15, .bold))
             }
             if let recipient = message?.to ?? (isEmail ? nil : draft.place) {
                 Text("To \(recipient)").font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
@@ -413,10 +429,10 @@ private struct DraftCard: View {
             }
 
             if let sent {
-                Text(sent).textSelection(.enabled)
+                Text(sent).font(OrtusFont.text(14)).lineSpacing(3).textSelection(.enabled)
             } else {
                 editor
-                Divider().padding(.top, 4)
+                Rectangle().fill(OrtusTheme.line).frame(height: 1).padding(.horizontal, -14).padding(.top, 2)
                 if draft.source == "email" { copyButton } else { sendButton }
             }
         }
@@ -434,10 +450,11 @@ private struct DraftCard: View {
                 .focused($isEditing)
                 .padding(.horizontal, -5) // NSTextView's line padding, so the text lines up with the labels
         }
-        .font(OrtusTheme.Typo.body)
+        .font(OrtusFont.text(14))
+        .lineSpacing(3)
         .background(
             RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous)
-                .fill(Color.primary.opacity(isEditing ? 0.05 : isHovering ? 0.03 : 0))
+                .fill(OrtusTheme.text.opacity(isEditing ? 0.06 : isHovering ? 0.03 : 0))
                 .padding(-4)
         )
         .onHover { isHovering = $0 }
@@ -474,11 +491,11 @@ private struct VerificationCodeCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
+            HStack(spacing: 7) {
                 if ["gmail", "slack"].contains(code.source) {
-                    BrandGlyph(id: code.source, size: 12)
+                    BrandGlyph(id: code.source, size: 14, color: OrtusTheme.textMuted)
                 } else {
-                    Image(systemName: "key").font(.system(size: 10))
+                    OrtusIcon(.key, size: 14)
                 }
                 Text(code.from.isEmpty ? "Verification code" : code.from).lineLimit(1)
                 Spacer(minLength: 0)
@@ -489,7 +506,8 @@ private struct VerificationCodeCard: View {
 
             HStack(alignment: .center, spacing: OrtusTheme.spacingSM) {
                 Text(code.code)
-                    .font(OrtusTheme.Typo.display.monospacedDigit())
+                    .font(OrtusFont.display(42))
+                    .monospacedDigit()
                     .tracking(4)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
@@ -501,9 +519,12 @@ private struct VerificationCodeCard: View {
                     copied = true
                     Task { try? await Task.sleep(for: .seconds(2)); copied = false }
                 } label: {
-                    Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
+                    HStack(spacing: 8) {
+                        OrtusIcon(copied ? .check : .copy, size: 15)
+                        Text(copied ? "Copied" : "Copy")
+                    }
                 }
-                .draftButton()
+                .draftButton(size: .medium)
                 .help("Copy the code")
             }
         }
@@ -522,16 +543,16 @@ private struct ExpandButton: View {
         Button {
             withAnimation(.easeOut(duration: 0.18)) { action() }
         } label: {
-            HStack(spacing: 4) {
+            HStack(spacing: 6) {
                 Text(title)
-                Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold))
+                OrtusIcon(.chevronDown, size: 10)
             }
-            .font(OrtusTheme.Typo.caption.weight(.semibold))
-            .foregroundStyle(OrtusTheme.accentInk)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .background(Capsule().fill(OrtusTheme.accentSoft.opacity(isHovering ? 1 : 0.6)))
-            .contentShape(Capsule())
+            .font(OrtusFont.text(13, .bold))
+            .foregroundStyle(OrtusTheme.text)
+            .padding(.horizontal, 12)
+            .frame(height: 30)
+            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(OrtusTheme.cardChip.opacity(isHovering ? 0.75 : 1)))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { hovering in

@@ -11,13 +11,13 @@ struct ScheduleView: View {
         VStack(spacing: 0) {
             if focusManager.schedules.isEmpty && !isAddingNew {
                 OrtusEmptyState(
-                    icon: "calendar.badge.plus",
+                    icon: .schedule,
                     title: "No schedules yet",
                     message: "Choose the apps and websites to set aside during each focus window."
                 )
             } else {
                 ScrollView {
-                    VStack(spacing: OrtusTheme.spacingSM) {
+                    VStack(spacing: 10) {
                         ForEach(focusManager.schedules) { schedule in
                             if editingScheduleID == schedule.id {
                                 ScheduleInlineEditor(
@@ -77,13 +77,14 @@ struct ScheduleView: View {
                 editingScheduleID = nil
                 isAddingNew = true
             } label: {
-                Label("Add schedule", systemImage: "plus")
-                    .frame(maxWidth: .infinity)
+                HStack(spacing: 8) {
+                    OrtusIcon(.plus, size: 14)
+                    Text("Add schedule")
+                }
             }
-            .buttonStyle(OrtusSecondaryButtonStyle())
+            .buttonStyle(OrtusSecondaryButtonStyle(fullWidth: true))
             .disabled(isAddingNew)
-            .padding(.horizontal, OrtusTheme.spacingMD)
-            .padding(.bottom, OrtusTheme.spacingSM)
+            .padding([.horizontal, .bottom], OrtusTheme.spacingMD)
         }
         .onAppear { if snapshotState == "new-schedule" { isAddingNew = true } }
     }
@@ -100,23 +101,21 @@ struct ScheduleRow: View {
     @State private var isHovering = false
 
     var body: some View {
-        HStack(spacing: OrtusTheme.spacingMD) {
+        HStack(spacing: 12) {
             Button(action: onEdit) {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(schedule.name)
-                        .font(OrtusTheme.Typo.headline)
-                        .foregroundStyle(.primary)
+                        .font(OrtusTheme.Typo.cardTitle)
+                        .foregroundStyle(OrtusTheme.text)
 
                     Text("\(daysSummary) · \(schedule.startTimeString)\u{2013}\(schedule.endTimeString)")
-                        .font(OrtusTheme.Typo.body)
+                        .font(OrtusFont.text(14))
                         .foregroundStyle(OrtusTheme.textMuted)
                         .monospacedDigit()
 
-                    HStack(spacing: OrtusTheme.spacingXS) {
-                        if isLocked {
-                            Image(systemName: "lock.fill")
-                                .font(OrtusTheme.Typo.meta)
-                        }
+                    HStack(spacing: 6) {
+                        OrtusIcon(isLocked ? .locked : .blocked, size: 12)
+                            .foregroundStyle(isLocked ? OrtusTheme.accent : OrtusTheme.textMuted)
                         Text(isLocked ? "Active until \(activeEndTimeString) · \(modeDescription)" : modeDescription)
                     }
                     .font(OrtusTheme.Typo.caption)
@@ -137,9 +136,7 @@ struct ScheduleRow: View {
                 set: { onToggle($0) }
             ))
             .labelsHidden()
-            .toggleStyle(.switch)
-            .controlSize(.small)
-            .tint(isLocked ? OrtusTheme.textMuted : OrtusTheme.accent)
+            .toggleStyle(OrtusToggleStyle())
             .accessibilityLabel("\(schedule.name) enabled")
             .disabled(isLocked)
         }
@@ -192,22 +189,20 @@ struct ScheduleInlineEditor: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
+        VStack(alignment: .leading, spacing: 14) {
             OrtusSectionHeader(title: title)
 
-            TextField("Name", text: $schedule.name)
+            TextField("", text: $schedule.name, prompt: Text("Name").foregroundStyle(OrtusTheme.textMuted))
                 .textFieldStyle(OrtusTextFieldStyle())
+                .accessibilityLabel("Name")
 
-            HStack {
-                DatePicker("Start", selection: $startTime, displayedComponents: .hourAndMinute)
-                    .labelsHidden()
-                Text("\u{2013}")
-                    .foregroundStyle(OrtusTheme.textMuted)
-                DatePicker("End", selection: $endTime, displayedComponents: .hourAndMinute)
-                    .labelsHidden()
+            HStack(spacing: 10) {
+                TimeStepper(time: $startTime, label: "Start")
+                Text("to").font(OrtusTheme.Typo.body).foregroundStyle(OrtusTheme.textMuted)
+                TimeStepper(time: $endTime, label: "End")
             }
 
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: OrtusTheme.spacingSM) {
+            HStack(spacing: 5) {
                 ForEach([Weekday.monday, .tuesday, .wednesday, .thursday, .friday, .saturday, .sunday]) { day in
                     DayToggleButton(day: day, isSelected: schedule.days.contains(day)) {
                         if schedule.days.contains(day) {
@@ -225,17 +220,17 @@ struct ScheduleInlineEditor: View {
 
             ModePicker(selection: $schedule.blocked)
 
-            HStack {
-                Button("Cancel", action: onCancel)
-                    .buttonStyle(OrtusGhostButtonStyle())
+            HStack(spacing: 4) {
+                // Delete stands apart on the left, away from Cancel and Save.
                 if let onDelete {
-                    Button(action: onDelete) {
-                        Text("Delete").font(OrtusTheme.Typo.button).foregroundStyle(OrtusTheme.danger)
-                    }
-                    .buttonStyle(OrtusPressableStyle(inset: 4))
+                    Button("Delete", action: onDelete)
+                        .buttonStyle(OrtusGhostButtonStyle(size: .medium))
                 }
 
                 Spacer()
+
+                Button("Cancel", action: onCancel)
+                    .buttonStyle(OrtusGhostButtonStyle(size: .medium))
 
                 Button("Save") {
                     let calendar = Calendar.current
@@ -252,6 +247,110 @@ struct ScheduleInlineEditor: View {
     }
 }
 
+// MARK: - Time stepper
+
+/// A time of day as one big number on sand, with up and down arrows that move it by
+/// 15 minutes. The number is a field: type "9:30", "2130" or "9pm". What's on screen is
+/// always what gets saved, even without pressing Return.
+struct TimeStepper: View {
+    @Binding var time: Date
+    let label: String
+    @State private var text = ""
+    /// The time when typing started, for Esc.
+    @State private var timeBeforeTyping: Date?
+    @FocusState private var focused: Bool
+    @Environment(\.ortusOnCard) private var onCard
+
+    private var minutes: Int {
+        let c = Calendar.current.dateComponents([.hour, .minute], from: time)
+        return (c.hour ?? 0) * 60 + (c.minute ?? 0)
+    }
+
+    private func set(_ total: Int) {
+        let wrapped = ((total % 1440) + 1440) % 1440
+        time = Calendar.current.date(bySettingHour: wrapped / 60, minute: wrapped % 60, second: 0, of: time) ?? time
+    }
+
+    /// One 15-minute step, landing on the quarter hour.
+    private func step(_ direction: Int) {
+        set(direction > 0 ? (minutes / 15 + 1) * 15 : (minutes % 15 == 0 ? minutes - 15 : minutes / 15 * 15))
+        text = label24
+    }
+
+    private var label24: String { String(format: "%02d:%02d", minutes / 60, minutes % 60) }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            TextField("", text: $text)
+                .textFieldStyle(.plain)
+                .font(OrtusFont.text(17, .bold)).monospacedDigit()
+                .frame(width: 56)
+                .focused($focused)
+                .onAppear { text = label24 }
+                .onChange(of: text) { _, new in if let parsed = Self.parse(new) { set(parsed) } }
+                .onChange(of: minutes) { _, _ in if !focused { text = label24 } }
+                // Tidy "930" into "09:30", or put back the time if what was typed can't be read.
+                .onChange(of: focused) { _, isFocused in
+                    if isFocused { timeBeforeTyping = time } else { text = label24 }
+                }
+                .onSubmit { text = label24 }
+                .onExitCommand {
+                    if let timeBeforeTyping { time = timeBeforeTyping }
+                    text = label24
+                    focused = false
+                }
+                .onKeyPress(.upArrow) { step(1); return .handled }
+                .onKeyPress(.downArrow) { step(-1); return .handled }
+                .help("Type a time, like 9:30 or 21:00")
+                .accessibilityLabel("\(label) time")
+                .accessibilityValue(label24)
+                .accessibilityAdjustableAction { direction in step(direction == .increment ? 1 : -1) }
+            VStack(spacing: 0) {
+                Button { step(1) } label: {
+                    OrtusIcon(.chevronDown, size: 10).rotationEffect(.degrees(180)).frame(width: 22, height: 15).contentShape(Rectangle())
+                }
+                .accessibilityLabel("\(label) 15 minutes later")
+                Button { step(-1) } label: {
+                    OrtusIcon(.chevronDown, size: 10).frame(width: 22, height: 15).contentShape(Rectangle())
+                }
+                .accessibilityLabel("\(label) 15 minutes earlier")
+            }
+            .buttonStyle(OrtusPressableStyle(cornerRadius: 5))
+            .foregroundStyle(OrtusTheme.textMuted)
+        }
+        .padding(.leading, 14).padding(.trailing, 8)
+        .frame(height: OrtusTheme.controlHeight)
+        .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous).fill(OrtusTheme.controlFill(onCard: onCard)))
+        .overlay {
+            if focused { RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous).strokeBorder(OrtusTheme.text, lineWidth: 2) }
+        }
+        .animation(.easeOut(duration: 0.15), value: focused)
+    }
+
+    /// Minutes after midnight for "9", "930", "9:30", "09.30", "21:00", "9pm", "9:30 am".
+    /// Nil when it isn't a time (yet), including a half-typed "21:3".
+    static func parse(_ raw: String) -> Int? {
+        let lower = raw.lowercased()
+        let pm = lower.contains("p"), am = lower.contains("a")
+        let parts = lower.split(whereSeparator: { !$0.isNumber }).map(String.init)
+        var hour: Int?, minute = 0
+        if parts.count >= 2 {
+            guard parts[1].count == 2 else { return nil }
+            hour = Int(parts[0]); minute = Int(parts[1]) ?? -1
+        } else if let digits = parts.first {
+            if digits.count <= 2 { hour = Int(digits) }
+            else if digits.count <= 4 { hour = Int(digits.dropLast(2)); minute = Int(digits.suffix(2)) ?? -1 }
+        }
+        guard var h = hour, (0..<60).contains(minute) else { return nil }
+        if am || pm {
+            guard (1...12).contains(h) else { return nil }
+            h = h % 12 + (pm ? 12 : 0)
+        }
+        guard (0..<24).contains(h) else { return nil }
+        return h * 60 + minute
+    }
+}
+
 // MARK: - Day Toggle Button
 
 struct DayToggleButton: View {
@@ -259,28 +358,21 @@ struct DayToggleButton: View {
     let isSelected: Bool
     let onTap: () -> Void
 
-    @State private var isHovering = false
-
     var body: some View {
         Button(action: onTap) {
             Text(day.shortName)
-                .font(OrtusTheme.Typo.badge)
+                .font(OrtusFont.text(13, .bold))
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, OrtusTheme.spacingSM)
+                .frame(height: 38)
                 .background(
-                    RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
-                        .fill(isSelected ? OrtusTheme.accentInk : (isHovering ? Color.primary.opacity(0.06) : .clear))
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(isSelected ? OrtusTheme.strong : OrtusTheme.fill)
                 )
-                .overlay(
-                    RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
-                        .strokeBorder(isSelected ? .clear : OrtusTheme.hairline, lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous))
-                .foregroundStyle(isSelected ? OrtusTheme.onAccent : .primary)
+                .foregroundStyle(isSelected ? OrtusTheme.onStrong : OrtusTheme.text)
+                .contentShape(Rectangle())
         }
-        .buttonStyle(OrtusPressableStyle(highlight: false))
-        .scaleEffect(isHovering ? 1.03 : 1.0)
-        .animation(.easeOut(duration: 0.15), value: isHovering)
-        .onHover { isHovering = $0 }
+        .buttonStyle(OrtusPressableStyle(cornerRadius: 10))
+        .accessibilityLabel(day.shortName)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

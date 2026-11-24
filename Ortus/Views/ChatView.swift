@@ -6,6 +6,7 @@ struct ChatView: View {
     @EnvironmentObject var router: PanelRouter
     @Environment(\.snapshotState) private var snapshotState
     @AppStorage("didSeeChatIntro") private var didSeeChatIntro = false
+    @AppStorage("chatIntroSentToSetup") private var chatIntroSentToSetup = false
     @State private var inputText = ""
     @AppStorage("genZMode") private var genZ = false
     @FocusState private var isInputFocused: Bool
@@ -16,10 +17,13 @@ struct ChatView: View {
         VStack(spacing: 0) {
             if !claudeCodeService.isConfigured {
                 OrtusEmptyState(
-                    icon: "sparkles",
-                    title: "Chat needs Claude Code",
-                    message: "Install Claude Code from docs.claude.com/claude-code, then check again in Settings."
+                    icon: .agent,
+                    title: "Your agent needs Claude Code.",
+                    message: "Chat uses Claude Code on your Mac. Set it up once, then ask from here."
                 )
+                Button("Set up agent") { router.modal = .chatSetup }
+                    .buttonStyle(OrtusPrimaryButtonStyle())
+                    .padding(.bottom, OrtusTheme.spacingMD)
             } else if claudeCodeService.messages.isEmpty {
                 emptyState
             } else {
@@ -38,9 +42,12 @@ struct ChatView: View {
                 inputText = "Go through my Slack DMs from this morning, pull out anything that needs a reply today, and draft short answers I can send when the session ends"
             }
         }
-        // Chat works with no setup, so the first visit explains what it is instead.
-        .onChange(of: claudeCodeService.isConfigured, initial: true) {
-            if claudeCodeService.isConfigured, !didSeeChatIntro, snapshotState == nil, router.modal == nil {
+        // The first visit explains what Chat is, set up or not, once detection has
+        // settled so it doesn't flip from "Set up agent" to "Get started". Someone sent to
+        // setup from it sees it again once Claude Code works, unless they're already chatting.
+        .onChange(of: claudeCodeService.isDetecting, initial: true) {
+            if !claudeCodeService.isDetecting, !didSeeChatIntro, !chatIntroSentToSetup || claudeCodeService.isConfigured,
+               claudeCodeService.messages.isEmpty, snapshotState == nil, router.modal == nil {
                 router.modal = .chatIntro
             }
         }
@@ -48,25 +55,18 @@ struct ChatView: View {
 
     // MARK: - Empty state
 
-    private let suggestions = ["Catch me up on Slack", "Anything urgent in my email?", "What’s on my calendar today?"]
-
     private var emptyState: some View {
         VStack(spacing: OrtusTheme.spacingMD) {
             Spacer()
-            Image(systemName: "sparkles").font(.system(size: 40, weight: .light)).foregroundStyle(OrtusTheme.accent)
-            Text(genZ ? "stay locked in, still in the loop" : "Stay in focus, still get answers").font(OrtusTheme.Typo.title).multilineTextAlignment(.center)
-            VStack(spacing: OrtusTheme.spacingSM) {
-                ForEach(suggestions, id: \.self) { suggestion in
-                    Button { inputText = suggestion; isInputFocused = true } label: {
-                        Text(suggestion).font(OrtusTheme.Typo.body)
-                            .padding(.horizontal, 14).padding(.vertical, 8)
-                            .background(Capsule().fill(OrtusTheme.cardSurface))
-                            .overlay(Capsule().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
-                    }
-                    .buttonStyle(OrtusPressableStyle(cornerRadius: 20))
-                }
-            }
-            .padding(.top, OrtusTheme.spacingXS)
+            OrtusIcon(.agent, size: 36)
+            Text(genZ ? "stay locked in,\nstill in the loop" : "Ask your agent.\nNothing opens.")
+                .font(OrtusTheme.Typo.titleSmall)
+                .tracking(-1)
+                .multilineTextAlignment(.center)
+            Text(genZ ? "it reads the apps ortus blocks so you don’t have to" : "It reads the apps Ortus blocks, so you don’t have to.")
+                .font(OrtusTheme.Typo.callout)
+                .foregroundStyle(OrtusTheme.textMuted)
+                .multilineTextAlignment(.center)
             Spacer()
         }
         .frame(maxWidth: .infinity)
@@ -80,7 +80,7 @@ struct ChatView: View {
             ScrollView {
                 // Not lazy: a chat is short, and a lazy stack kept re-laying out its rows
                 // forever in 1.1.15 (selectable text and draft cards resize as they lay out).
-                VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
+                VStack(alignment: .leading, spacing: 14) {
                     ForEach(claudeCodeService.messages) { message in
                         MessageRow(message: message)
                             .id(message.id)
@@ -106,21 +106,21 @@ struct ChatView: View {
 
     // MARK: - Input Bar
 
-    /// One line sits in a capsule with the buttons beside the text. Once the draft
-    /// needs a second line, the bar opens into a card: the text takes the full width
-    /// and the buttons drop to a row underneath.
+    /// One line sits in a bar with the buttons beside the text. Once the draft needs a
+    /// second line, the bar opens into a card: the text takes the full width and the
+    /// buttons drop to a row underneath.
     private var inputBar: some View {
         VStack(alignment: .leading, spacing: 0) {
             // The field keeps its place in both layouts, so switching keeps focus.
-            HStack(spacing: OrtusTheme.spacingSM) {
+            HStack(spacing: 10) {
                 if !isExpanded && hasConversation { newChatButton }
                 inputField
                 if !isExpanded { sendButton }
             }
-            .padding(.leading, isExpanded || !hasConversation ? OrtusTheme.spacingMD : 6)
-            .padding(.trailing, isExpanded ? OrtusTheme.spacingMD : 6)
-            .padding(.top, 6)
-            .padding(.bottom, isExpanded ? 0 : 6)
+            .padding(.leading, isExpanded || !hasConversation ? 14 : 10)
+            .padding(.trailing, isExpanded ? 14 : 8)
+            .padding(.top, isExpanded ? 12 : 8)
+            .padding(.bottom, isExpanded ? 0 : 8)
 
             if isExpanded {
                 HStack {
@@ -128,12 +128,14 @@ struct ChatView: View {
                     Spacer()
                     sendButton
                 }
-                .padding([.horizontal, .bottom], 6)
-                .padding(.top, 2)
+                .padding([.horizontal, .bottom], 10)
+                .padding(.top, 6)
             }
         }
-        .frame(minHeight: OrtusTheme.controlHeight)
-        .background(inputBarBackground)
+        .frame(minHeight: 50)
+        .background(inputBarShape.fill(OrtusTheme.cardSurface))
+        .overlay(inputBarShape.strokeBorder(OrtusTheme.text.opacity(isInputFocused ? 1 : isBarHovering ? 0.25 : 0), lineWidth: 2))
+        .animation(.easeOut(duration: 0.15), value: isBarHovering)
         .background(GeometryReader { proxy in
             Color.clear
                 .onAppear { barWidth = proxy.size.width }
@@ -147,10 +149,8 @@ struct ChatView: View {
             // The whole bar behaves like the text field, cursor included.
             if hovering { NSCursor.iBeam.push() } else { NSCursor.pop() }
         }
-        .padding(.horizontal, OrtusTheme.spacingMD)
-        .padding(.bottom, OrtusTheme.spacingSM)
+        .padding([.horizontal, .bottom], OrtusTheme.spacingMD)
         .animation(.easeOut(duration: 0.18), value: isInputFocused)
-        .animation(.easeOut(duration: 0.18), value: isBarHovering)
     }
 
     // Wraps instead of scrolling sideways, and grows to six lines before it
@@ -170,13 +170,13 @@ struct ChatView: View {
         Button {
             claudeCodeService.clearConversation()
         } label: {
-            Image(systemName: "square.and.pencil")
-                .font(.callout)
+            OrtusIcon(.edit, size: 15)
                 .foregroundStyle(OrtusTheme.textMuted)
                 .frame(width: 28, height: 28)
         }
-        .buttonStyle(OrtusPressableStyle(cornerRadius: 14))
+        .buttonStyle(OrtusPressableStyle(cornerRadius: 8))
         .help("New chat")
+        .accessibilityLabel("New chat")
         .disabled(claudeCodeService.isProcessing)
     }
 
@@ -195,40 +195,15 @@ struct ChatView: View {
     private var isExpanded: Bool {
         if inputText.contains("\n") { return true }
         guard barWidth > 0, !inputText.isEmpty else { return false }
-        let buttons: CGFloat = (hasConversation ? 2 : 1) * (28 + OrtusTheme.spacingSM)
-        let insets: CGFloat = (hasConversation ? 6 : OrtusTheme.spacingMD) + 6
-        let textWidth = (inputText as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 13)]).width
+        let buttons: CGFloat = (hasConversation ? 28 + 10 : 0) + 34 + 10
+        let insets: CGFloat = (hasConversation ? 10 : 14) + 8
+        let textWidth = (inputText as NSString).size(withAttributes: [.font: OrtusFont.nsText(15)]).width
         // Some slack so the card opens before the field itself starts to wrap.
         return textWidth > barWidth - buttons - insets - 8
     }
 
-    /// A capsule on one line. The card keeps the same end radius, so a long draft
-    /// reads as a soft rounded rectangle rather than a tall stadium.
     private var inputBarShape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: OrtusTheme.controlHeight / 2, style: .continuous)
-    }
-
-    private var inputBarBackground: some View {
-        ZStack {
-            // While typing, a soft amber halo just outside the edge, not a heavy ring.
-            inputBarShape
-                .stroke(OrtusTheme.accent.opacity(isInputFocused ? 0.14 : 0), lineWidth: 7)
-            inputBarShape
-                .fill(OrtusTheme.cardSurface)
-                .shadow(
-                    color: .black.opacity(isBarHovering ? 0.16 : 0.12),
-                    radius: isBarHovering ? 16 : 14,
-                    y: isBarHovering ? 5 : 4
-                )
-            // A thin top highlight lifts the surface in dark mode.
-            inputBarShape
-                .strokeBorder(LinearGradient(colors: [OrtusTheme.innerHighlight, .clear], startPoint: .top, endPoint: .center), lineWidth: 1)
-            inputBarShape
-                .strokeBorder(
-                    isInputFocused ? OrtusTheme.accent.opacity(0.55) : isBarHovering ? OrtusTheme.accent.opacity(0.35) : OrtusTheme.hairline,
-                    lineWidth: 1
-                )
-        }
+        RoundedRectangle(cornerRadius: 14, style: .continuous)
     }
 
     // MARK: - Helpers
@@ -252,71 +227,35 @@ struct ChatView: View {
 private struct ChatSendButton: View {
     let canSend: Bool
     let action: () -> Void
-    @State private var isHovering = false
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: "arrow.up")
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(canSend ? OrtusTheme.onAccent : OrtusTheme.textMuted)
-                .frame(width: 28, height: 28)
-                .background(
-                    Circle()
-                        .fill(
-                            canSend
-                                ? (isHovering ? OrtusTheme.accentInkHover : OrtusTheme.accentInk)
-                                : Color.primary.opacity(0.08)
-                        )
-                        // A soft sheen from the top gives the filled button some depth.
-                        .overlay(Circle().fill(LinearGradient(colors: [.white.opacity(canSend ? 0.2 : 0), .clear], startPoint: .top, endPoint: .center)))
-                )
-                .overlay(
-                    Circle().strokeBorder(
-                        canSend ? OrtusTheme.innerHighlightStrong : .clear,
-                        lineWidth: 1
-                    )
-                )
-                .shadow(
-                    color: canSend ? OrtusTheme.accent.opacity(isHovering ? 0.55 : 0.30) : .clear,
-                    radius: isHovering ? 8 : 4,
-                    y: 1
-                )
-                .scaleEffect(canSend && isHovering ? 1.08 : 1.0)
+            OrtusIcon(.send, size: 15)
+                .foregroundStyle(canSend ? OrtusTheme.onStrong : OrtusTheme.textMuted)
+                .frame(width: 34, height: 34)
+                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(canSend ? OrtusTheme.strong : OrtusTheme.cardChip))
         }
-        .buttonStyle(OrtusPressableStyle(highlight: false))
+        .buttonStyle(OrtusPressableStyle(cornerRadius: 10))
         .disabled(!canSend)
         .help("Send message")
-        .animation(.easeOut(duration: 0.18), value: isHovering)
-        .animation(.easeOut(duration: 0.18), value: canSend)
-        .onHover { isHovering = $0 }
+        .accessibilityLabel("Send")
+        .animation(.easeOut(duration: 0.15), value: canSend)
     }
 }
 
 private struct ChatStopButton: View {
     let action: () -> Void
-    @State private var isHovering = false
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: "stop.fill")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 28, height: 28)
-                .background(Circle().fill(OrtusTheme.warning))
-                .overlay(
-                    Circle().strokeBorder(OrtusTheme.innerHighlightStrong, lineWidth: 1)
-                )
-                .shadow(
-                    color: OrtusTheme.warning.opacity(isHovering ? 0.55 : 0.30),
-                    radius: isHovering ? 8 : 4,
-                    y: 1
-                )
-                .scaleEffect(isHovering ? 1.08 : 1.0)
+            OrtusIcon(.stop, size: 14)
+                .foregroundStyle(OrtusTheme.onStrong)
+                .frame(width: 34, height: 34)
+                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(OrtusTheme.strong))
         }
-        .buttonStyle(OrtusPressableStyle(highlight: false))
+        .buttonStyle(OrtusPressableStyle(cornerRadius: 10))
         .help("Stop")
-        .animation(.easeOut(duration: 0.18), value: isHovering)
-        .onHover { isHovering = $0 }
+        .accessibilityLabel("Stop")
     }
 }
 
@@ -339,13 +278,12 @@ private struct ActivityRow: View {
                     Button {
                         withAnimation(.easeOut(duration: 0.18)) { isOpen.toggle() }
                     } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 9, weight: .semibold))
+                        HStack(spacing: 7) {
+                            OrtusIcon(.chevronRight, size: 11)
                                 .rotationEffect(.degrees(isOpen ? 90 : 0))
                             Text(summary)
                             if activity.hasProblem {
-                                Image(systemName: "exclamationmark.circle.fill").foregroundStyle(OrtusTheme.danger)
+                                OrtusProblemIcon(size: 16)
                             }
                         }
                         .font(OrtusTheme.Typo.caption)
@@ -357,6 +295,7 @@ private struct ActivityRow: View {
 
                     if isOpen { stepList.transition(.opacity) }
                 }
+                .padding(.vertical, 2)
             }
         }
         .padding(.leading, 4)
@@ -369,20 +308,20 @@ private struct ActivityRow: View {
         TimelineView(.periodic(from: .now, by: 0.35)) { context in
             let phase = Int(context.date.timeIntervalSinceReferenceDate / 0.35) % 3
             let elapsed = Int(context.date.timeIntervalSince(activity.startedAt))
-            HStack(spacing: 8) {
-                HStack(spacing: 3) {
+            HStack(spacing: 10) {
+                HStack(spacing: 4) {
                     ForEach(0..<3) { i in
-                        Circle()
-                            .fill(OrtusTheme.accent)
-                            .frame(width: 5, height: 5)
-                            .opacity(phase == i ? 1.0 : 0.3)
+                        RoundedRectangle(cornerRadius: 2, style: .continuous)
+                            .fill(OrtusTheme.text)
+                            .frame(width: 7, height: 7)
+                            .opacity([1.0, 0.5, 0.25][(i - phase + 3) % 3])
                     }
                 }
                 Text(activity.progress + "…")
                     .foregroundStyle(OrtusTheme.textMuted)
                 // A count after a few seconds shows it hasn't stalled.
                 if elapsed >= 3 {
-                    Text("\(elapsed)s").foregroundStyle(OrtusTheme.textMuted.opacity(0.7)).monospacedDigit()
+                    Text("\(elapsed)s").foregroundStyle(OrtusTheme.textMuted).monospacedDigit()
                 }
             }
             .font(OrtusTheme.Typo.caption)
@@ -390,32 +329,32 @@ private struct ActivityRow: View {
     }
 
     private var stepList: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: 8) {
             ForEach(activity.steps) { step in
-                HStack(alignment: .firstTextBaseline, spacing: 5) {
+                HStack(alignment: .center, spacing: 8) {
                     if step.status == .failed {
-                        Image(systemName: "exclamationmark.circle.fill")
-                            .font(.system(size: 10))
-                            .foregroundStyle(OrtusTheme.danger)
+                        OrtusProblemIcon(size: 14)
                     }
                     Text(step.status == .failed ? "\(step.progress) failed" : step.title)
                         .italic(step.kind != .tool)
-                        .foregroundStyle(step.kind == .tool ? OrtusTheme.textMuted : OrtusTheme.textMuted.opacity(0.75))
+                        // Thinking reads quieter than tool steps (Archivo has no italic).
+                        .foregroundStyle(OrtusTheme.textMuted.opacity(step.kind != .tool ? 0.7 : 1))
                         .lineLimit(3)
                 }
             }
             if let finished = activity.finishedAt {
                 let seconds = max(1, Int(finished.timeIntervalSince(activity.startedAt).rounded()))
                 Text(activity.wasStopped ? "Stopped after \(seconds)s" : "Done in \(seconds)s")
-                    .foregroundStyle(OrtusTheme.textMuted.opacity(0.7))
+                    .foregroundStyle(OrtusTheme.textMuted)
             }
         }
         .font(OrtusTheme.Typo.caption)
+        .padding(.vertical, 2)
         .padding(.leading, 12)
         .overlay(alignment: .leading) {
-            Rectangle().fill(OrtusTheme.textMuted.opacity(0.3)).frame(width: 1)
+            Rectangle().fill(OrtusTheme.line).frame(width: 2)
         }
-        .padding(.leading, 4)
+        .padding(.leading, 5)
     }
 }
 
@@ -438,17 +377,16 @@ private struct MessageRow: View {
     @ViewBuilder private var textBubble: some View {
         if message.role == .user {
             HStack(spacing: 0) {
-                Spacer(minLength: 36)
+                Spacer(minLength: 60)
                 // Verbatim: an email or a web address you typed stays plain text, not a link.
                 Text(verbatim: message.content)
-                    .font(OrtusTheme.Typo.body)
+                    .font(OrtusFont.text(15, .medium))
+                    .lineSpacing(2)
                     .textSelection(.enabled)
-                    .foregroundStyle(OrtusTheme.onAccent)
+                    .foregroundStyle(OrtusTheme.onStrong)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
-                    .background(userBubbleBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous))
-                    .shadow(color: .black.opacity(0.05), radius: 4, y: 2)
+                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(OrtusTheme.strong))
                     .help(message.timestamp.formatted(date: .omitted, time: .shortened))
             }
         } else {
@@ -458,37 +396,18 @@ private struct MessageRow: View {
         }
     }
 
-    private var userBubbleBackground: some View {
-        RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous)
-            .fill(OrtusTheme.accentInk)
-            .overlay(
-                RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous)
-                    .strokeBorder(OrtusTheme.innerHighlightStrong, lineWidth: 1)
-            )
-    }
-
     private var errorBubble: some View {
-        HStack(alignment: .top, spacing: 8) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(OrtusTheme.danger)
-                .symbolRenderingMode(.hierarchical)
+        HStack(alignment: .top, spacing: 10) {
+            OrtusProblemIcon(size: 18)
             Text(message.content)
-                .font(OrtusTheme.Typo.body)
-                .foregroundStyle(.primary)
+                .font(OrtusTheme.Typo.callout)
                 .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
-                .fill(OrtusTheme.danger.opacity(0.12))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
-                .strokeBorder(OrtusTheme.danger.opacity(0.35), lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous))
+        .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous).fill(OrtusTheme.cardSurface))
     }
 }
 
@@ -497,30 +416,42 @@ private struct MessageRow: View {
 /// Shown the first time Chat opens: what it is, what it uses, and that it asks before acting.
 struct ChatIntroModal: View {
     @EnvironmentObject var router: PanelRouter
+    @EnvironmentObject var claudeCodeService: ClaudeCodeService
     @AppStorage("didSeeChatIntro") private var didSeeChatIntro = false
+    @AppStorage("chatIntroSentToSetup") private var chatIntroSentToSetup = false
 
     var body: some View {
-        OrtusModal(title: "Chat while you focus", onClose: close) {
+        OrtusModal(title: "Chat while you focus", largeTitle: true, onClose: close) {
             VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
                 Text("Ask about the apps Ortus blocks, without opening them.")
-                    .font(OrtusTheme.Typo.body).foregroundStyle(OrtusTheme.textMuted)
+                    .font(OrtusTheme.Typo.callout).foregroundStyle(OrtusTheme.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
                 OrtusGroup {
-                    OrtusListRow(title: "Runs on Claude Code", subtitle: "Already on this Mac, so there is nothing to set up.") {
-                        Image(systemName: "terminal")
+                    OrtusListRow(title: "Runs on Claude Code",
+                                 subtitle: claudeCodeService.isConfigured ? "Already on this Mac, so there’s nothing to set up." : "Install it once, and Chat uses it from then on.") {
+                        OrtusIcon(.terminal, size: 18)
                     } trailing: { EmptyView() }
                     OrtusGroupDivider()
-                    OrtusListRow(title: "Uses your connectors", subtitle: "Slack, Gmail, Calendar: whatever you connected to Claude.") {
-                        Image(systemName: "point.3.connected.trianglepath.dotted")
+                    OrtusListRow(title: "Uses your connectors", subtitle: "Whatever you connected to Claude Code.") {
+                        OrtusIcon(.link, size: 18)
                     } trailing: { EmptyView() }
                     OrtusGroupDivider()
                     OrtusListRow(title: "Asks before acting", subtitle: "It checks with you before it sends or changes anything.") {
-                        Image(systemName: "checkmark.shield")
+                        OrtusIcon(.shield, size: 18)
                     } trailing: { EmptyView() }
                 }
+                .overlay(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).strokeBorder(OrtusTheme.line, lineWidth: 1))
                 HStack {
                     Spacer()
-                    Button("Get started", action: close).buttonStyle(OrtusPrimaryButtonStyle())
+                    if claudeCodeService.isConfigured {
+                        Button("Get started", action: close).buttonStyle(OrtusPrimaryButtonStyle())
+                    } else {
+                        Button("Set up agent") {
+                            chatIntroSentToSetup = true
+                            router.modal = .chatSetup
+                        }
+                        .buttonStyle(OrtusPrimaryButtonStyle())
+                    }
                 }
             }
         }

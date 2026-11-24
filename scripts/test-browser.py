@@ -9,6 +9,8 @@ import argparse
 import os
 import shlex
 import shutil
+import ssl
+import subprocess
 import tempfile
 import threading
 import time
@@ -34,7 +36,16 @@ class Fixture(BaseHTTPRequestHandler):
     def log_message(self, *_):
         pass
 
+# Chromium forces HTTPS for preloaded domains such as google.com, so the fixture speaks TLS
+# with a throwaway self-signed certificate that the test browser is told to accept.
 server = ThreadingHTTPServer(('127.0.0.1', 0), Fixture)
+certs = tempfile.mkdtemp(prefix='ortus-browser-qa-cert-')
+subprocess.run(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1', '-subj', '/CN=localhost',
+                '-keyout', f'{certs}/key.pem', '-out', f'{certs}/cert.pem'], check=True, capture_output=True)
+tls = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+tls.load_cert_chain(f'{certs}/cert.pem', f'{certs}/key.pem')
+shutil.rmtree(certs)
+server.socket = tls.wrap_socket(server.socket, server_side=True)
 threading.Thread(target=server.serve_forever, daemon=True).start()
 try:
     with tempfile.TemporaryDirectory(prefix='ortus-browser-qa-') as tmp:
@@ -64,7 +75,8 @@ try:
         with sync_playwright() as p:
             context = p.chromium.launch_persistent_context(str(temp / 'profile'), channel='chromium', headless=True,
                 args=[f'--disable-extensions-except={extension}', f'--load-extension={extension}',
-                      '--host-resolver-rules=MAP * 127.0.0.1', '--no-proxy-server'],
+                      '--host-resolver-rules=MAP * 127.0.0.1', '--no-proxy-server', '--ignore-certificate-errors'],
+                ignore_https_errors=True,
                 viewport={'width': 1100, 'height': 780})
             worker = context.service_workers[0] if context.service_workers else context.wait_for_event('serviceworker')
             # Loading an unpacked extension needs Developer mode; without it, Chrome disables the extension on reload.
@@ -121,7 +133,7 @@ try:
             else:
                 raise AssertionError('The reloaded extension did not apply the session again')
             page = context.new_page()
-            page.goto(f'http://reload.example:{port}/', wait_until='domcontentloaded')
+            page.goto(f'https://reload.example:{port}/', wait_until='domcontentloaded')
             page.wait_for_url(lambda url: url.startswith(f'chrome-extension://{EXTENSION_ID}/blocked.html'))
             page.close()
             # Session storage is cleared on every reload, so a marker that survives means it reloaded once.
@@ -131,21 +143,21 @@ try:
             publish([])
             print('PASS: an updated extension reloads once and keeps blocking', flush=True)
             gmail = context.new_page()
-            gmail.goto(f'http://mail.google.com:{port}/mail/inbox')
+            gmail.goto(f'https://mail.google.com:{port}/mail/inbox')
             assert gmail.title() == 'Local fixture'
             publish(['mail.google.com', 'linkedin.com'])
             gmail.wait_for_url(lambda url: url.startswith(f'chrome-extension://{EXTENSION_ID}/blocked.html'))
-            gmail.locator('#title').filter(has_text='Gmail is set aside').wait_for()
+            gmail.locator('#status').filter(has_text='Gmail is closed until').wait_for()
             gmail.screenshot(path=str(ROOT / '.context/website-blocked.png'))
             print('PASS: an already-open Gmail tab is blocked', flush=True)
 
             linkedin = context.new_page()
-            linkedin.goto(f'http://www.linkedin.com:{port}/feed', wait_until='domcontentloaded')
+            linkedin.goto(f'https://www.linkedin.com:{port}/feed', wait_until='domcontentloaded')
             linkedin.wait_for_url(lambda url: url.startswith(f'chrome-extension://{EXTENSION_ID}/blocked.html'))
             print('PASS: LinkedIn navigation and subdomains are redirected', flush=True)
             for domain in ['docs.google.com', 'notlinkedin.com', 'linkedin.com.example.test']:
                 page = context.new_page()
-                page.goto(f'http://{domain}:{port}/')
+                page.goto(f'https://{domain}:{port}/')
                 assert page.title() == 'Local fixture'
                 page.close()
             print('PASS: Google Docs and lookalike domains stay available', flush=True)
@@ -153,15 +165,15 @@ try:
             assert len(rules) == 2 and rules[1]['action']['type'] == 'block'
             # Use the browser's fetch implementation so DNR proves it blocks background requests too.
             allowed = context.new_page()
-            allowed.goto(f'http://docs.google.com:{port}/')
-            fetch_result = allowed.evaluate("async url => { try { await fetch(url, { mode:'no-cors' }); return 'allowed'; } catch { return 'blocked'; } }", f'http://mail.google.com:{port}/background')
+            allowed.goto(f'https://docs.google.com:{port}/')
+            fetch_result = allowed.evaluate("async url => { try { await fetch(url, { mode:'no-cors' }); return 'allowed'; } catch { return 'blocked'; } }", f'https://mail.google.com:{port}/background')
             assert fetch_result == 'blocked'
             print('PASS: background requests to blocked domains fail', flush=True)
 
             publish([])
             gmail.locator('#return').wait_for(state='visible')
             gmail.locator('#return').click()
-            gmail.wait_for_url(f'http://mail.google.com:{port}/mail/inbox')
+            gmail.wait_for_url(f'https://mail.google.com:{port}/mail/inbox')
             assert gmail.title() == 'Local fixture'
             print('PASS: ending focus releases sites and restores the original URL', flush=True)
 

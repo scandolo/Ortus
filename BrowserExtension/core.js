@@ -62,5 +62,14 @@ export function connectionMessage(error) {
 export function offlineMessage(host) {
   if (host.endsWith('.preview')) return { title: 'Ortus Preview isn’t running',
     status: 'This profile uses the preview extension. Open Ortus Preview, or load the Ortus Browser folder here instead.' };
-  return { title: 'Ortus isn’t running', status: 'Open Ortus to keep your focus sessions going.' };
+  return { title: 'Ortus isn’t running', status: 'Open Ortus to keep your sessions going.' };
+}
+// "48 minutes", "1 hour 5 minutes". Rounds up, so it agrees with the end time on the clock
+// and never says zero while a site is still closed.
+export function timeLeft(seconds) {
+  const minutes = Math.max(1, Math.ceil(seconds / 60));
+  const count = (n, unit) => `${n} ${unit}${n === 1 ? '' : 's'}`;
+  if (minutes < 60) return count(minutes, 'minute');
+  const hours = Math.floor(minutes / 60), rest = minutes % 60;
+  return rest ? `${count(hours, 'hour')} ${count(rest, 'minute')}` : count(hours, 'hour');
 }

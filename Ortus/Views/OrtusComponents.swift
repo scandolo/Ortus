@@ -23,75 +23,73 @@ final class PanelRouter: ObservableObject {
     init(modal: PanelModal? = nil) { self.modal = modal }
 }
 
-/// The one modal shape: dimmed panel, a lifted card with a title and a close button.
+/// The one modal shape: the panel dims, a sheet with 18 pt corners sits over it. A big
+/// title makes a statement ("No end button."); a small one names a setup form.
 struct OrtusModal<Content: View>: View {
     let title: String
+    var largeTitle = false
     let onClose: () -> Void
     @ViewBuilder var content: Content
     @State private var contentHeight: CGFloat?
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.28).ignoresSafeArea().onTapGesture(perform: onClose)
+            OrtusTheme.scrim.ignoresSafeArea().onTapGesture(perform: onClose)
             VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    Text(title).font(OrtusTheme.Typo.headline)
-                    Spacer()
+                HStack(alignment: .top, spacing: 12) {
+                    Text(title)
+                        .font(largeTitle ? OrtusTheme.Typo.sheetTitle : OrtusTheme.Typo.sheetTitleSmall)
+                        .tracking(largeTitle ? -0.7 : 0)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
                     Button(action: onClose) {
-                        Image(systemName: "xmark").font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(OrtusTheme.textMuted)
-                            .frame(width: 26, height: 26).background(Circle().fill(Color.primary.opacity(0.06)))
+                        OrtusIcon(.close, size: 12).foregroundStyle(OrtusTheme.textMuted)
+                            .frame(width: 30, height: 30)
+                            .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(OrtusTheme.controlFill(onCard: true)))
                     }
-                    .buttonStyle(OrtusPressableStyle(cornerRadius: 13)).keyboardShortcut(.cancelAction).accessibilityLabel("Close")
+                    .buttonStyle(OrtusPressableStyle(cornerRadius: 9)).keyboardShortcut(.cancelAction).accessibilityLabel("Close")
                 }
-                .padding(OrtusTheme.spacingMD)
+                .padding([.horizontal, .top], 20)
+                .padding(.bottom, 16)
                 ScrollView {
                     content
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding([.horizontal, .bottom], OrtusTheme.spacingMD)
+                        .padding([.horizontal, .bottom], 20)
                         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
                 }
                 .frame(maxHeight: contentHeight)
             }
-            // Shadow on the surface only: on the whole stack it also falls from every child,
-            // greying the card around inner groups and text.
-            .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).fill(OrtusTheme.cardSurface)
-                .shadow(color: .black.opacity(0.22), radius: 24, y: 8))
-            .overlay(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).strokeBorder(OrtusTheme.hairline, lineWidth: 1))
+            .foregroundStyle(OrtusTheme.text)
+            .environment(\.ortusOnCard, true)
+            .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).fill(OrtusTheme.cardSurface))
             .padding(OrtusTheme.spacingMD)
         }
     }
 }
 
-/// A short confirmation shaped like a macOS alert: title, one line, Cancel and a
-/// button that names the outcome.
+/// A short confirmation: a statement for a title, one line, and two buttons that name
+/// the outcome. The safe choice is the primary.
 struct OrtusAlert: View {
     let title: String
     let message: String
+    let cancel: String
     let confirm: String
     let onCancel: () -> Void
     let onConfirm: () -> Void
 
     var body: some View {
-        ZStack {
-            Color.black.opacity(0.28).ignoresSafeArea().onTapGesture(perform: onCancel)
-            VStack(spacing: OrtusTheme.spacingSM) {
-                Text(title).font(OrtusTheme.Typo.headline)
+        OrtusModal(title: title, largeTitle: true, onClose: onCancel) {
+            VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
                 Text(message).font(OrtusTheme.Typo.body).foregroundStyle(OrtusTheme.textMuted)
-                    .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                    .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: OrtusTheme.spacingSM) {
-                    Button(action: onCancel) { Text("Cancel").frame(maxWidth: .infinity) }
-                        .keyboardShortcut(.cancelAction)
-                    Button(action: onConfirm) { Text(confirm).foregroundStyle(OrtusTheme.danger).frame(maxWidth: .infinity) }
+                    Button(action: onCancel) { Text(cancel).frame(maxWidth: .infinity) }
+                        .buttonStyle(OrtusPrimaryButtonStyle())
+                        .keyboardShortcut(.defaultAction)
+                    Button(action: onConfirm) { Text(confirm).frame(maxWidth: .infinity) }
+                        .buttonStyle(OrtusSecondaryButtonStyle())
                 }
-                .buttonStyle(OrtusSecondaryButtonStyle())
-                .padding(.top, OrtusTheme.spacingSM)
             }
-            .padding(OrtusTheme.spacingMD)
-            .frame(width: 280)
-            .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).fill(OrtusTheme.cardSurface)
-                .shadow(color: .black.opacity(0.22), radius: 24, y: 8))
-            .overlay(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).strokeBorder(OrtusTheme.hairline, lineWidth: 1))
         }
     }
 }
@@ -107,13 +105,13 @@ struct OrtusListRow<Icon: View, Trailing: View>: View {
     @ViewBuilder var trailing: Trailing
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 14) {
             icon
-                .font(.system(size: 15))
                 .frame(width: 22, height: 22)
-                .foregroundStyle(.primary)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(OrtusTheme.Typo.bodyMedium)
+                .foregroundStyle(OrtusTheme.text)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(OrtusTheme.Typo.headline)
+                    .fixedSize(horizontal: false, vertical: true)
                 if let subtitle {
                     Text(subtitle).font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -124,7 +122,7 @@ struct OrtusListRow<Icon: View, Trailing: View>: View {
         }
         .frame(minHeight: 30)
         .padding(.horizontal, OrtusTheme.spacingMD)
-        .padding(.vertical, 11)
+        .padding(.vertical, 10)
     }
 }
 
@@ -132,18 +130,30 @@ struct OrtusListRow<Icon: View, Trailing: View>: View {
 struct OrtusGroup<Content: View>: View {
     @ViewBuilder var content: Content
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous)
         VStack(spacing: 0) { content }
+            .environment(\.ortusOnCard, true)
+            .padding(.vertical, 4)
             .background(shape.fill(OrtusTheme.cardSurface))
-            .overlay(shape.strokeBorder(OrtusTheme.hairline, lineWidth: 1))
             .clipShape(shape)
-            .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
     }
 }
 
-/// Hairline between rows, aligned with the row text.
+/// A straight, full-width line between rows.
 struct OrtusGroupDivider: View {
-    var body: some View { Rectangle().fill(OrtusTheme.hairline).frame(height: 1).padding(.leading, 50) }
+    var body: some View { Rectangle().fill(OrtusTheme.line).frame(height: 1) }
+}
+
+/// The number of a setup step: a small squircle in the primary colour.
+struct OrtusStepNumber: View {
+    let number: Int
+    var body: some View {
+        Text("\(number)")
+            .font(OrtusTheme.Typo.badge).monospacedDigit()
+            .foregroundStyle(OrtusTheme.onStrong)
+            .frame(width: 22, height: 22)
+            .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(OrtusTheme.strong))
+    }
 }
 
 /// A numbered setup step, used by every setup modal.
@@ -155,83 +165,63 @@ struct OrtusStepRow<Trailing: View>: View {
 
     var body: some View {
         OrtusListRow(title: title, subtitle: detail) {
-            Text("\(number)")
-                .font(OrtusTheme.Typo.badge).monospacedDigit()
-                .frame(width: 22, height: 22)
-                .background(Circle().fill(OrtusTheme.accentSoft))
-                .foregroundStyle(OrtusTheme.accentInk)
+            OrtusStepNumber(number: number)
         } trailing: { trailing }
     }
 }
 
-/// Compact capsule for the trailing action of a row.
-struct OrtusRowButtonStyle: ButtonStyle {
-    var role: ButtonRole? = nil
-    func makeBody(configuration: Configuration) -> some View { RowButton(configuration: configuration, destructive: role == .destructive) }
-
-    private struct RowButton: View {
-        let configuration: Configuration
-        let destructive: Bool
-        @Environment(\.isEnabled) private var isEnabled
-        @State private var isHovering = false
-        var body: some View {
-            let tint = destructive ? OrtusTheme.danger : Color.primary
-            configuration.label
-                .font(OrtusTheme.Typo.button)
-                .foregroundStyle(destructive ? OrtusTheme.danger : .primary)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 6)
-                .background(Capsule().fill(tint.opacity(configuration.isPressed ? 0.16 : isHovering && isEnabled ? 0.1 : 0.05)))
-                .scaleEffect(configuration.isPressed ? 0.94 : 1)
-                .opacity(isEnabled ? 1 : 0.45)
-                .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
-                .animation(.easeOut(duration: 0.15), value: isHovering)
-                .onHover { isHovering = $0 }
-        }
-    }
-}
-
-/// A setup problem reduced to a mark: it explains itself on hover and opens the fix
-/// on click. The hint opens above and to the right.
-struct ProblemBadge: View {
+/// A problem written where it bites: the triangle, what it breaks, and the fix on click.
+/// Inside a card it sits on the inset colour (bone in white, ink in ash).
+struct OrtusProblemNote: View {
     let message: String
-    var actionHint = "Click to set up"
+    var actionLabel: String? = nil
     let action: () -> Void
-    /// Snapshots can't hover.
-    var showsHint = false
-    @State private var hovering = false
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: "exclamationmark.shield.fill")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(OrtusTheme.warning)
-                .frame(width: 22, height: 22)
-                .background(Circle().fill(OrtusTheme.cardSurface))
-                .overlay(Circle().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
-        }
-        .buttonStyle(OrtusPressableStyle(cornerRadius: 11, highlight: false))
-        .onHover { hovering = $0 }
-        .overlay(alignment: .bottomLeading) {
-            if hovering || showsHint {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(message).foregroundStyle(.primary)
-                    Text(actionHint).foregroundStyle(OrtusTheme.textMuted)
+            HStack(spacing: 10) {
+                OrtusProblemIcon()
+                Text(message).font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.text)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+                if let actionLabel {
+                    Text(actionLabel).font(OrtusTheme.Typo.buttonSmall).underline().foregroundStyle(OrtusTheme.text)
                 }
-                    .font(OrtusTheme.Typo.caption)
-                    .frame(width: 210, alignment: .leading)
-                    .padding(.horizontal, 10).padding(.vertical, 8)
-                    .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous).fill(OrtusTheme.cardSurface)
-                        .shadow(color: .black.opacity(0.16), radius: 10, y: 3))
-                    .overlay(RoundedRectangle(cornerRadius: OrtusTheme.radiusSM, style: .continuous).strokeBorder(OrtusTheme.hairline, lineWidth: 1))
-                    .fixedSize()
-                    .offset(y: -30)
-                    .allowsHitTesting(false)
-                    .transition(.opacity)
             }
+            .padding(.horizontal, 12).padding(.vertical, 10)
+            .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous).fill(OrtusTheme.inset))
+            .contentShape(Rectangle())
         }
-        .animation(.easeOut(duration: 0.12), value: hovering)
+        .buttonStyle(OrtusPressableStyle(cornerRadius: OrtusTheme.radiusMD))
+        .help(actionLabel ?? "Click to fix")
         .accessibilityLabel(message)
+        .accessibilityHint(actionLabel ?? "Opens the fix")
+    }
+}
+
+/// A problem during a session: a card with the triangle, a title, the consequence and
+/// one fix.
+struct OrtusProblemCard: View {
+    let title: String
+    let detail: String
+    let action: String
+    let onAction: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            OrtusProblemIcon()
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(OrtusFont.text(14, .bold))
+                Text(detail).font(OrtusTheme.Typo.meta).foregroundStyle(OrtusTheme.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
+            Button(action, action: onAction).buttonStyle(OrtusRowButtonStyle())
+        }
+        .padding(.horizontal, 14).padding(.vertical, 12)
+        .environment(\.ortusOnCard, true)
+        .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).fill(OrtusTheme.cardSurface))
     }
 }
 
@@ -258,7 +248,8 @@ struct OrtusPressableStyle: ButtonStyle {
             let fill = !highlight || !isEnabled ? 0 : configuration.isPressed ? 0.09 : isHovering ? 0.05 : 0
             configuration.label
                 .padding(inset)
-                .background(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous).fill(Color.primary.opacity(fill)))
+                // On top, so it also shows on labels that draw their own fill (chips).
+                .overlay(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous).fill(OrtusTheme.text.opacity(fill)).allowsHitTesting(false))
                 .contentShape(Rectangle())
                 .padding(-inset)
                 .scaleEffect(configuration.isPressed && isEnabled ? 0.97 : 1)

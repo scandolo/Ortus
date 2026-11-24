@@ -38,7 +38,7 @@ struct SlackStatusPreview: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous)
-                .strokeBorder(OrtusTheme.hairline, lineWidth: 1)
+                .strokeBorder(OrtusTheme.line, lineWidth: 1)
         )
         .overlay(alignment: .topTrailing) {
             Text("Slack preview")
@@ -147,7 +147,7 @@ struct SlackStatusPreview: View {
 
     // MARK: - Slack-like palette
     //
-    // Adaptive light/dark to match the user's macOS appearance, but tuned to read
+    // Follows Ortus's own light (free) and dark (locked) look, not macOS's, but tuned to read
     // as "this is Slack" — white-ish in light mode, near-black in dark mode, with
     // the muted gray Slack uses for timestamps and metadata.
 

@@ -1,8 +1,10 @@
-import { effectiveRules, siteGroups, connectionMessage, offlineMessage } from './core.js';
+import { effectiveRules, siteGroups, connectionMessage, offlineMessage, timeLeft } from './core.js';
 import { NATIVE_HOST } from './config.js';
 import { glyph } from './glyphs.js';
+const root = document.documentElement;
 const title = document.querySelector('#title');
 const status = document.querySelector('#status');
+const problem = document.querySelector('#problem');
 const blockedSites = document.querySelector('#blocked-sites');
 const sitesHeading = document.querySelector('#sites-heading');
 const list = document.querySelector('#sites');
@@ -16,14 +18,19 @@ async function render() {
   const live = policy?.heartbeatExpiresAt > Date.now() / 1000;
   const groups = connected && live ? siteGroups(effectiveRules(policy)) : [];
   const end = Math.max(0, ...groups.map(group => group.expiresAt));
-  if (!connected) { setText(title, 'Not connected'); setText(status, connectionMessage(connection?.error)); }
-  else if (!live) { const offline = offlineMessage(NATIVE_HOST); setText(title, offline.title); setText(status, offline.status); }
-  else if (groups.length) { setText(title, 'Focus is on'); setText(status, `Until ${clock(end)}`); }
-  else { setText(title, 'Ready when you are'); setText(status, 'Websites are blocked when a focus session starts.'); }
+  // Bone is free, ink is locked: the stylesheet picks the ground from data-state.
+  let state;
+  if (!connected) { state = 'disconnected'; setText(title, 'Not connected'); setText(status, connectionMessage(connection?.error)); }
+  else if (!live) { state = 'offline'; const offline = offlineMessage(NATIVE_HOST); setText(title, offline.title); setText(status, offline.status); }
+  else if (groups.length) { state = 'locked'; setText(title, `Until ${clock(end)}`); setText(status, `${timeLeft(end - Date.now() / 1000)} to go.`); }
+  else { state = 'idle'; setText(title, 'Ready when you are'); setText(status, 'Websites are blocked when a focus session starts.'); }
+  root.dataset.state = state;
+  // An <svg> has no .hidden property, so toggle the attribute.
+  problem.toggleAttribute('hidden', state !== 'disconnected' && state !== 'offline');
   const signature = JSON.stringify(groups);
   if (list.dataset.signature !== signature) {
     list.replaceChildren(...groups.map(group => {
-      // A strip of muted marks reads as status, not as a list of buttons. Names live in the
+      // A strip of fading marks reads as status, not as a list of buttons. Names live in the
       // tooltip and in hidden text for screen readers.
       const row = document.createElement('li');
       const mark = document.createElement('span'); mark.className = 'glyph'; mark.innerHTML = glyph(group.name);
@@ -36,10 +43,14 @@ async function render() {
     }));
     list.dataset.signature = signature;
   }
-  setText(sitesHeading, `${groups.length} ${groups.length === 1 ? 'site' : 'sites'} set aside`);
+  // As in the app: one site is named, more are counted after the circles.
+  setText(sitesHeading, groups.length === 1 ? groups[0].name : `${groups.length} blocked`);
+  sitesHeading.title = groups.map(group => group.name).join(', ');
   blockedSites.hidden = !groups.length;
   reconnect.hidden = connected;
 }
 reconnect.addEventListener('click', () => { chrome.runtime.sendMessage({ type:'reconnect' }); setText(status, 'Checking the connection…'); });
 chrome.storage.onChanged.addListener(render);
+// Keeps "minutes to go" current while the popup stays open during a session.
+setInterval(() => { if (root.dataset.state === 'locked') render(); }, 15000);
 render();

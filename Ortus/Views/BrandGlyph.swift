@@ -8,37 +8,38 @@ import OrtusCore
 struct BrandGlyph: View {
     let id: String
     var size: CGFloat = 16
+    /// Text colour by default; the blocked-app stack draws marks in its ground colour.
+    var color: Color = OrtusTheme.text
 
     var body: some View {
         let parts = Self.parts(for: id)
-        ZStack {
-            if parts.isEmpty { Image(systemName: "globe").resizable().scaledToFit() }
-            ForEach(parts.indices, id: \.self) { index in render(parts[index]) }
+        Group {
+            if parts.isEmpty { OrtusIcon(.globe, size: size) } else { Self.mark(parts, size: size).fill(color) }
         }
-        .foregroundStyle(OrtusTheme.ink)
+        .foregroundStyle(color)
         .frame(width: size, height: size)
-        .compositingGroup()
         .accessibilityHidden(true)
     }
 
-    @ViewBuilder private func render(_ part: Part) -> some View {
-        let shape = UnitShape(path: part.path)
-        let style = StrokeStyle(lineWidth: part.width * size, lineCap: .round, lineJoin: .round)
-        switch (part.width > 0, part.cut) {
-        case (false, false): shape.fill()
-        case (true, false): shape.stroke(style: style)
-        case (false, true): shape.fill().blendMode(.destinationOut)
-        case (true, true): shape.stroke(style: style).blendMode(.destinationOut)
+    /// The mark as one shape, with the cuts subtracted geometrically. A blend mode
+    /// (destinationOut) erased whatever sat under the whole panel, not just the mark,
+    /// so the "f" or "in" showed the background instead of the circle behind the mark.
+    private static func mark(_ parts: [Part], size: CGFloat) -> Path {
+        let scale = CGAffineTransform(scaleX: size, y: size)
+        var result = Path()
+        for part in parts {
+            let scaled = part.path.applying(scale)
+            let shape = part.width > 0
+                ? scaled.strokedPath(StrokeStyle(lineWidth: part.width * size, lineCap: .round, lineJoin: .round))
+                : scaled
+            result = part.cut ? result.subtracting(shape) : result.union(shape)
         }
+        return result
     }
 
     /// A path in a 0…1 square; `width` > 0 strokes it, `cut` punches it out of the mark.
     private struct Part { var path: Path; var width: CGFloat = 0; var cut = false }
 
-    private struct UnitShape: Shape {
-        let path: Path
-        func path(in rect: CGRect) -> Path { path.applying(CGAffineTransform(scaleX: rect.width, y: rect.height)) }
-    }
 
     private static func lines(_ points: [(CGFloat, CGFloat)]) -> Path {
         var path = Path(); path.addLines(points.map { CGPoint(x: $0.0, y: $0.1) }); return path
@@ -169,12 +170,111 @@ struct BrandGlyph: View {
     }
 }
 
-/// Up to three marks that summarise a mode. `cluster` arranges them as a small
-/// floating triangle (used where the mode is the subject); otherwise they sit in a
-/// compact overlapping row (used in lists).
+/// What a mode blocks, as items: one per preset it holds (Gmail, Slack), then one per
+/// other website or app, sorted by name.
+struct BlockedItem: Identifiable, Equatable {
+    let id: String
+    let glyph: String
+    let name: String
+    let isApp: Bool
+
+    @MainActor static func all(in selection: BlockSelection) -> [BlockedItem] {
+        var items: [BlockedItem] = []
+        var websites = selection.websites
+        var apps = selection.applications
+        for preset in BlockingPreset.all where selection.contains(preset) {
+            let name = preset.id == "slack" && !selection.fullyContains(preset)
+                ? (selection.blocksSlack ? "Slack app" : "Slack website") : preset.title
+            items.append(BlockedItem(id: preset.id, glyph: preset.id, name: name, isApp: preset.selection.websites.isEmpty))
+            websites.removeAll { preset.selection.websites.contains($0) }
+            apps.removeAll { app in preset.selection.applications.contains { $0.id == app.id } }
+        }
+        items += websites.map { BlockedItem(id: $0, glyph: BrandGlyph.websiteID(for: $0) ?? "", name: $0, isApp: false) }
+        items += apps.map { BlockedItem(id: $0.id, glyph: BrandGlyph.applicationID(for: $0) ?? "", name: $0.name, isApp: true) }
+        return items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    /// "6 sites", "2 apps", "3 sites · 2 apps": a count instead of a list of names.
+    @MainActor static func countLabel(for selection: BlockSelection) -> String {
+        let items = all(in: selection)
+        let sites = items.filter { !$0.isApp }.count
+        let apps = selection.applications.count
+        func plural(_ n: Int, _ word: String) -> String { "\(n) \(word)\(n == 1 ? "" : "s")" }
+        switch (sites, apps) {
+        case (0, 0): return "Nothing yet"
+        case (_, 0): return plural(sites, "site")
+        case (0, _): return plural(apps, "app")
+        default: return plural(sites, "site") + " · " + plural(apps, "app")
+        }
+    }
+}
+
+/// Blocked apps and sites: overlapping circles that fade a step each, each holding its
+/// mark in the ground colour, the most opaque on top. After `limit` marks, a +N count.
+struct BlockedStack: View {
+    let items: [BlockedItem]
+    /// What the stack sits on: draws the ring between circles and the marks.
+    var ground: Color = OrtusTheme.cardSurface
+    var size: CGFloat = 26
+    var limit = 3
+    var showsMore = true
+
+    @Environment(\.colorScheme) private var scheme
+
+    /// Solid fills from the strongest (front) to the faintest (back). Opaque, so a circle
+    /// never shows the one behind it, and every fill keeps the mark readable: ink to
+    /// bone-muted under bone marks when free, bone to stone under ink marks when locked.
+    static func fill(index: Int, locked: Bool) -> Color {
+        let from: UInt32 = locked ? 0xF2EEE8 : 0x1C1C19
+        let to: UInt32 = locked ? 0x9A978E : 0x5E5C55
+        let t = min(Double(index) / 5, 1)
+        func channel(_ value: UInt32, _ shift: UInt32) -> Double { Double((value >> shift) & 0xFF) }
+        let mixed = [16, 8, 0].reduce(UInt32(0)) { result, shift in
+            let c = channel(from, UInt32(shift)) + (channel(to, UInt32(shift)) - channel(from, UInt32(shift))) * t
+            return result | (UInt32(c.rounded()) << UInt32(shift))
+        }
+        return Color(hex: mixed)
+    }
+
+    var body: some View {
+        let shown = Array(items.prefix(limit))
+        HStack(spacing: 8) {
+            HStack(spacing: -8) {
+                ForEach(Array(shown.enumerated()), id: \.element.id) { index, item in
+                    mark(item)
+                        .frame(width: size, height: size)
+                        .background(Circle().fill(Self.fill(index: index, locked: scheme == .dark)))
+                        .overlay(Circle().strokeBorder(ground, lineWidth: 2))
+                        .zIndex(Double(shown.count - index))
+                }
+            }
+            if showsMore, items.count > limit {
+                Text("+\(items.count - limit)")
+                    .font(OrtusTheme.Typo.badge).monospacedDigit()
+                    .fixedSize()
+                    .foregroundStyle(OrtusTheme.text)
+                    .padding(.horizontal, 8)
+                    .frame(height: size - 4)
+                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(OrtusTheme.cardChip))
+            }
+        }
+        .help(items.map(\.name).joined(separator: ", "))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Blocks " + items.map(\.name).joined(separator: ", "))
+    }
+
+    @ViewBuilder private func mark(_ item: BlockedItem) -> some View {
+        if item.glyph.isEmpty && item.isApp {
+            OrtusIcon(.app, size: size * 0.48).foregroundStyle(ground)
+        } else {
+            BrandGlyph(id: item.glyph, size: size * 0.5, color: ground)
+        }
+    }
+}
+
+/// Up to three marks that summarise a mode in a list: small sand circles, overlapping.
 struct ModeGlyphs: View {
     let selection: BlockSelection
-    var cluster = false
 
     static func identifiers(for selection: BlockSelection) -> [String] {
         let presets = BlockingPreset.all.filter { selection.fullyContains($0) }.map(\.id)
@@ -186,59 +286,16 @@ struct ModeGlyphs: View {
 
     var body: some View {
         let ids = Self.identifiers(for: selection)
-        Group {
+        HStack(spacing: -4) {
             if ids.isEmpty {
-                Image(systemName: "square.dashed").font(.system(size: 13)).frame(width: 22, height: 22)
-            } else if cluster {
-                ZStack {
-                    ForEach(Array(ids.enumerated()), id: \.element) { index, id in
-                        FloatingMark(id: id, index: index).offset(Self.triangle(count: ids.count)[index])
-                    }
-                }
-                .frame(width: 46, height: 40)
-            } else {
-                HStack(spacing: -4) {
-                    ForEach(ids, id: \.self) { id in mark(id) }
-                }
+                OrtusIcon(.blocked, size: 12).frame(width: 22, height: 22)
+                    .background(Circle().fill(OrtusTheme.fill))
+            }
+            ForEach(ids, id: \.self) { id in
+                BrandGlyph(id: id, size: 12)
+                    .frame(width: 22, height: 22)
+                    .background(Circle().fill(OrtusTheme.fill))
             }
         }
-        .foregroundStyle(.primary)
-    }
-
-    /// Top mark sits behind; the lower two overlap in front of it.
-    private static func triangle(count: Int) -> [CGSize] {
-        switch count {
-        case 1: [.zero]
-        case 2: [CGSize(width: -9, height: 0), CGSize(width: 9, height: 0)]
-        default: [CGSize(width: 0, height: -8), CGSize(width: -10, height: 7), CGSize(width: 10, height: 7)]
-        }
-    }
-
-    fileprivate static func circle<Content: View>(_ content: Content) -> some View {
-        content
-            .frame(width: 22, height: 22)
-            .background(Circle().fill(OrtusTheme.cardSurface))
-            .overlay(Circle().strokeBorder(OrtusTheme.hairline, lineWidth: 1))
-    }
-
-    private func mark(_ id: String) -> some View { Self.circle(BrandGlyph(id: id, size: 12)) }
-}
-
-/// One mark of the cluster, drifting a point up and down on its own slow rhythm.
-/// The phase animator scopes the motion to this offset; starting a repeating
-/// `withAnimation` on appear also animated the menu bar panel's own layout.
-private struct FloatingMark: View {
-    let id: String
-    let index: Int
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        ModeGlyphs.circle(BrandGlyph(id: id, size: 12))
-            .shadow(color: .black.opacity(0.10), radius: 3, y: 2)
-            .phaseAnimator(reduceMotion ? [0.0] : [1.2, -1.2]) { mark, offset in
-                mark.offset(y: offset)
-            } animation: { _ in
-                .easeInOut(duration: 2.2 + Double(index) * 0.45)
-            }
     }
 }
