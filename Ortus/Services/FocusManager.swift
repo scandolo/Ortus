@@ -40,13 +40,20 @@ final class FocusManager: ObservableObject {
     @AppStorage("relaunchSlackOnEnd") var relaunchSlackOnEnd = false
     @AppStorage("showNotifications") var showNotifications = true
     @AppStorage("lastEmergencyEndTimestamp") var lastEmergencyEndTimestamp: Double = 0
-    @AppStorage("developerModeEnabled") var developerModeEnabled = false
+    @AppStorage("developerModeEnabled") private var developerModeStored = false
     @AppStorage("emergencyScheduleSuppressUntil") var emergencyScheduleSuppressUntil: Double = 0
     @AppStorage("slackStatusEnabled") var slackStatusEnabled = true
     @AppStorage("slackStatusText") var slackStatusText = "Ortus mode"
     @AppStorage("slackStatusEmoji") var slackStatusEmoji = ":no_entry_sign:"
     @AppStorage("slackDndEnabled") var slackDndEnabled = true
     var slackService: SlackService? { didSet { applySlackStatusForFocus() } }
+
+    /// Developer tools, like "End focus (dev)". Preview builds only: in a release this
+    /// stays false and the seven taps in Settings change nothing.
+    var developerModeEnabled: Bool {
+        get { BuildProfile.developerMode(stored: developerModeStored) }
+        set { if BuildProfile.isPreview { developerModeStored = newValue } }
+    }
 
     var canUseEmergencyEnd: Bool {
         guard lastEmergencyEndTimestamp > 0 else { return true }

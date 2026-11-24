@@ -4,6 +4,9 @@ import Darwin
 public enum BuildProfile {
     public static var isPreview: Bool { Bundle.main.object(forInfoDictionaryKey: "OrtusPreviewBuild") as? Bool == true }
     public static var name: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "Ortus" }
+    /// Developer mode (seven taps on the mark in Settings) is for Preview builds only.
+    /// A release ignores the taps and any value already saved.
+    public static func developerMode(stored: Bool, isPreview: Bool = BuildProfile.isPreview) -> Bool { isPreview && stored }
 }
 
 /// Only an active session holds this lock. Idle comparison windows never write
