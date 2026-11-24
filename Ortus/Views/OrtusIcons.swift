@@ -4,7 +4,7 @@ import SwiftUI
 
 /// The First Light icon set: solid shapes with real cut-outs on a 24 pt grid, drawn in
 /// the current foreground style. The eight brand icons are copied from the brand kit
-/// (brain/projects/ortus/brand/assets/icons); the rest follow the same rules.
+/// (the brand kit's icon set); the rest follow the same rules.
 struct OrtusIcon: View {
     enum Name: String, CaseIterable {
         // Brand kit

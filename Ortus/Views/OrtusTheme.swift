@@ -5,7 +5,7 @@ import SwiftUI
 // MARK: - Design System: First Light
 //
 // ┌─────────────────────────────────────────────────────────────────────┐
-// │  ORTUS VISUAL RULES (brand kit: brain/projects/ortus/brand/)         │
+// │  ORTUS VISUAL RULES (from the First Light brand kit)                 │
 // │  The browser extension (BrowserExtension/style.css) and the website  │
 // │  (landing/styles.css) use the same tokens. Change all three.         │
 // │                                                                      │

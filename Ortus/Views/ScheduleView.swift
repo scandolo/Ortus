@@ -256,6 +256,8 @@ struct TimeStepper: View {
     @Binding var time: Date
     let label: String
     @State private var text = ""
+    /// The time when typing started, for Esc.
+    @State private var timeBeforeTyping: Date?
     @FocusState private var focused: Bool
     @Environment(\.ortusOnCard) private var onCard
 
@@ -288,9 +290,15 @@ struct TimeStepper: View {
                 .onChange(of: text) { _, new in if let parsed = Self.parse(new) { set(parsed) } }
                 .onChange(of: minutes) { _, _ in if !focused { text = label24 } }
                 // Tidy "930" into "09:30", or put back the time if what was typed can't be read.
-                .onChange(of: focused) { _, isFocused in if !isFocused { text = label24 } }
+                .onChange(of: focused) { _, isFocused in
+                    if isFocused { timeBeforeTyping = time } else { text = label24 }
+                }
                 .onSubmit { text = label24 }
-                .onExitCommand { text = label24; focused = false }
+                .onExitCommand {
+                    if let timeBeforeTyping { time = timeBeforeTyping }
+                    text = label24
+                    focused = false
+                }
                 .onKeyPress(.upArrow) { step(1); return .handled }
                 .onKeyPress(.downArrow) { step(-1); return .handled }
                 .help("Type a time, like 9:30 or 21:00")
@@ -320,13 +328,14 @@ struct TimeStepper: View {
     }
 
     /// Minutes after midnight for "9", "930", "9:30", "09.30", "21:00", "9pm", "9:30 am".
-    /// Nil when it isn't a time (yet).
+    /// Nil when it isn't a time (yet), including a half-typed "21:3".
     static func parse(_ raw: String) -> Int? {
         let lower = raw.lowercased()
         let pm = lower.contains("p"), am = lower.contains("a")
         let parts = lower.split(whereSeparator: { !$0.isNumber }).map(String.init)
         var hour: Int?, minute = 0
         if parts.count >= 2 {
+            guard parts[1].count == 2 else { return nil }
             hour = Int(parts[0]); minute = Int(parts[1]) ?? -1
         } else if let digits = parts.first {
             if digits.count <= 2 { hour = Int(digits) }

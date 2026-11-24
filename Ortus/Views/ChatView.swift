@@ -44,10 +44,10 @@ struct ChatView: View {
         }
         // The first visit explains what Chat is, set up or not, once detection has
         // settled so it doesn't flip from "Set up agent" to "Get started". Someone sent to
-        // setup from it sees it again once Claude Code works.
+        // setup from it sees it again once Claude Code works, unless they're already chatting.
         .onChange(of: claudeCodeService.isDetecting, initial: true) {
             if !claudeCodeService.isDetecting, !didSeeChatIntro, !chatIntroSentToSetup || claudeCodeService.isConfigured,
-               snapshotState == nil, router.modal == nil {
+               claudeCodeService.messages.isEmpty, snapshotState == nil, router.modal == nil {
                 router.modal = .chatIntro
             }
         }

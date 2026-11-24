@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Resize the First Light app icon into every size the app and the extension use.
 
-The master is the brand kit's app-icon-1024.png (brain/projects/ortus/brand/assets/app-icon),
+The master is the brand kit's app-icon-1024.png,
 kept in the repo as Ortus/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png.
 Usage: python3 generate_app_icon.py [path/to/app-icon-1024.png]
 """
