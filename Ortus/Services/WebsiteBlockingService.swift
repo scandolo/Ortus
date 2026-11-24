@@ -127,14 +127,25 @@ final class WebsiteBlockingService: ObservableObject {
             // The unpacked build (manifest key) and the Chrome Web Store build have different ids.
             let result = CompanionRegistration.register(hostName: hostName, bridge: bridge, unpackedID: id, storeID: identity["storeID"],
                                                         bundledExtension: bundledExtension, unpackedFolder: extensionDirectory)
-            folderError = result.folder.map {
-                "Load unpacked can't use the “\(extensionDirectory.lastPathComponent)” folder: \($0.localizedDescription)"
-                    + (preview ? "" : " Add Ortus from the Chrome Web Store instead.")
-            }
+            folderError = result.folder.map { Self.folderMessage($0.localizedDescription, folder: extensionDirectory.lastPathComponent, preview: preview) }
             if let error = result.manifests { throw error }
             setupError = nil
         } catch { setupError = "Browser setup: \(error.localizedDescription)" }
     }
+
+    /// A preview connects only to its own folder, so only the release can point at the store instead.
+    static func folderMessage(_ reason: String, folder: String, preview: Bool) -> String {
+        "Load unpacked can't use the “\(folder)” folder: \(reason)" + (preview ? "" : " Add Ortus from the Chrome Web Store instead.")
+    }
+
+    #if DEBUG
+    /// The snapshot harness shows the message a folder owned by another macOS user gives.
+    func pinFolderErrorForSnapshot() {
+        guard let folder = extensionDirectory else { return }
+        let reason = CocoaError(.fileWriteNoPermission, userInfo: [NSFilePathErrorKey: folder.appendingPathComponent("background.js").path]).localizedDescription
+        setupError = Self.folderMessage(reason, folder: folder.lastPathComponent, preview: preview)
+    }
+    #endif
 
     /// The published listing. Uses the bundled store id when the app has one, so the
     /// button and the native host allow the same extension.
