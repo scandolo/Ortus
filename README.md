@@ -7,8 +7,8 @@
 
 ### No end button. The focus app that doesn't trust you.
 
-A free, open source Mac menu-bar app. It closes the apps and blocks the websites you choose until the session ends.
-Need a message from Slack? Ask your agent. Nothing opens.
+A free, open source Mac app that locks you out of the apps and websites you choose until the session ends,
+with an agent that gets you what you need from them. Need a message from Slack? Ask. Nothing opens.
 
 [![Website](https://img.shields.io/badge/website-ortusmode.com-FE701C)](https://ortusmode.com)
 [![Latest release](https://img.shields.io/github/v/release/scandolo/Ortus?color=FE701C&label=download)](https://github.com/scandolo/Ortus/releases/latest)
@@ -16,7 +16,7 @@ Need a message from Slack? Ask your agent. Nothing opens.
 [![Built with SwiftUI](https://img.shields.io/badge/SwiftUI-Swift%206-1C1C19?logo=swift&logoColor=white)](Package.swift)
 [![License: MIT](https://img.shields.io/badge/license-MIT-FE701C)](LICENSE)
 
-[Website](https://ortusmode.com) · [Install](#install) · [How it works](#how-it-works) · [Development](#development)
+[Website](https://ortusmode.com) · [Install](#install) · [How it works](#how-it-works) · [Your agent](#your-agent) · [Development](#development)
 
 <br />
 
@@ -28,7 +28,13 @@ Need a message from Slack? Ask your agent. Nothing opens.
 
 ## What is Ortus?
 
-Ortus lives in your Mac menu bar. Pick what to block and for how long, then press **Lock in**, or let a schedule start the session for you. Until it ends, Ortus closes the Mac apps in your mode. With the browser extension, it blocks the websites too.
+Ortus lives in your Mac menu bar and does two things.
+
+**It locks you in.** Pick what to block and for how long, then press **Lock in**, or let a schedule start the session for you. Until it ends, Ortus closes the Mac apps in your mode. With the browser extension, it blocks the websites too.
+
+**Your agent keeps you in the loop.** During a session, ask Ortus for the message, thread or file you need. Chat runs the Claude Code already on your Mac, with your sign-in and whatever you connected to it, like Slack, Gmail or your calendar, and answers right inside Ortus. You get what you came for without the feed around it. It drafts replies for you and asks before it sends or changes anything.
+
+### Modes and the lock
 
 **Socials**, the default, blocks LinkedIn, X (x.com and twitter.com), Instagram, Facebook, Reddit and TikTok. **Messages** blocks Gmail, Slack and WhatsApp. **Everything** blocks both. Choose **Change → New custom mode** to add websites and Mac apps of your own. Schedules use the same modes.
 
@@ -38,7 +44,7 @@ There is no end button. Quitting Ortus is blocked while a session runs. A sessio
 
 The panel is bone while you're free and ink while you're locked, so you can tell at a glance. When the timer ends, the websites load again. Apps Ortus closed stay closed until you open them. The weekly emergency end reopens them.
 
-**Ask your agent. Nothing opens.** Chat runs the Claude Code already on your Mac, with your sign-in and whatever you connected to it, so you can get a message or a file from Slack without opening Slack. If Slack is connected, Ortus also sets your Slack status and Do Not Disturb when a session closes the Slack app, and clears them when it ends. Both are optional.
+If Slack is connected, Ortus also sets your Slack status and Do Not Disturb when a session closes the Slack app, and clears them when it ends.
 
 > Willpower runs out. A locked session doesn't.
 
@@ -91,10 +97,10 @@ open Ortus.app
 
 Requires macOS 14+ and the Swift 6 toolchain (Xcode).
 
-### Chat (optional)
+### Your agent
 
 Chat uses your locally installed Claude Code and its existing sign-in and
-connectors. Ortus detects it automatically. Open **Settings → Chat → Configure**
+connectors. Ortus blocks apps and websites without it; Chat needs it. Ortus detects it automatically. Open **Settings → Chat → Configure**
 to change its location or check again; leave the location empty to use automatic
 detection.
 
