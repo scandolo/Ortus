@@ -6,11 +6,17 @@
   const queue = [];
   const track = (event, props) => (window.posthog && window.posthog.__loaded ? window.posthog.capture(event, props) : queue.push([event, props]));
 
-  // Download clicks: show where the file went, and count which button was used.
-  const HINT = 'Downloading. Open Ortus.dmg and drag Ortus to Applications.';
+  // Download clicks: count which button was used, and show one toast with the install steps.
+  const toast = document.getElementById('download-toast');
+  let hideTimer = 0;
+  const hideToast = () => { toast.classList.remove('show'); setTimeout(() => { toast.hidden = true; }, 450); };
+  toast.querySelector('.toast-close').addEventListener('click', hideToast);
   document.querySelectorAll('[data-download]').forEach((a) => a.addEventListener('click', () => {
     track('download_clicked', { location: a.dataset.download });
-    document.querySelectorAll('.install-hint').forEach((h) => { h.textContent = HINT; });
+    clearTimeout(hideTimer);
+    toast.hidden = false;
+    requestAnimationFrame(() => toast.classList.add('show'));
+    hideTimer = setTimeout(hideToast, 9000);
   }));
 
   if (!KEY) return;
