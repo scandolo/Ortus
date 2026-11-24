@@ -64,7 +64,8 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 .popup .headline p { font-size: 13px; }
 .problem { width: 22px; height: 22px; flex: none; color: var(--persimmon); }
 .popup section { display: flex; flex-direction: column; gap: 10px; }
-.popup h2.label { font-size: 11px; }
+.popup .count-row { display: flex; align-items: center; gap: 12px; }
+.popup .count-row h2 { margin: 0; font: 600 14px/1 var(--text-font); white-space: nowrap; }
 .popup button { width: 100%; }
 
 /* Blocked sites: overlapping circles that fade a step each, each holding the site's mark,
@@ -83,7 +84,8 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 .sites li:nth-child(4) { background: color-mix(in srgb, var(--bone) 54%, var(--ink)); }
 .sites li:nth-child(5) { background: color-mix(in srgb, var(--bone) 42%, var(--ink)); }
 .sites li:nth-child(6) { background: color-mix(in srgb, var(--bone) 32%, var(--ink)); }
-.sites li:nth-child(n+7) { background: color-mix(in srgb, var(--bone) 24%, var(--ink)); }
+/* As in the app, six circles at most; the count says the rest. Screen readers still hear every site. */
+.sites li:nth-child(n+7) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); border: 0; margin: 0; }
 .sites .glyph { width: 16px; height: 16px; }
 .sites .glyph svg { display: block; width: 16px; height: 16px; }
 .sites .glyph:empty { background: no-repeat center/15px url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%231C1C19" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>'); }
