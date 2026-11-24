@@ -2,35 +2,52 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Privacy policy · Ortus</title>
   <meta name="description" content="What Ortus, its browser extension and ortusmode.com do with your data." />
-  <meta name="theme-color" content="#1A1A1C" />
-  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#F2EEE8" />
+  <meta name="color-scheme" content="light" />
   <link rel="canonical" href="https://ortusmode.com/privacy" />
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="preload" href="/assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/assets/fonts/archivo-black-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <header class="nav" id="nav" aria-label="Ortus">
-    <div class="nav__bar">
-      <a class="nav__brand" href="/" aria-label="Ortus home">
-        <img class="nav__logo" src="/assets/favicon.svg" width="30" height="30" alt="Ortus" />
+  <svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="apple" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701" />
+    </symbol>
+  </svg>
+  <header class="nav">
+    <div class="wrap-wide nav-inner">
+      <a href="/" aria-label="Ortus home">
+        <img class="logo" src="/assets/brand/logo/ortus-logo.svg" alt="Ortus" height="28" />
       </a>
+      <nav class="nav-links" aria-label="Site">
+        <a class="nav-text" href="https://github.com/scandolo/Ortus" target="_blank" rel="noopener">GitHub</a>
+        <a class="btn btn-ink" href="/download/Ortus.dmg">
+          <svg aria-hidden="true"><use href="#apple" /></svg>
+          Get Ortus
+        </a>
+      </nav>
     </div>
   </header>
 
   <main class="doc">
+    <div class="doc-wrap">
     <h1>Privacy policy</h1>
-    <p class="doc__updated">Last updated 20 November 2026</p>
+    <p class="updated">Last updated 24 November 2026</p>
 
-    <div class="doc__card">
+    <div class="doc-card">
       <h2>The short version</h2>
       <ul>
         <li>Ortus has no accounts. It runs on your Mac, and your settings stay there.</li>
         <li>We never see your messages, the websites you visit, or your AI chats.</li>
         <li>The browser extension talks only to the Ortus app on your Mac. It sends nothing over the internet.</li>
         <li>If you opt in, the Mac app sends anonymous usage events, like "focus session started", so we can see what works. It's off unless you turn it on.</li>
+        <li>The homepage counts visits anonymously, without cookies.</li>
         <li>We don't sell data, show ads, or share data with anyone for marketing.</li>
       </ul>
     </div>
@@ -73,13 +90,14 @@
     <p>The use of information received from Chrome APIs adheres to the <a href="https://developer.chrome.com/docs/webstore/program-policies/policies" target="_blank" rel="noopener">Chrome Web Store User Data Policy</a>, including the Limited Use requirements.</p>
 
     <h2>This website</h2>
-    <p>ortusmode.com is hosted by Vercel, which processes standard request data, such as IP address and browser type, to deliver and protect the site. The site sets no cookies and has no analytics.</p>
+    <p>ortusmode.com is hosted by Vercel, which processes standard request data, such as IP address and browser type, to deliver and protect the site.</p>
+    <p>The homepage also sends anonymous events to PostHog, in its EU cloud, so we can see whether the page works: the page was viewed or left, which sections were reached, how far it was scrolled, and which Download button was clicked. It sets no cookies and stores nothing on your device, so every visit counts on its own. Like any request, it reveals your IP address, which PostHog can use to estimate a rough location. The site's other pages have no analytics.</p>
 
     <h2>Email</h2>
     <p>Mail to support@ortusmode.com is forwarded by Cloudflare to our inbox. We use it only to reply to you.</p>
 
     <h2>Legal basis and how long we keep data</h2>
-    <p>We send anonymous usage events only with your consent, which you can withdraw anytime in Settings. We keep usage events for up to 24 months, and support emails for as long as needed to help you.</p>
+    <p>We send anonymous usage events only with your consent, which you can withdraw anytime in Settings. We count homepage visits on the basis of our legitimate interest in knowing whether the site works; you can block it with any content blocker. We keep usage events and homepage events for up to 24 months, and support emails for as long as needed to help you.</p>
 
     <h2>Your rights</h2>
     <p>You can ask to access or delete data about you, or object to its use, by emailing <a href="mailto:support@ortusmode.com">support@ortusmode.com</a>. Because usage events aren't linked to your identity, we may need your installation ID to find them. You can also complain to your data protection authority; in Italy that's the <a href="https://www.garanteprivacy.it" target="_blank" rel="noopener">Garante per la protezione dei dati personali</a>.</p>
@@ -89,29 +107,22 @@
 
     <h2>Changes</h2>
     <p>If this policy changes, we'll update this page and the date at the top. For significant changes, we'll also say so in the app.</p>
+    </div>
   </main>
 
   <footer class="footer">
-    <div class="footer__inner">
-      <div class="footer__brand">
-        <div>
-          <p class="footer__word">Ortus</p>
-          <p class="footer__tag">Block distractions. Do the work.</p>
-        </div>
-      </div>
-      <nav class="footer__links" aria-label="Footer">
+    <div class="wrap footer-inner">
+      <a href="/" aria-label="Ortus home">
+        <img class="logo" src="/assets/brand/logo/ortus-logo.svg" alt="Ortus" height="28" />
+      </a>
+      <nav aria-label="Footer">
         <a href="/#download">Download</a>
         <a href="/privacy">Privacy</a>
         <a href="mailto:support@ortusmode.com">Support</a>
         <a href="https://github.com/scandolo/Ortus" target="_blank" rel="noopener">GitHub</a>
       </nav>
-    </div>
-    <div class="footer__base">
-      <p class="footer__latin">Carpe lucem.</p>
-      <p class="footer__copy">© 2026 Ortus · Free &amp; open source</p>
+      <p>© 2026 Ortus</p>
     </div>
   </footer>
-
-  <script src="/script.js" defer></script>
 </body>
 </html>

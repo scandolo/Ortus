@@ -2,59 +2,63 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Welcome to Ortus</title>
   <meta name="robots" content="noindex" />
-  <meta name="theme-color" content="#1A1A1C" />
-  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#F2EEE8" />
+  <meta name="color-scheme" content="light" />
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="preload" href="/assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/assets/fonts/archivo-black-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <header class="nav" id="nav" aria-label="Ortus">
-    <div class="nav__bar">
-      <a class="nav__brand" href="/" aria-label="Ortus home">
-        <img class="nav__logo" src="/assets/favicon.svg" width="30" height="30" alt="Ortus" />
+  <header class="nav">
+    <div class="wrap-wide nav-inner">
+      <a href="/" aria-label="Ortus home">
+        <img class="logo" src="/assets/brand/logo/ortus-logo.svg" alt="Ortus" height="28" />
       </a>
     </div>
   </header>
 
   <!-- Opened by Ortus on first launch. The choices go back to the app through its URL scheme. -->
   <main class="doc">
-    <h1>Ortus is running</h1>
-    <p class="welcome__lede">Look for the sun in your menu bar. Every session starts there.</p>
+    <div class="doc-wrap">
+      <h1>Ortus is running</h1>
+      <p class="lede">Look for the sun in your menu bar. Every session starts there.</p>
 
-    <section class="doc__card" aria-labelledby="hardcore-title">
-      <h2 id="hardcore-title">Ortus is hardcore</h2>
-      <p>Once a session starts, it runs to the end. That's the point.</p>
-      <ul>
-        <li><strong>No off button.</strong> You get 30 seconds to cancel a session you just started, then it's locked.</li>
-        <li><strong>No quitting.</strong> Ortus stays open until focus ends.</li>
-        <li><strong>No workarounds.</strong> Blocked apps close again if you reopen them, and turning off the browser extension won't get you out.</li>
-        <li><strong>One emergency exit a week</strong>, in Settings, for when something really can't wait.</li>
-      </ul>
-    </section>
+      <section class="doc-card" aria-labelledby="hardcore-title">
+        <h2 id="hardcore-title">Ortus is hardcore</h2>
+        <p>Once a session starts, it runs to the end. That's the point.</p>
+        <ul>
+          <li><strong>No off button.</strong> You get a short grace period to cancel a session you just started, then it's locked.</li>
+          <li><strong>No quitting.</strong> Ortus stays open until focus ends.</li>
+          <li><strong>No workarounds.</strong> Blocked apps close again if you reopen them, and turning off the browser extension won't get you out.</li>
+          <li><strong>One emergency exit a week</strong>, in Settings, for when something really can't wait.</li>
+        </ul>
+      </section>
 
-    <section class="doc__card" aria-labelledby="ext-title">
-      <h2 id="ext-title">Block websites too</h2>
-      <p>Ortus closes Mac apps on its own. For websites, add its extension. Chrome, Arc, Edge and Brave all install it from the Chrome Web Store.</p>
-      <a class="btn btn--primary welcome__action" href="https://chromewebstore.google.com/detail/lheanmgemlbnpeonkdbbinmankaineao" target="_blank" rel="noopener">Add to Chrome</a>
-      <p class="welcome__small">Then open its Details and turn on Allow in Incognito, so private windows are covered too. Safari and Firefox aren't supported yet.</p>
-    </section>
+      <section class="doc-card" aria-labelledby="ext-title">
+        <h2 id="ext-title">Block websites too</h2>
+        <p>Ortus closes Mac apps on its own. For websites, add its extension. Chrome, Arc, Edge and Brave all install it from the Chrome Web Store.</p>
+        <a class="btn btn-line" href="https://chromewebstore.google.com/detail/lheanmgemlbnpeonkdbbinmankaineao" target="_blank" rel="noopener">Add to Chrome</a>
+        <p class="small">Then open its Details and turn on Allow in Incognito, so private windows are covered too. Safari and Firefox aren't supported yet.</p>
+      </section>
 
-    <section class="doc__card" aria-labelledby="choices-title">
-      <h2 id="choices-title">Two choices</h2>
-      <label class="welcome__choice">
-        <input type="checkbox" id="login" checked />
-        <span><strong>Open Ortus when you log in</strong><br />Schedules only run while Ortus is open.</span>
-      </label>
-      <label class="welcome__choice">
-        <input type="checkbox" id="analytics" />
-        <span><strong>Share anonymous usage</strong><br />Which features get used, never your messages or the sites you visit. <a href="/privacy">Privacy policy</a></span>
-      </label>
-      <a class="btn btn--primary welcome__action" id="save" href="ortus://welcome?login=1&amp;analytics=0">Save choices</a>
-      <p class="welcome__small" id="save-note">Your browser will ask to open Ortus. You can change both anytime in Ortus → Settings.</p>
-    </section>
+      <section class="doc-card" aria-labelledby="choices-title">
+        <h2 id="choices-title">Two choices</h2>
+        <label class="choice">
+          <input type="checkbox" id="login" checked />
+          <span><strong>Open Ortus when you log in</strong><br />Schedules only run while Ortus is open.</span>
+        </label>
+        <label class="choice">
+          <input type="checkbox" id="analytics" />
+          <span><strong>Share anonymous usage</strong><br />Which features get used, never your messages or the sites you visit. <a href="/privacy">Privacy policy</a></span>
+        </label>
+        <a class="btn btn-primary" id="save" href="ortus://welcome?login=1&amp;analytics=0">Save choices</a>
+        <p class="small" id="save-note">Your browser will ask to open Ortus. You can change both anytime in Ortus → Settings.</p>
+      </section>
+    </div>
   </main>
 
   <script>

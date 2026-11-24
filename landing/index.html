@@ -1,274 +1,357 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ortus - The hardcore focus app for makers</title>
-
-  <!-- SEO / social -->
-  <meta name="description" content="Ortus is a macOS menu-bar app that blocks distractions while you do deep work. On a schedule or on demand. No end button. Free & open source." />
-  <meta name="theme-color" content="#1A1A1C" />
-  <meta name="color-scheme" content="dark" />
-
-  <!-- Open Graph -->
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://ortusmode.com/" />
-  <meta property="og:site_name" content="Ortus" />
-  <meta property="og:title" content="Ortus: the hardcore focus app for makers" />
-  <meta property="og:description" content="A macOS menu-bar app that blocks distractions on a schedule or on demand. No end button. Free & open source." />
-  <meta property="og:image" content="https://ortusmode.com/assets/social-preview.png" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Ortus, a macOS menu-bar focus app, showing a locked 52:00 deep-focus session." />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Ortus: the hardcore focus app for makers" />
-  <meta name="twitter:description" content="A macOS menu-bar app that blocks distractions while you do deep work. No end button." />
-  <meta name="twitter:image" content="https://ortusmode.com/assets/social-preview.png" />
-
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ortus · The focus app that doesn't trust you</title>
+  <meta name="description" content="Ortus closes Slack, X and email until your session ends. Open one and it closes again. Need a message from Slack? Ask Claude Code. Free and open source.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="canonical" href="https://ortusmode.com/">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="theme-color" content="#1C1C19">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://ortusmode.com/">
+  <meta property="og:title" content="Ortus · The focus app that doesn't trust you">
+  <meta property="og:description" content="No end button. Ortus closes Slack, X and email until your session ends. Free and open source, for Mac.">
+  <meta property="og:image" content="https://ortusmode.com/assets/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Ortus · The focus app that doesn't trust you">
+  <meta name="twitter:description" content="No end button. Ortus closes Slack, X and email until your session ends. Free and open source, for Mac.">
+  <meta name="twitter:image" content="https://ortusmode.com/assets/og.png">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Ortus", "description": "A Mac focus app with no end button. It closes Slack, X, email and any app or website you pick, and keeps them closed until your session ends. Your own Claude Code can check Slack and Gmail for you.", "applicationCategory": "ProductivityApplication", "operatingSystem": "macOS 14 or later", "url": "https://ortusmode.com/", "downloadUrl": "https://github.com/scandolo/Ortus/releases/latest/download/Ortus.dmg", "isAccessibleForFree": true, "license": "https://opensource.org/licenses/MIT", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}}</script>
+  <link rel="preload" href="assets/fonts/archivo-black-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="home.css">
+  <script>document.documentElement.classList.add('js')</script>
+  <script src="hero.js" defer></script>
+  <script src="reveal.js" defer></script>
+  <script src="analytics.js" defer></script>
 </head>
 <body>
-  <!-- ============================== NAV ============================== -->
-  <header class="nav" id="nav" aria-label="Ortus">
-    <div class="nav__bar">
-      <a class="nav__brand" href="#top" aria-label="Ortus home">
-        <img class="nav__logo" src="assets/favicon.svg" width="30" height="30" alt="Ortus" />
-      </a>
-    </div>
-  </header>
+<main>
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="stage">
+      <div class="curtain" aria-hidden="true"></div>
 
-  <main id="top">
-    <!-- ============================== HERO ============================== -->
-    <section class="hero" aria-labelledby="hero-title">
-      <!-- cinematic dawn horizon glow -->
-      <div class="hero__glow" aria-hidden="true"></div>
+      <header class="nav">
+        <a class="logo" href="/" aria-label="Ortus">
+          <svg viewBox="0 0 156 36" aria-hidden="true"><g transform="translate(0 2) scale(.83077)" fill="#FE701C"><path d="M3.5 26.5a22.5 22.5 0 0 1 45 0Z"></path><path d="M1.6 28.5H51L50.4 32.1H1Z"></path><path d="M9.3 35H43L42.7 36.6H9Z"></path></g></svg>
+          <svg class="blend" viewBox="0 0 156 36" aria-hidden="true"><g fill="#F2EEE8"><path d="M65.8944 3.1200Q72.7296 3.1200 76.4544 6.6144Q80.1792 10.1088 80.1792 16.7904Q80.1792 23.4720 76.4544 26.9664Q72.7296 30.4608 65.8944 30.4608Q59.0592 30.4608 55.3536 26.9856Q51.6480 23.5104 51.6480 16.7904Q51.6480 10.0704 55.3536 6.5952Q59.0592 3.1200 65.8944 3.1200ZM65.8944 9.4560Q63.1680 9.4560 61.7472 11.1072Q60.3264 12.7584 60.3264 15.5616L60.3264 18.0192Q60.3264 20.8224 61.7472 22.4736Q63.1680 24.1248 65.8944 24.1248Q68.6208 24.1248 70.0608 22.4736Q71.5008 20.8224 71.5008 18.0192L71.5008 15.5616Q71.5008 12.7584 70.0608 11.1072Q68.6208 9.4560 65.8944 9.4560Z"></path><path d="M92.8896 9.2256Q93.7728 9.2256 94.4640 9.4368Q95.1552 9.6480 95.1552 9.6864L95.1552 16.0992L92.6976 16.0992Q90.3168 16.0992 89.2608 17.3280Q88.2048 18.5568 88.2048 20.9760L88.2048 30.0000L80.5632 30.0000L80.5632 9.7248L86.8224 9.7248L87.3216 12.7968Q88.0128 11.0304 89.5104 10.1280Q91.0080 9.2256 92.8896 9.2256Z"></path><path d="M109.4016 9.7248L109.4016 14.9088L105.1008 14.9088L105.1008 22.6272Q105.1008 24.0096 105.5616 24.6432Q106.0224 25.2768 107.2512 25.2768L109.4016 25.2768L109.4016 29.7696Q108.4800 30.0768 107.0208 30.2688Q105.5616 30.4608 104.4864 30.4608Q101.1072 30.4608 99.2832 29.2320Q97.4592 28.0032 97.4592 25.0464L97.4592 14.9088L94.6176 14.9088L94.6176 9.7248L97.7664 9.7248L99.4176 3.5808L105.1008 3.5808L105.1008 9.7248Z"></path><path d="M123.9936 30.0000L123.4944 26.9280Q122.3040 28.5792 120.3648 29.5200Q118.4256 30.4608 116.2752 30.4608Q112.7424 30.4608 110.9760 28.5024Q109.2096 26.5440 109.2096 22.8576L109.2096 9.7248L116.8512 9.7248L116.8512 21.9360Q116.8512 23.2416 117.5232 24.0288Q118.1952 24.8160 119.4240 24.8160Q120.8448 24.8160 121.7280 23.8944Q122.6112 22.9728 122.6112 21.6288L122.6112 9.7248L130.2528 9.7248L130.2528 30.0000Z"></path><path d="M140.8896 9.2640Q144.9600 9.2640 147.7824 10.8576Q150.6048 12.4512 150.6048 15.7920L143.5008 15.7920Q143.5008 14.6784 142.5024 14.2176Q141.8112 13.8336 140.7744 13.8336Q138.0096 13.8336 138.0096 15.1392Q138.0096 15.8688 138.9696 16.1760Q139.9296 16.4832 142.1184 16.8288Q144.8064 17.2128 146.6112 17.7312Q148.4160 18.2496 149.7600 19.5744Q151.1040 20.8992 151.1040 23.2800Q151.1040 27.1584 148.2048 28.8096Q145.3056 30.4608 140.6208 30.4608Q137.9328 30.4608 135.5520 29.7120Q133.1712 28.9632 131.6736 27.3888Q130.1760 25.8144 130.1760 23.3952L137.2800 23.3952L137.2800 23.5488Q137.3184 24.8544 138.3744 25.3728Q139.4304 25.8912 140.6208 25.8912Q143.8080 25.8912 143.8080 24.3936Q143.8080 23.6256 142.8096 23.2800Q141.8112 22.9344 139.5456 22.5504Q136.8192 22.0896 135.0720 21.5520Q133.3248 21.0144 132.0192 19.7280Q130.7136 18.4416 130.7136 16.1376Q130.7136 12.4128 133.5360 10.8384Q136.3584 9.2640 140.8896 9.2640Z"></path></g></svg>
+        </a>
+        <nav class="links" aria-label="Main">
+          <a class="blend nav-github" href="https://github.com/scandolo/Ortus" aria-label="GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path></svg><span>GitHub</span></a>
+          <a class="blend nav-download" href="https://github.com/scandolo/Ortus/releases/latest/download/Ortus.dmg" data-download="nav"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"></path></svg>Get Ortus</a>
+        </nav>
+      </header>
+      <div class="nav-rule blend" aria-hidden="true"></div>
 
-      <div class="hero__inner">
-        <div class="hero__copy">
-          <h1 class="hero__title fade-up d2" id="hero-title">
-            One switch to <span class="grad-text">lock in.</span>
-          </h1>
-          <p class="hero__sub fade-up d3">
-            Ortus is the most <strong>hardcore focus app</strong> for makers.
-          </p>
-          <p class="hero__sub hero__sub--detail fade-up d3">
-            It lives in your Mac menu bar, blocks distractions on a schedule or on demand, and has no end button until you're done.
-          </p>
-
-          <div class="hero__cta fade-up d4">
-            <a class="btn btn--primary btn--lg" href="/download/Ortus.dmg" data-download>Download for Mac</a>
+      <div class="intro">
+        <h1 id="hero-title"><span class="blend line1">No end button.</span><span class="blend line2">The focus app that doesn't trust you.</span></h1>
+        <p class="sub blend">Ortus closes Slack, X and email until your session ends. Open one and it closes again. Need a message from Slack? Ask Claude Code.</p>
+        <div class="actions">
+          <div class="cta-group">
+            <a class="cta" id="download" href="https://github.com/scandolo/Ortus/releases/latest/download/Ortus.dmg" data-download="hero"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"></path></svg>Download for Mac</a>
+            <span class="note blend"><svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="6.2" fill="none" stroke="currentColor" stroke-width="1.3"></circle><path d="M4.3 7.2l1.9 1.9 3.6-3.9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span>Free and <a href="https://github.com/scandolo/Ortus">open source</a>. No account. macOS 14+.</span></span>
           </div>
-          <p class="hero__meta fade-up d4">Free · macOS 14 or later · Apple silicon and Intel</p>
+          <span class="cue" aria-hidden="true">Scroll to lock in <svg viewBox="0 0 12 12" width="12" height="12"><path d="M6 1v9M2 6.5 6 10.5 10 6.5" fill="none" stroke="currentColor" stroke-width="1.6"></path></svg></span>
         </div>
+      </div>
 
-        <!-- ===== macOS MENU-BAR MOCKUP (the proof) ===== -->
-        <div class="hero__device fade-up d5">
-          <div class="hero__device-glow" aria-hidden="true"></div>
-          <div class="macscene">
-            <!-- macOS menu bar with the Ortus sun lit -->
-            <div class="menubar" aria-hidden="true">
-              <div class="menubar__sys">
-                <svg width="20" height="14" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="18" height="10" rx="2.5"/><rect x="3" y="5" width="12" height="6" rx="1" fill="currentColor" stroke="none"/><path d="M21 6v4" stroke-linecap="round"/></svg>
-                <svg width="17" height="15" viewBox="0 0 24 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 7.5a15 15 0 0 1 20 0"/><path d="M5 11a10 10 0 0 1 14 0"/><path d="M8.5 14.5a5 5 0 0 1 7 0"/><circle cx="12" cy="18" r="0.6" fill="currentColor"/></svg>
-                <span class="menubar__clock">9:41</span>
-                <span class="menubar__ortus"><img src="assets/sunmark.svg" width="18" height="18" alt="" /></span>
-              </div>
-            </div>
+      <div class="scene-box" role="img" aria-label="A Mac desktop full of Slack, Gmail, X and YouTube. As you scroll, the page goes dark, the windows close, and only the work stays open.">
+        <img class="wallpaper" src="assets/wallpaper.jpg" alt="">
+        <div class="scene scene-desktop" aria-hidden="true">
+      <div class="b-w1" style="position: absolute; left: 28px; top: 34px; width: 470px; height: 360px; background: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 22px 60px rgba(0, 0, 0, 0.35); display: flex; flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif">
+      <div style="height: 30px; flex: none; display: flex; align-items: center; gap: 7px; padding: 0 12px; background: #F4F2EE; border-bottom: 1px solid rgba(28, 28, 25, 0.08)">
+      <span style="width: 11px; height: 11px; border-radius: 50%; background: #FF5F57"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #28C840"></span>
+      <span style="flex: 1; text-align: center; font-size: 12px; color: #5E5C55; margin-right: 40px">Slack · Acme</span>
+      </div>
+      <div style="flex: 1; display: flex; min-height: 0">
+      <div style="width: 146px; flex: none; background: #4A154B; color: rgba(255, 255, 255, 0.72); padding: 14px 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 7px; font-size: 13px">
+      <div style="color: #FFFFFF; font-weight: 700; font-size: 15px; margin-bottom: 6px">Acme</div>
+      <div># general</div>
+      <div style="display: flex; justify-content: space-between; color: #FFFFFF; font-weight: 700"><span># eng</span><span style="background: #E01E5A; border-radius: 9px; padding: 0 7px; font-size: 11px; line-height: 18px">12</span></div>
+      <div># design</div>
+      <div style="display: flex; justify-content: space-between; color: #FFFFFF; font-weight: 700"><span># launch</span><span style="background: #E01E5A; border-radius: 9px; padding: 0 7px; font-size: 11px; line-height: 18px">4</span></div>
+      <div style="margin-top: 8px; display: flex; justify-content: space-between; color: #FFFFFF; font-weight: 700"><span>Luca</span><span style="background: #E01E5A; border-radius: 9px; padding: 0 7px; font-size: 11px; line-height: 18px">3</span></div>
+      <div>Marta</div>
+      </div>
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+      <div style="padding: 11px 16px; border-bottom: 1px solid #ECEAE6; font-size: 15px; font-weight: 700; color: #1D1C1D"># eng</div>
+      <div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; font-size: 14px; line-height: 1.4; color: #1D1C1D">
+      <div style="display: flex; gap: 10px"><div style="width: 34px; height: 34px; flex: none; border-radius: 8px; background: #E8A87C; color: #FFFFFF; font-weight: 700; display: flex; align-items: center; justify-content: center">M</div><div><div><b>Marta</b> <span style="color: #8A8780; font-size: 12px">9:58</span></div>Deploy is red again. Can someone look before the demo?</div></div>
+      <div style="display: flex; align-items: center; gap: 8px; color: #E01E5A; font-size: 11px; font-weight: 700"><div style="flex: 1; height: 1px; background: #E01E5A"></div>New</div>
+      <div style="display: flex; gap: 10px"><div style="width: 34px; height: 34px; flex: none; border-radius: 8px; background: #7FB3D5; color: #FFFFFF; font-weight: 700; display: flex; align-items: center; justify-content: center">L</div><div><div><b>Luca</b> <span style="color: #8A8780; font-size: 12px">10:02</span></div><span style="background: #FFF3C4; color: #1264A3; padding: 0 2px">@sam</span> quick one, did you see my DM?</div></div>
+      <div style="display: flex; gap: 10px"><div style="width: 34px; height: 34px; flex: none; border-radius: 8px; background: #8FB996; color: #FFFFFF; font-weight: 700; display: flex; align-items: center; justify-content: center">P</div><div><div><b>Priya</b> <span style="color: #8A8780; font-size: 12px">10:05</span></div>Standup moved to 10:30. Also, who touched staging?</div></div>
+      </div>
+      </div>
+      </div>
+      </div>
 
-            <div class="popover">
-              <span class="popover__notch" aria-hidden="true"></span>
-            <!-- floating capsule tab bar -->
-            <div class="popover__tabs" role="tablist" aria-label="Ortus">
-              <button class="tab tab--active" type="button" role="tab" data-panel="focus">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="13" r="7" /><path d="M12 13V9" /><path d="M9 2h6" /><path d="m19 5 1.5-1.5" />
-                </svg>
-                Focus
-              </button>
-              <button class="tab" type="button" role="tab" data-panel="schedule">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="5" width="18" height="16" rx="2.5" /><path d="M3 9h18" /><path d="M8 3v4" /><path d="M16 3v4" />
-                </svg>
-                Schedule
-              </button>
-              <button class="tab" type="button" role="tab" data-panel="chat">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 12a8 8 0 0 1-11.5 7.2L4 21l1.8-5.5A8 8 0 1 1 21 12Z" />
-                </svg>
-                Chat
-              </button>
-              <button class="tab tab--icon" type="button" role="tab" data-panel="settings" aria-label="Settings">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
-                </svg>
-              </button>
-            </div>
+      <div class="b-w2" style="position: absolute; left: 540px; top: 24px; width: 400px; height: 280px; background: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 22px 60px rgba(0, 0, 0, 0.35); font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: #1F1F1F">
+      <div style="height: 30px; display: flex; align-items: center; gap: 7px; padding: 0 12px; background: #F4F2EE; border-bottom: 1px solid rgba(28, 28, 25, 0.08)">
+      <span style="width: 11px; height: 11px; border-radius: 50%; background: #FF5F57"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #28C840"></span>
+      <span style="flex: 1; text-align: center; font-size: 12px; color: #5E5C55; margin-right: 40px">mail.google.com</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px">
+      <svg viewBox="0 0 24 24" width="22" height="22" role="img" aria-label="Gmail"><path fill="#EA4335" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"></path></svg>
+      <b style="font-size: 14px">Inbox</b><span style="background: #D3E3FD; border-radius: 10px; padding: 1px 8px; font-size: 12px; font-weight: 700">1,284</span>
+      </div>
+      <div style="display: flex; flex-direction: column; font-size: 13px">
+      <div style="display: flex; gap: 10px; padding: 9px 14px; border-top: 1px solid #F1F3F4; font-weight: 700"><span style="width: 86px; flex: none">Stripe</span><span style="flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">Your invoice is overdue</span><span style="font-size: 12px">10:41</span></div>
+      <div style="display: flex; gap: 10px; padding: 9px 14px; border-top: 1px solid #F1F3F4; font-weight: 700"><span style="width: 86px; flex: none">Anna Keller</span><span style="flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">Re: Q4 plan, need your input today</span><span style="font-size: 12px">10:38</span></div>
+      <div style="display: flex; gap: 10px; padding: 9px 14px; border-top: 1px solid #F1F3F4; font-weight: 700"><span style="width: 86px; flex: none">LinkedIn</span><span style="flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">14 people viewed your profile</span><span style="font-size: 12px">10:30</span></div>
+      <div style="display: flex; gap: 10px; padding: 9px 14px; border-top: 1px solid #F1F3F4; font-weight: 700"><span style="width: 86px; flex: none">GitHub</span><span style="flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">[web-app] 3 new issues opened</span><span style="font-size: 12px">10:12</span></div>
+      <div style="display: flex; gap: 10px; padding: 9px 14px; border-top: 1px solid #F1F3F4"><span style="width: 86px; flex: none">Figma</span><span style="flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">6 new comments on Hero v3</span><span style="font-size: 12px">9:40</span></div>
+      </div>
+      </div>
 
-            <!-- FOCUS -->
-            <div class="popover__screen panel panel--active" data-panel="focus">
-              <div class="timer">
-                <div class="timer__glow"></div>
-                <div class="timer__ring">
-                  <div class="timer__center">
-                    <span class="timer__time">52:00</span>
-                  </div>
-                </div>
-              </div>
-              <p class="focus__name">Deep work</p>
-              <p class="focus__targets">LinkedIn · X · Slack</p>
-              <span class="focus__extend">+ 15 min</span>
-            </div>
+      <div class="b-w3" style="position: absolute; left: 976px; top: 56px; width: 340px; height: 400px; background: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 22px 60px rgba(0, 0, 0, 0.35); font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: #0F1419">
+      <div style="height: 30px; display: flex; align-items: center; gap: 7px; padding: 0 12px; background: #F4F2EE; border-bottom: 1px solid rgba(28, 28, 25, 0.08)">
+      <span style="width: 11px; height: 11px; border-radius: 50%; background: #FF5F57"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #28C840"></span>
+      <span style="flex: 1; text-align: center; font-size: 12px; color: #5E5C55; margin-right: 40px">x.com/home</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px 0">
+      <svg viewBox="0 0 24 24" width="18" height="18" role="img" aria-label="X"><path fill="#0F1419" d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"></path></svg>
+      <span style="font-size: 17px; font-weight: 700">Home</span>
+      </div>
+      <div style="padding: 11px; margin-top: 8px; text-align: center; color: #1D9BF0; font-size: 14px; border-top: 1px solid #EFF3F4; border-bottom: 1px solid #EFF3F4">Show 48 posts</div>
+      <div style="display: flex; flex-direction: column; font-size: 14px; line-height: 1.35">
+      <div style="display: flex; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #EFF3F4"><div style="width: 36px; height: 36px; flex: none; border-radius: 50%; background: #C9B8A6"></div><div><div><b>dan</b> <span style="color: #536471">@dan_ships · 2m</span></div>Hot take: deep work is a myth invented by people with no Slack.</div></div>
+      <div style="display: flex; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #EFF3F4"><div style="width: 36px; height: 36px; flex: none; border-radius: 50%; background: #9EB3C7"></div><div><div><b>Sara Lin</b> <span style="color: #536471">@saralin · 6m</span></div>This launch just changed everything. A thread (1/27)</div></div>
+      <div style="display: flex; gap: 10px; padding: 12px 16px"><div style="width: 36px; height: 36px; flex: none; border-radius: 50%; background: #B7C4A8"></div><div><div><b>the build guy</b> <span style="color: #536471">@buildguy · 9m</span></div>You don't need focus. You need better notifications.</div></div>
+      </div>
+      </div>
 
-            <!-- SCHEDULE -->
-            <div class="popover__screen panel" data-panel="schedule" hidden>
-              <p class="popover__eyebrow">Schedule</p>
-              <ul class="sched">
-                <li class="sched__row">
-                  <div>
-                    <p class="sched__name">Deep work</p>
-                    <p class="sched__time">Mon-Fri · 9:00-12:00</p>
-                  </div>
-                  <span class="toggle is-on"></span>
-                </li>
-                <li class="sched__row">
-                  <div>
-                    <p class="sched__name">Afternoon focus</p>
-                    <p class="sched__time">Mon-Fri · 14:00-16:00</p>
-                  </div>
-                  <span class="toggle is-on"></span>
-                </li>
-                <li class="sched__row">
-                  <div>
-                    <p class="sched__name">Weekend reset</p>
-                    <p class="sched__time">Sat · 10:00-13:00</p>
-                  </div>
-                  <span class="toggle"></span>
-                </li>
-              </ul>
-            </div>
+      <div class="b-w4" style="position: absolute; left: 400px; top: 270px; width: 440px; height: 280px; background: #0F0F0F; border-radius: 12px; overflow: hidden; box-shadow: 0 26px 70px rgba(0, 0, 0, 0.45); font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif">
+      <div style="height: 30px; display: flex; align-items: center; gap: 7px; padding: 0 12px; background: #F4F2EE; border-bottom: 1px solid rgba(28, 28, 25, 0.08)">
+      <span style="width: 11px; height: 11px; border-radius: 50%; background: #FF5F57"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #28C840"></span>
+      <span style="flex: 1; text-align: center; font-size: 12px; color: #5E5C55; margin-right: 40px">youtube.com/watch</span>
+      </div>
+      <div style="position: relative; height: 190px; overflow: hidden; background: linear-gradient(135deg, #3A3836 0%, #1A1918 100%); display: flex; align-items: center; justify-content: center">
+      <svg viewBox="0 0 24 24" width="60" height="60" role="img" aria-label="Play on YouTube" style="position: relative"><path fill="#FF0000" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"></path><path fill="#FFFFFF" d="M9.545 15.568V8.432L15.818 12z"></path></svg>
+      <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255, 255, 255, 0.25)"><div style="width: 38%; height: 3px; background: #FF0000"></div></div>
+      <span style="position: absolute; left: 12px; bottom: 10px; font-size: 12px; color: #FFFFFF; font-variant-numeric: tabular-nums">17:42 / 47:12</span>
+      </div>
+      <div style="padding: 10px 14px; color: #F1F1F1">
+      <div style="font-size: 15px; font-weight: 700">I tried 30 productivity apps so you don't have to</div>
+      <div style="font-size: 12px; color: #AAAAAA; margin-top: 4px">2.1M views · Autoplay next in 5</div>
+      </div>
+      </div>
 
-            <!-- CHAT -->
-            <div class="popover__screen panel" data-panel="chat" hidden>
-              <p class="popover__eyebrow">Chat</p>
-              <div class="chat">
-                <div class="chat__bubble chat__bubble--me">What did #eng decide on the migration timeline?</div>
-                <div class="chat__bubble">Pushed to next sprint. Raj flagged an auth dependency, and Lena's owning the rollback plan.</div>
-                <div class="chat__bubble chat__bubble--me">Link me the thread.</div>
-              </div>
-            </div>
+      <div class="b-n1" style="position: absolute; left: 1002px; top: calc(14px - var(--scene-top, 0px) / var(--s, 1)); width: 322px; display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; box-sizing: border-box; background: rgba(250, 248, 244, 0.96); border-radius: 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: #1C1C19">
+      <div style="width: 30px; height: 30px; flex: none; border-radius: 7px; background: #FFFFFF; border: 1px solid #ECEAE6; display: flex; align-items: center; justify-content: center"><svg viewBox="0 0 24 24" width="17" height="17" role="img" aria-label="Slack"><path fill="#4A154B" d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"></path></svg></div>
+      <div style="flex: 1; font-size: 13px; line-height: 1.35"><div style="display: flex; justify-content: space-between"><b>Luca</b><span style="font-size: 11px; color: #8A8780">now</span></div>you there?</div>
+      </div>
+      <div class="b-n2" style="position: absolute; left: 1002px; top: calc(84px - var(--scene-top, 0px) / var(--s, 1)); width: 322px; display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; box-sizing: border-box; background: rgba(250, 248, 244, 0.96); border-radius: 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: #1C1C19">
+      <div style="width: 30px; height: 30px; flex: none; border-radius: 7px; background: #FFFFFF; border: 1px solid #ECEAE6; display: flex; align-items: center; justify-content: center"><svg viewBox="0 0 24 24" width="17" height="17" role="img" aria-label="Gmail"><path fill="#EA4335" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"></path></svg></div>
+      <div style="flex: 1; font-size: 13px; line-height: 1.35"><div style="display: flex; justify-content: space-between"><b>Anna Keller</b><span style="font-size: 11px; color: #8A8780">now</span></div>Re: Q4 plan, need your input today</div>
+      </div>
+        </div>
+        
+        <div class="scene scene-mobile" aria-hidden="true">
+      <div class="b-w1" style="position: absolute; left: 10px; top: 46px; width: 236px; height: 196px; background: #FFFFFF; border-radius: 10px; overflow: hidden; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35); display: flex; flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif">
+      <div style="height: 22px; flex: none; display: flex; align-items: center; gap: 5px; padding: 0 9px; background: #F4F2EE"><span style="width: 8px; height: 8px; border-radius: 50%; background: #FF5F57"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #28C840"></span></div>
+      <div style="flex: 1; display: flex; min-height: 0">
+      <div style="width: 74px; flex: none; background: #4A154B; color: rgba(255, 255, 255, 0.72); padding: 9px 7px; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px; font-size: 10px">
+      <div style="color: #FFFFFF; font-weight: 700; font-size: 11px">Acme</div>
+      <div style="display: flex; justify-content: space-between; color: #FFFFFF; font-weight: 700"><span># eng</span><span style="background: #E01E5A; border-radius: 6px; padding: 0 4px; font-size: 9px">12</span></div>
+      <div># design</div>
+      <div style="display: flex; justify-content: space-between; color: #FFFFFF; font-weight: 700"><span>Luca</span><span style="background: #E01E5A; border-radius: 6px; padding: 0 4px; font-size: 9px">3</span></div>
+      </div>
+      <div style="flex: 1; padding: 9px; display: flex; flex-direction: column; gap: 8px; font-size: 11px; line-height: 1.35; color: #1D1C1D">
+      <b># eng</b>
+      <div><b>Marta</b> Deploy is red again. Can someone look?</div>
+      <div><b>Luca</b> <span style="background: #FFF3C4; color: #1264A3">@sam</span> did you see my DM?</div>
+      </div>
+      </div>
+      </div>
 
-            <!-- SETTINGS -->
-            <div class="popover__screen panel" data-panel="settings" hidden>
-              <p class="popover__eyebrow">Settings</p>
-              <ul class="set">
-                <li class="set__row"><span>Launch at login</span><span class="toggle is-on"></span></li>
-                <li class="set__row"><span>Focus notifications</span><span class="toggle is-on"></span></li>
-                <li class="set__row"><span>Relaunch apps after focus</span><span class="toggle is-on"></span></li>
-                <li class="set__row"><span>Emergency end · 1 left this week</span><span class="toggle"></span></li>
-              </ul>
-            </div>
-          </div>
+      <div class="b-w2" style="position: absolute; left: 132px; top: 26px; width: 224px; height: 150px; background: #FFFFFF; border-radius: 10px; overflow: hidden; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35); font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: #1F1F1F">
+      <div style="height: 22px; display: flex; align-items: center; gap: 5px; padding: 0 9px; background: #F4F2EE"><span style="width: 8px; height: 8px; border-radius: 50%; background: #FF5F57"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #28C840"></span></div>
+      <div style="display: flex; align-items: center; gap: 6px; padding: 7px 10px; font-size: 11px"><svg viewBox="0 0 24 24" width="14" height="14" role="img" aria-label="Gmail"><path fill="#EA4335" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"></path></svg><b>Inbox</b><span style="background: #D3E3FD; border-radius: 7px; padding: 0 5px; font-size: 10px; font-weight: 700">1,284</span></div>
+      <div style="font-size: 10.5px">
+      <div style="padding: 5px 10px; border-top: 1px solid #F1F3F4; font-weight: 700">Stripe · Invoice overdue</div>
+      <div style="padding: 5px 10px; border-top: 1px solid #F1F3F4; font-weight: 700">Anna · Q4 plan, need input</div>
+      <div style="padding: 5px 10px; border-top: 1px solid #F1F3F4; font-weight: 700">LinkedIn · 14 profile views</div>
+      </div>
+      </div>
+
+      <div class="b-w3" style="position: absolute; left: 172px; top: 198px; width: 184px; height: 240px; background: #FFFFFF; border-radius: 10px; overflow: hidden; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35); font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: #0F1419">
+      <div style="height: 22px; display: flex; align-items: center; gap: 5px; padding: 0 9px; background: #F4F2EE"><span style="width: 8px; height: 8px; border-radius: 50%; background: #FF5F57"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #28C840"></span></div>
+      <div style="display: flex; align-items: center; gap: 7px; padding: 8px 10px 0"><svg viewBox="0 0 24 24" width="13" height="13" role="img" aria-label="X"><path fill="#0F1419" d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"></path></svg><b style="font-size: 12px">Home</b></div>
+      <div style="padding: 7px; margin-top: 6px; text-align: center; color: #1D9BF0; font-size: 11px; border-top: 1px solid #EFF3F4; border-bottom: 1px solid #EFF3F4">Show 48 posts</div>
+      <div style="display: flex; gap: 7px; padding: 8px 10px; font-size: 10.5px; line-height: 1.35; border-bottom: 1px solid #EFF3F4"><div style="width: 24px; height: 24px; flex: none; border-radius: 50%; background: #C9B8A6"></div><div><b>dan</b> Hot take: deep work is a myth invented by people with no Slack.</div></div>
+      <div style="display: flex; gap: 7px; padding: 8px 10px; font-size: 10.5px; line-height: 1.35; border-bottom: 1px solid #EFF3F4"><div style="width: 24px; height: 24px; flex: none; border-radius: 50%; background: #9EB3C7"></div><div><b>Sara Lin</b> This launch just changed everything. (1/27)</div></div>
+      <div style="display: flex; gap: 7px; padding: 8px 10px; font-size: 10.5px; line-height: 1.35"><div style="width: 24px; height: 24px; flex: none; border-radius: 50%; background: #B7C4A8"></div><div><b>the build guy</b> You don't need focus. You need better notifications.</div></div>
+      </div>
+
+      <div class="b-w4" style="position: absolute; left: 16px; top: 262px; width: 214px; height: 150px; background: #0F0F0F; border-radius: 10px; overflow: hidden; box-shadow: 0 18px 46px rgba(0, 0, 0, 0.45); font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif">
+      <div style="height: 22px; display: flex; align-items: center; gap: 5px; padding: 0 9px; background: #F4F2EE"><span style="width: 8px; height: 8px; border-radius: 50%; background: #FF5F57"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #28C840"></span></div>
+      <div style="position: relative; height: 98px; overflow: hidden; background: linear-gradient(135deg, #3A3836 0%, #1A1918 100%); display: flex; align-items: center; justify-content: center">
+      <svg viewBox="0 0 24 24" width="34" height="34" role="img" aria-label="Play on YouTube" style="position: relative"><path fill="#FF0000" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"></path><path fill="#FFFFFF" d="M9.545 15.568V8.432L15.818 12z"></path></svg>
+      <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255, 255, 255, 0.25)"><div style="width: 38%; height: 3px; background: #FF0000"></div></div>
+      </div>
+      <div style="padding: 6px 9px; color: #F1F1F1; font-size: 10.5px; font-weight: 700; line-height: 1.3">I tried 30 productivity apps so you don't have to</div>
+      </div>
+
+        </div>
+        
+        <div class="dim"></div>
+        <div class="scene scene-desktop front" aria-hidden="true">
+          <div class="b-glow" style="position: absolute; left: 242px; top: 40px; width: 860px; height: 470px; border-radius: 12px"></div>
+          <div class="b-work" style="position: absolute; left: 242px; top: 40px; width: 860px; height: 470px; background: #FFFFFF; color: #37352F; border-radius: 12px; overflow: hidden; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif">
+      <div style="height: 36px; flex: none; display: flex; align-items: center; gap: 7px; padding: 0 14px; background: #F7F7F5; border-bottom: 1px solid rgba(55, 53, 47, 0.09)">
+        <span style="width: 11px; height: 11px; border-radius: 50%; background: #FF5F57"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #28C840"></span>
+        <span style="margin-left: 16px; font-size: 13px; color: #37352F">Growth / Fix activation before Q1</span>
+        <span style="margin-left: auto; font-size: 13px; color: #787774">Share</span>
+      </div>
+      <div style="flex: 1; display: flex; min-height: 0">
+        <div style="width: 196px; flex: none; background: #F7F7F5; padding: 12px 8px; box-sizing: border-box; display: flex; flex-direction: column; gap: 1px; font-size: 13px; color: #5F5E5B; border-right: 1px solid rgba(55, 53, 47, 0.06)">
+          <div style="padding: 5px 8px 12px; font-weight: 700; color: #37352F">Sam's workspace</div>
+          <div style="padding: 5px 8px; border-radius: 6px;  white-space: nowrap; overflow: hidden; text-overflow: ellipsis">🏠 Home</div>
+          <div style="padding: 5px 8px; border-radius: 6px; background: rgba(55, 53, 47, 0.08); color: #37352F; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">📈 Fix activation before Q1</div>
+          <div style="padding: 5px 8px; border-radius: 6px;  white-space: nowrap; overflow: hidden; text-overflow: ellipsis">🧪 Experiments</div>
+          <div style="padding: 5px 8px; border-radius: 6px;  white-space: nowrap; overflow: hidden; text-overflow: ellipsis">📝 Weekly notes</div>
+          <div style="padding: 5px 8px; border-radius: 6px;  white-space: nowrap; overflow: hidden; text-overflow: ellipsis">🗺️ Q1 roadmap</div>
+        </div>
+        <div style="flex: 1; padding: 30px 64px 0; box-sizing: border-box; font-size: 15px; line-height: 1.5">
+          <div style="font-size: 38px; line-height: 1">📈</div>
+          <div style="margin-top: 12px; font-size: 32px; line-height: 1.15; font-weight: 700; letter-spacing: -0.01em">Fix activation before Q1</div>
+          <div style="margin-top: 16px; display: flex; gap: 10px; padding: 12px 16px; border-radius: 6px; background: #F1F1EF"><span>💡</span><span>42% of new signups never finish setup. Everything else waits until that number moves.</span></div>
+          <div style="margin-top: 18px; font-size: 19px; font-weight: 600">This week</div>
+          <div style="margin-top: 4px">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 3px 0"> <span style="width: 16px; height: 16px; flex: none; box-sizing: border-box; border-radius: 3px; background: #2383E2; display: inline-flex; align-items: center; justify-content: center"><svg viewBox="0 0 12 12" width="11" height="11"><path d="M2.5 6.2l2.3 2.3 4.7-5" fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span style="color: #9B9A97; text-decoration: line-through">Cut setup from six steps to two</span></div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 3px 0"> <span style="width: 16px; height: 16px; flex: none; box-sizing: border-box; border-radius: 3px; border: 1.5px solid #9B9A97"></span><span style="">Ship the import flow<span style="display: inline-block; width: 2px; height: 19px; margin-left: 2px; vertical-align: -4px; background: #37352F"></span></span></div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 3px 0"> <span style="width: 16px; height: 16px; flex: none; box-sizing: border-box; border-radius: 3px; border: 1.5px solid #9B9A97"></span><span style="">Kill the empty dashboard</span></div>
           </div>
         </div>
       </div>
-    </section>
-
-    <!-- ============================== TRUST STRIP ============================== -->
-    <section class="trust" aria-label="Why Ortus works">
-      <p class="trust__line reveal">
-        Willpower runs out. <span class="grad-text">A locked session doesn't.</span>
-        Ortus holds the line so you can stay in the work.
-      </p>
-    </section>
-
-    <!-- ============================== HOW IT WORKS ============================== -->
-    <section class="how" id="how" aria-labelledby="how-title">
-      <div class="section-head reveal">
+    </div>
+        </div>
+        <div class="scene scene-mobile front" aria-hidden="true">
+          <div class="b-glow" style="position: absolute; left: 16px; top: 34px; width: 334px; height: 360px; border-radius: 10px"></div>
+          <div class="b-work" style="position: absolute; left: 16px; top: 34px; width: 334px; height: 360px; background: #FFFFFF; color: #37352F; border-radius: 10px; overflow: hidden; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif">
+      <div style="height: 24px; flex: none; display: flex; align-items: center; gap: 5px; padding: 0 9px; background: #F7F7F5; border-bottom: 1px solid rgba(55, 53, 47, 0.09)"><span style="width: 8px; height: 8px; border-radius: 50%; background: #FF5F57"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #FEBC2E"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #28C840"></span><span style="margin-left: 10px; font-size: 10px; color: #787774">Growth / Fix activation before Q1</span></div>
+      <div style="padding: 18px 20px 0; font-size: 12.5px; line-height: 1.45">
+        <div style="font-size: 28px; line-height: 1">📈</div>
+        <div style="margin-top: 10px; font-size: 21px; line-height: 1.15; font-weight: 700; letter-spacing: -0.01em">Fix activation before Q1</div>
+        <div style="margin-top: 12px; display: flex; gap: 8px; padding: 9px 11px; border-radius: 6px; background: #F1F1EF"><span>💡</span><span>42% of new signups never finish setup.</span></div>
+        <div style="margin-top: 14px; font-size: 15px; font-weight: 600">This week</div>
+        <div style="margin-top: 2px">
+          <div style="display: flex; align-items: center; gap: 7px; padding: 3px 0"> <span style="width: 13px; height: 13px; flex: none; box-sizing: border-box; border-radius: 3px; background: #2383E2; display: inline-flex; align-items: center; justify-content: center"><svg viewBox="0 0 12 12" width="8" height="8"><path d="M2.5 6.2l2.3 2.3 4.7-5" fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span style="color: #9B9A97; text-decoration: line-through">Cut setup to two steps</span></div>
+          <div style="display: flex; align-items: center; gap: 7px; padding: 3px 0"> <span style="width: 13px; height: 13px; flex: none; box-sizing: border-box; border-radius: 3px; border: 1.5px solid #9B9A97"></span><span style="">Ship the import flow<span style="display: inline-block; width: 2px; height: 16px; margin-left: 2px; vertical-align: -4px; background: #37352F"></span></span></div>
+          <div style="display: flex; align-items: center; gap: 7px; padding: 3px 0"> <span style="width: 13px; height: 13px; flex: none; box-sizing: border-box; border-radius: 3px; border: 1.5px solid #9B9A97"></span><span style="">Kill the empty dashboard</span></div>
+        </div>
+      </div>
+    </div>
+        </div>
+      </div>
+    </div>
+    <div class="pin-space" aria-hidden="true"></div>
+  </section>
+<!-- sections after the hero -->
+  <section class="sec sec-ink why" aria-labelledby="why-title">
+    <div class="wrap reveal">
+      <h2 class="why-label" id="why-title">Why we built Ortus</h2>
+      <div class="why-text">
+        <p><strong>Distraction is the default now.</strong> You open Slack, X or email on muscle memory, for one quick check. Blink, and the morning is gone. The one thing that mattered hasn't moved.</p>
+        <p><strong>Every fix we tried was too soft or too dumb.</strong> Do Not Disturb, Focus modes and Slack statuses mute the noise but leave the app one click away, and almost half of all interruptions are ones we start ourselves.<sup>1</sup> Hard blockers do hold, but they also lock you out of the message or file you need to get the work done, so they end up switched off.</p>
+        <p><strong>So we built one that holds, and still lets you work.</strong></p>
+        <p class="footnote" id="note-1">1. Dabbish, Mark and González, <a href="https://www.ics.uci.edu/~gmark/Home_page/Publications_files/CHI%202011%20Self-interruption.pdf">“Why Do I Keep Interrupting Myself?”</a>, CHI 2011: almost half of the interruptions people experience are self-initiated.</p>
+      </div>
+    </div>
+  </section>
+  <section class="sec sec-bone how" id="how-it-works" aria-labelledby="how-title">
+    <div class="wrap">
+      <div class="reveal">
         <p class="eyebrow">How it works</p>
-        <h2 class="section-title" id="how-title">Built to keep you in. Not let you out.</h2>
+        <h2 class="h2" id="how-title"><span>Set it once.</span><span class="muted">Then it holds.</span></h2>
+        <ol class="steps">
+          <li><span class="step-n">1</span><div><h3>Pick what pulls you away.</h3><p>Slack, X, email, YouTube, or any app or website you choose.</p></div></li>
+          <li><span class="step-n">2</span><div><h3>Start now, or on a schedule.</h3><p>One session when you need it, or every weekday morning, automatically.</p></div></li>
+          <li><span class="step-n">3</span><div><h3>The wall holds.</h3><p>There's no end button, only one emergency exit a week.</p></div></li>
+        </ol>
       </div>
-
-      <ol class="steps">
-        <li class="step reveal">
-          <span class="step__num" aria-hidden="true">1</span>
-          <h3 class="step__title">Block from the menu bar</h3>
-          <p class="step__body">Ortus blocks your distractions straight from the macOS menu bar. Run it on a schedule, or kick off a session on demand.</p>
-        </li>
-        <li class="step reveal">
-          <span class="step__num" aria-hidden="true">2</span>
-          <h3 class="step__title">No end button</h3>
-          <p class="step__body">Once a session starts, there's no off switch to talk yourself into. The door stays closed until the time is up.</p>
-        </li>
-        <li class="step reveal">
-          <span class="step__num" aria-hidden="true">3</span>
-          <h3 class="step__title">Chat, not chatter</h3>
-          <p class="step__body">Need something while you're heads down? Ask in chat and get just the info you need, none of the distractions.</p>
-        </li>
-      </ol>
-    </section>
-
-    <!-- ============================== FINAL CTA ============================== -->
-    <section class="cta" aria-labelledby="cta-title">
-      <div class="cta__panel reveal">
-        <div class="cta__glow" aria-hidden="true"></div>
-        <h2 class="cta__title" id="cta-title">First light. First task.</h2>
-        <p class="cta__sub">Block the distractions, drop into deep work, and ship.</p>
-        <a class="btn btn--primary btn--lg" href="/download/Ortus.dmg" data-download>Download for Mac</a>
-        <p class="cta__meta">macOS 14+ · Free &amp; open source</p>
-      </div>
-    </section>
-  </main>
-
-  <!-- ============================== FOOTER ============================== -->
-  <footer class="footer">
-    <div class="footer__inner">
-      <div class="footer__brand">
-        <div>
-          <p class="footer__word">Ortus</p>
-          <p class="footer__tag">Block distractions. Do the work.</p>
-        </div>
-      </div>
-
-      <nav class="footer__links" aria-label="Footer">
-        <a href="#how">How it works</a>
-        <a href="#download">Download</a>
-        <a href="/privacy">Privacy</a>
-        <a href="mailto:support@ortusmode.com">Support</a>
-        <a href="https://github.com/scandolo/Ortus" target="_blank" rel="noopener">GitHub</a>
-      </nav>
+      <div class="panel-box reveal" aria-hidden="true"><div class="panel-scale"><div class="app-panel" style="width: 420px; box-sizing: border-box; padding: 16px 20px 20px; background: #1C1C19; border-radius: 24px; color: #F2EEE8; font-family: Archivo, system-ui, sans-serif; text-align: left; box-shadow: 0 30px 70px rgba(28, 28, 25, 0.35), inset 0 0 0 1px rgba(242, 238, 232, 0.08)">
+  <div style="display: flex; gap: 2px; padding: 4px; background: #2A2925; border-radius: 14px"><div style="flex: 1; height: 38px; display: flex; align-items: center; justify-content: center; gap: 7px; border-radius: 10px; font-size: 14px; font-weight: 700; background: #F2EEE8; color: #1C1C19; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25)"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M3 15a9 9 0 0 1 18 0Z"></path><rect x="1.5" y="16.5" width="21" height="2.6" fill="currentColor"></rect><rect x="4" y="20.6" width="16" height="1.8" fill="currentColor"></rect></svg>Focus</div><div style="flex: 1; height: 38px; display: flex; align-items: center; justify-content: center; gap: 7px; border-radius: 10px; font-size: 14px; font-weight: 700; color: #9A978E"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M3 5h18v16H3ZM6 11h12v7H6Z"></path><rect x="7" y="2" width="3" height="5" fill="currentColor"></rect><rect x="14" y="2" width="3" height="5" fill="currentColor"></rect></svg>Schedule</div><div style="flex: 1; height: 38px; display: flex; align-items: center; justify-content: center; gap: 7px; border-radius: 10px; font-size: 14px; font-weight: 700; color: #9A978E"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M7 3.5h10a5 5 0 0 1 5 5v4a5 5 0 0 1-5 5h-6l-5.5 4v-4.2A5 5 0 0 1 2 12.5v-4a5 5 0 0 1 5-5ZM6.3 9.3h2.6v2.6H6.3ZM10.7 9.3h2.6v2.6h-2.6ZM15.1 9.3h2.6v2.6h-2.6Z"></path></svg>Chat</div><div style="width: 44px; height: 38px; display: flex; align-items: center; justify-content: center; color: #9A978E"><svg viewBox="0 0 24 24" width="16" height="16" role="img" aria-label="Settings"><rect x="2" y="5.6" width="20" height="2.8" fill="currentColor"></rect><rect x="2" y="15.6" width="20" height="2.8" fill="currentColor"></rect><rect x="13" y="3" width="5" height="8" rx="1.2" fill="currentColor"></rect><rect x="5.5" y="13" width="5" height="8" rx="1.2" fill="currentColor"></rect></svg></div></div>
+  <div style="margin-top: 28px; display: flex; align-items: center; gap: 8px; color: #FE701C; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="3"></path><path fill="currentColor" fill-rule="evenodd" d="M4 10.5h16V22H4ZM10.8 14h2.4v4.5h-2.4Z"></path></svg>Locked in · Focus</div>
+  <div style="margin-top: 10px; font-family: 'Archivo Black', Archivo, sans-serif; font-size: 104px; line-height: 0.92; letter-spacing: -0.045em; font-variant-numeric: tabular-nums">48:12</div>
+  <div style="margin-top: 26px; height: 3px; border-radius: 2px; background: #3A3934"><div style="width: 20%; height: 3px; border-radius: 2px; background: #FE701C"></div></div>
+  <div style="margin-top: 10px; text-align: right; font-size: 13px; color: #9A978E">ends 11:30</div>
+  <div style="margin-top: 14px; display: flex; align-items: center"><span style="width: 32px; height: 32px; margin-left: 0px; border-radius: 50%; background: #F2EEE8; border: 2px solid #1C1C19; display: inline-flex; align-items: center; justify-content: center"><svg viewBox="0 0 24 24" width="14" height="14" role="img" aria-label="Slack"><path fill="#1C1C19" d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"></path></svg></span><span style="width: 32px; height: 32px; margin-left: -9px; border-radius: 50%; background: #D6D2CF; border: 2px solid #1C1C19; display: inline-flex; align-items: center; justify-content: center"><svg viewBox="0 0 24 24" width="14" height="14" role="img" aria-label="X"><path fill="#1C1C19" d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"></path></svg></span><span style="width: 32px; height: 32px; margin-left: -9px; border-radius: 50%; background: #B9B5AE; border: 2px solid #1C1C19; display: inline-flex; align-items: center; justify-content: center"><svg viewBox="0 0 24 24" width="14" height="14" role="img" aria-label="Gmail"><path fill="#1C1C19" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"></path></svg></span><span style="width: 32px; height: 32px; margin-left: -9px; border-radius: 50%; background: #9A978E; border: 2px solid #1C1C19; display: inline-flex; align-items: center; justify-content: center"><svg viewBox="0 0 24 24" width="14" height="14" role="img" aria-label="YouTube"><path fill="#1C1C19" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.070 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"></path></svg></span><span style="width: 32px; height: 32px; margin-left: -9px; border-radius: 50%; background: #7E7B74; border: 2px solid #1C1C19; display: inline-flex; align-items: center; justify-content: center"><svg viewBox="0 0 24 24" width="14" height="14" role="img" aria-label="LinkedIn"><path fill="#1C1C19" d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"></path></svg></span><span style="width: 32px; height: 32px; margin-left: -9px; border-radius: 50%; background: #66635D; border: 2px solid #1C1C19; display: inline-flex; align-items: center; justify-content: center"><svg viewBox="0 0 24 24" width="14" height="14" role="img" aria-label="Instagram"><path fill="#1C1C19" d="M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.335 1.384-2.126.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.319 1.347 20.651.935 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 2.16c3.203 0 3.585.016 4.85.071 1.17.055 1.805.249 2.227.415.562.217.96.477 1.382.896.419.42.679.819.896 1.381.164.422.36 1.057.413 2.227.057 1.266.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227-.224.562-.479.96-.899 1.382-.419.419-.824.679-1.38.896-.42.164-1.065.36-2.235.413-1.274.057-1.649.07-4.859.07-3.211 0-3.586-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421-.569-.224-.96-.479-1.379-.899-.421-.419-.69-.824-.9-1.38-.165-.42-.359-1.065-.42-2.235-.045-1.26-.061-1.649-.061-4.844 0-3.196.016-3.586.061-4.861.061-1.17.255-1.814.42-2.234.21-.57.479-.96.9-1.381.419-.419.81-.689 1.379-.898.42-.166 1.051-.361 2.221-.421 1.275-.045 1.65-.06 4.859-.06l.045.03zm0 3.678c-3.405 0-6.162 2.76-6.162 6.162 0 3.405 2.76 6.162 6.162 6.162 3.405 0 6.162-2.76 6.162-6.162 0-3.405-2.76-6.162-6.162-6.162zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm7.846-10.405c0 .795-.646 1.44-1.44 1.44-.795 0-1.44-.646-1.44-1.44 0-.794.646-1.439 1.44-1.439.793-.001 1.44.645 1.44 1.439z"></path></svg></span><span style="margin-left: 14px; font-size: 15px; font-weight: 700">6 blocked</span></div>
+  <div style="margin-top: 20px; height: 48px; border-radius: 12px; background: #2E2D29; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px; font-weight: 700"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="#F2EEE8"></circle><path d="M10 5.5v9M5.5 10h9" stroke="#2E2D29" stroke-width="2.2" stroke-linecap="round"></path></svg>15 min</div>
+</div></div></div>
     </div>
-
-    <div class="footer__base">
-      <p class="footer__latin">Carpe lucem.</p>
-      <p class="footer__copy">© 2026 Ortus · Free &amp; open source</p>
-    </div>
-  </footer>
-
-  <!-- ============================== DOWNLOAD MODAL ============================== -->
-  <dialog class="dl" id="download" aria-labelledby="dl-title">
-    <form method="dialog"><button class="dl__close" aria-label="Close">×</button></form>
-    <h2 class="dl__title" id="dl-title" data-started="Ortus is downloading" data-idle="Install Ortus">Install Ortus</h2>
-    <ol class="dl__steps">
-      <li>Open <strong>Ortus.dmg</strong> from your Downloads.</li>
-      <li>Drag Ortus into Applications.</li>
-      <li>Open it. Look for the sun in your menu bar.</li>
-    </ol>
-    <p class="dl__note">Ortus closes Mac apps on its own. For websites, it walks you through adding its extension to Chrome, Arc, Edge or Brave.</p>
-    <a class="btn btn--primary dl__again" href="/download/Ortus.dmg" data-download data-idle="Download Ortus.dmg" data-started="Download again">Download Ortus.dmg</a>
-    <p class="dl__meta">macOS 14 or later · Apple silicon and Intel · Signed and notarized by Apple</p>
-    <details class="dl__terminal">
-      <summary>Prefer Terminal?</summary>
-      <div class="install" role="group" aria-label="Install command">
-        <code class="install__cmd"><span class="install__prompt">$</span> curl -fsSL https://ortusmode.com/install.sh | bash</code>
-        <button class="install__copy" type="button" data-copy="curl -fsSL https://ortusmode.com/install.sh | bash" aria-label="Copy install command">
-          <svg class="install__icon-copy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-          <span class="install__copy-label">Copy</span>
-        </button>
+  </section>
+  <section class="sec sec-ink agent" aria-labelledby="agent-title">
+    <div class="wrap">
+      <div class="reveal">
+        <p class="eyebrow">Your agent</p>
+        <h2 class="h2" id="agent-title"><span>Ask.</span><span class="muted">Don't open.</span></h2>
+        <p class="body">During a session, ask Ortus for the message, thread or file you need. Your own Claude Code reads whatever you've connected to it, like Slack, Gmail or your calendar, and answers right inside Ortus. You get what you came for, and none of the feed around it.</p>
+        <div class="tiles" aria-label="Slack, Gmail and Calendar"><span class="tile"><svg viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Slack"><path fill="#F2EEE8" d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"></path></svg></span><span class="tile"><svg viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Gmail"><path fill="#F2EEE8" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"></path></svg></span><span class="tile"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" fill="none" stroke="#F2EEE8" stroke-width="2"></rect><rect x="3" y="5" width="18" height="5" rx="2" fill="#F2EEE8"></rect><rect x="7" y="2.5" width="2.4" height="5" rx="1" fill="#F2EEE8"></rect><rect x="14.6" y="2.5" width="2.4" height="5" rx="1" fill="#F2EEE8"></rect></svg></span></div>
+        <p class="small">Uses your own Claude Code. The blocker works fully without it.</p>
       </div>
-    </details>
-  </dialog>
-
-  <script src="script.js" defer></script>
+      <div class="chat-box reveal" aria-hidden="true"><div class="app-panel" style="width: 420px; box-sizing: border-box; padding: 16px 20px 20px; background: #1C1C19; border-radius: 24px; color: #F2EEE8; font-family: Archivo, system-ui, sans-serif; text-align: left; box-shadow: 0 30px 70px rgba(28, 28, 25, 0.35), inset 0 0 0 1px rgba(242, 238, 232, 0.08)">
+  <div style="display: flex; gap: 2px; padding: 4px; background: #2A2925; border-radius: 14px"><div style="flex: 1; height: 38px; display: flex; align-items: center; justify-content: center; gap: 7px; border-radius: 10px; font-size: 14px; font-weight: 700; color: #9A978E"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M3 15a9 9 0 0 1 18 0Z"></path><rect x="1.5" y="16.5" width="21" height="2.6" fill="currentColor"></rect><rect x="4" y="20.6" width="16" height="1.8" fill="currentColor"></rect></svg>Focus</div><div style="flex: 1; height: 38px; display: flex; align-items: center; justify-content: center; gap: 7px; border-radius: 10px; font-size: 14px; font-weight: 700; color: #9A978E"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M3 5h18v16H3ZM6 11h12v7H6Z"></path><rect x="7" y="2" width="3" height="5" fill="currentColor"></rect><rect x="14" y="2" width="3" height="5" fill="currentColor"></rect></svg>Schedule</div><div style="flex: 1; height: 38px; display: flex; align-items: center; justify-content: center; gap: 7px; border-radius: 10px; font-size: 14px; font-weight: 700; background: #F2EEE8; color: #1C1C19; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25)"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M7 3.5h10a5 5 0 0 1 5 5v4a5 5 0 0 1-5 5h-6l-5.5 4v-4.2A5 5 0 0 1 2 12.5v-4a5 5 0 0 1 5-5ZM6.3 9.3h2.6v2.6H6.3ZM10.7 9.3h2.6v2.6h-2.6ZM15.1 9.3h2.6v2.6h-2.6Z"></path></svg>Chat</div><div style="width: 44px; height: 38px; display: flex; align-items: center; justify-content: center; color: #9A978E"><svg viewBox="0 0 24 24" width="16" height="16" role="img" aria-label="Settings"><rect x="2" y="5.6" width="20" height="2.8" fill="currentColor"></rect><rect x="2" y="15.6" width="20" height="2.8" fill="currentColor"></rect><rect x="13" y="3" width="5" height="8" rx="1.2" fill="currentColor"></rect><rect x="5.5" y="13" width="5" height="8" rx="1.2" fill="currentColor"></rect></svg></div></div>
+  <div style="margin: 22px 0 0 auto; width: fit-content; max-width: 80%; padding: 11px 15px; border-radius: 14px; background: #F2EEE8; color: #1C1C19; font-size: 15px; line-height: 1.4">What did Dana say about the import flow?</div>
+  <div style="margin-top: 16px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #9A978E"><span>›</span>Searched Slack · 2 steps</div>
+  <div style="margin-top: 10px; font-size: 15px; line-height: 1.5">She's fine with <b>CSV only for v1</b>, but needs a yes by 2pm. Want me to reply?</div>
+  <div style="margin-top: 12px; padding: 14px; border-radius: 14px; background: #2E2D29">
+    <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #9A978E"><span style="font-weight: 700; color: #9A978E">#</span> growth</div>
+    <div style="margin-top: 10px; display: flex; gap: 10px; font-size: 14px; line-height: 1.45">
+      <span style="width: 26px; height: 26px; flex: none; border-radius: 7px; background: #1C1C19; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700">D</span>
+      <div><div><b>Dana Ortiz</b> <span style="margin-left: 4px; font-size: 12px; color: #9A978E">Today 10:12</span></div>Import spec is in the doc. Are we OK shipping CSV only in v1? Need a yes by 2pm.</div>
+    </div>
+  </div>
+  <div style="margin-top: 18px; height: 50px; padding: 0 8px 0 16px; border-radius: 14px; background: #2E2D29; display: flex; align-items: center; gap: 10px; font-size: 15px; color: #9A978E"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2 14l1-4 8-8 3 3-8 8z" fill="#9A978E"></path></svg>What do you need?<span style="margin-left: auto; width: 34px; height: 34px; border-radius: 9px; background: #1C1C19; display: inline-flex; align-items: center; justify-content: center"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5" fill="none" stroke="#F2EEE8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></div>
+</div></div>
+    </div>
+  </section>
+  <section class="sec sec-bone faq" aria-labelledby="faq-title">
+    <div class="wrap">
+      <div class="reveal">
+        <p class="eyebrow eyebrow-dash">Before you lock in</p>
+        <h2 class="faq-title" id="faq-title">Questions?</h2>
+      </div>
+      <div class="qa reveal">
+        <details open><summary>What if something urgent happens?<span class="pm" aria-hidden="true"></span></summary><p>Almost nothing is so urgent it can't wait two hours. If you need to check something, ask your agent. And Settings has one emergency end per calendar week.</p></details>
+        <details><summary>Is no end button too extreme?<span class="pm" aria-hidden="true"></span></summary><p>That's the point: if you could stop it, you would. When you start a session, you get a short grace period to change your mind, then it's locked. Scheduled sessions lock right away.</p></details>
+        <details><summary>Which apps and websites can I block?<span class="pm" aria-hidden="true"></span></summary><p>Any app on your Mac. Websites are blocked with a small browser extension for Chrome, Arc, Edge and Brave.</p></details>
+        <details><summary>Do I need Claude Code?<span class="pm" aria-hidden="true"></span></summary><p>No, the blocker works fully without it. For now, chat runs on your own Claude Code, so AI inside Ortus costs you nothing extra. More ways to connect are coming.</p></details>
+        <details><summary>What about my phone?<span class="pm" aria-hidden="true"></span></summary><p>Ortus guards your Mac, where the work happens. Put the phone in another room. iPhone is on the roadmap.</p></details>
+        <details><summary>Does Ortus read my messages?<span class="pm" aria-hidden="true"></span></summary><p>It runs on your Mac with no account and no server of ours. When you ask a question, your own Claude Code does the reading.</p></details>
+        <details><summary>How much does Ortus cost?<span class="pm" aria-hidden="true"></span></summary><p>Nothing. It's free and open source, and there's no account to create.</p></details>
+      </div>
+    </div>
+  </section>
+  <section class="cta-band" aria-labelledby="cta-title">
+    <div class="wrap">
+      <h2 class="cta-band-title" id="cta-title"><span>Make something</span><span>before anyone needs you.</span></h2>
+      <div class="cta-band-action">
+        <a class="cta cta-ink" href="https://github.com/scandolo/Ortus/releases/latest/download/Ortus.dmg" data-download="final"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"></path></svg>Download for Mac</a>
+        <p class="cta-band-note">Free and <a href="https://github.com/scandolo/Ortus">open source</a>. No account. macOS 14+.</p>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="footer">
+  <a href="/" class="footer-home" aria-label="Ortus home"><svg viewBox="0 0 156 36" class="footer-logo" aria-hidden="true"><g transform="translate(0 2) scale(.83077)" fill="#FE701C"><path d="M3.5 26.5a22.5 22.5 0 0 1 45 0Z"></path><path d="M1.6 28.5H51L50.4 32.1H1Z"></path><path d="M9.3 35H43L42.7 36.6H9Z"></path></g><g fill="#1C1C19"><path d="M65.8944 3.1200Q72.7296 3.1200 76.4544 6.6144Q80.1792 10.1088 80.1792 16.7904Q80.1792 23.4720 76.4544 26.9664Q72.7296 30.4608 65.8944 30.4608Q59.0592 30.4608 55.3536 26.9856Q51.6480 23.5104 51.6480 16.7904Q51.6480 10.0704 55.3536 6.5952Q59.0592 3.1200 65.8944 3.1200ZM65.8944 9.4560Q63.1680 9.4560 61.7472 11.1072Q60.3264 12.7584 60.3264 15.5616L60.3264 18.0192Q60.3264 20.8224 61.7472 22.4736Q63.1680 24.1248 65.8944 24.1248Q68.6208 24.1248 70.0608 22.4736Q71.5008 20.8224 71.5008 18.0192L71.5008 15.5616Q71.5008 12.7584 70.0608 11.1072Q68.6208 9.4560 65.8944 9.4560Z"></path><path d="M92.8896 9.2256Q93.7728 9.2256 94.4640 9.4368Q95.1552 9.6480 95.1552 9.6864L95.1552 16.0992L92.6976 16.0992Q90.3168 16.0992 89.2608 17.3280Q88.2048 18.5568 88.2048 20.9760L88.2048 30.0000L80.5632 30.0000L80.5632 9.7248L86.8224 9.7248L87.3216 12.7968Q88.0128 11.0304 89.5104 10.1280Q91.0080 9.2256 92.8896 9.2256Z"></path><path d="M109.4016 9.7248L109.4016 14.9088L105.1008 14.9088L105.1008 22.6272Q105.1008 24.0096 105.5616 24.6432Q106.0224 25.2768 107.2512 25.2768L109.4016 25.2768L109.4016 29.7696Q108.4800 30.0768 107.0208 30.2688Q105.5616 30.4608 104.4864 30.4608Q101.1072 30.4608 99.2832 29.2320Q97.4592 28.0032 97.4592 25.0464L97.4592 14.9088L94.6176 14.9088L94.6176 9.7248L97.7664 9.7248L99.4176 3.5808L105.1008 3.5808L105.1008 9.7248Z"></path><path d="M123.9936 30.0000L123.4944 26.9280Q122.3040 28.5792 120.3648 29.5200Q118.4256 30.4608 116.2752 30.4608Q112.7424 30.4608 110.9760 28.5024Q109.2096 26.5440 109.2096 22.8576L109.2096 9.7248L116.8512 9.7248L116.8512 21.9360Q116.8512 23.2416 117.5232 24.0288Q118.1952 24.8160 119.4240 24.8160Q120.8448 24.8160 121.7280 23.8944Q122.6112 22.9728 122.6112 21.6288L122.6112 9.7248L130.2528 9.7248L130.2528 30.0000Z"></path><path d="M140.8896 9.2640Q144.9600 9.2640 147.7824 10.8576Q150.6048 12.4512 150.6048 15.7920L143.5008 15.7920Q143.5008 14.6784 142.5024 14.2176Q141.8112 13.8336 140.7744 13.8336Q138.0096 13.8336 138.0096 15.1392Q138.0096 15.8688 138.9696 16.1760Q139.9296 16.4832 142.1184 16.8288Q144.8064 17.2128 146.6112 17.7312Q148.4160 18.2496 149.7600 19.5744Q151.1040 20.8992 151.1040 23.2800Q151.1040 27.1584 148.2048 28.8096Q145.3056 30.4608 140.6208 30.4608Q137.9328 30.4608 135.5520 29.7120Q133.1712 28.9632 131.6736 27.3888Q130.1760 25.8144 130.1760 23.3952L137.2800 23.3952L137.2800 23.5488Q137.3184 24.8544 138.3744 25.3728Q139.4304 25.8912 140.6208 25.8912Q143.8080 25.8912 143.8080 24.3936Q143.8080 23.6256 142.8096 23.2800Q141.8112 22.9344 139.5456 22.5504Q136.8192 22.0896 135.0720 21.5520Q133.3248 21.0144 132.0192 19.7280Q130.7136 18.4416 130.7136 16.1376Q130.7136 12.4128 133.5360 10.8384Q136.3584 9.2640 140.8896 9.2640Z"></path></g></svg></a>
+  <nav aria-label="Footer">
+    <a href="/privacy">Privacy</a>
+    <a href="mailto:support@ortusmode.com">Support</a>
+    <a href="https://github.com/scandolo/Ortus">GitHub</a>
+  </nav>
+</footer>
+<div class="toast" id="download-toast" role="status" aria-live="polite" hidden>
+  <span class="toast-icon" aria-hidden="true"><svg viewBox="0 0 16 16" width="16" height="16"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+  <div class="toast-body">
+    <p class="toast-title">Ortus is downloading</p>
+    <ol class="toast-steps"><li>Open <b>Ortus.dmg</b> from your Downloads.</li><li>Drag Ortus into Applications, then open it.</li></ol>
+  </div>
+  <button class="toast-close" type="button" aria-label="Close">×</button>
+</div>
 </body>
 </html>
