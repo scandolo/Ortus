@@ -251,13 +251,15 @@ struct ScheduleInlineEditor: View {
 
 /// A time of day as one big number on sand, with up and down arrows that move it by
 /// 15 minutes. The number is a field: type "9:30", "2130" or "9pm". What's on screen is
-/// always what gets saved, even without pressing Return.
+/// always what gets saved, even without pressing Return. Return, Esc or a click
+/// anywhere else in the panel ends typing.
 struct TimeStepper: View {
     @Binding var time: Date
     let label: String
     @State private var text = ""
     /// The time when typing started, for Esc.
     @State private var timeBeforeTyping: Date?
+    @State private var clickMonitor: Any?
     @FocusState private var focused: Bool
     @Environment(\.ortusOnCard) private var onCard
 
@@ -292,8 +294,10 @@ struct TimeStepper: View {
                 // Tidy "930" into "09:30", or put back the time if what was typed can't be read.
                 .onChange(of: focused) { _, isFocused in
                     if isFocused { timeBeforeTyping = time } else { text = label24 }
+                    endTypingOnClickElsewhere(isFocused)
                 }
-                .onSubmit { text = label24 }
+                .onDisappear { endTypingOnClickElsewhere(false) }
+                .onSubmit { text = label24; focused = false }
                 .onExitCommand {
                     if let timeBeforeTyping { time = timeBeforeTyping }
                     text = label24
@@ -325,6 +329,23 @@ struct TimeStepper: View {
             if focused { RoundedRectangle(cornerRadius: OrtusTheme.radiusMD, style: .continuous).strokeBorder(OrtusTheme.text, lineWidth: 2) }
         }
         .animation(.easeOut(duration: 0.15), value: focused)
+    }
+
+    /// While typing, a click anywhere in the panel outside the field ends it, arrows
+    /// included (they still step). AppKit only does that for clicks on other fields.
+    private func endTypingOnClickElsewhere(_ watch: Bool) {
+        if !watch, let clickMonitor { NSEvent.removeMonitor(clickMonitor); self.clickMonitor = nil }
+        guard watch, clickMonitor == nil else { return }
+        clickMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { event in
+            MainActor.assumeIsolated {
+                // While typing, the first responder is the field editor; its delegate is the field.
+                if let window = event.window, let field = (window.firstResponder as? NSText)?.delegate as? NSView,
+                   window.contentView?.superview?.hitTest(event.locationInWindow)?.isDescendant(of: field) != true {
+                    window.makeFirstResponder(nil)
+                }
+            }
+            return event
+        }
     }
 
     /// Minutes after midnight for "9", "930", "9:30", "09.30", "21:00", "9pm", "9:30 am".

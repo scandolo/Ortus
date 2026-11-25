@@ -23,13 +23,15 @@ enum SnapshotHarness {
         let directory = URL(fileURLWithPath: path, isDirectory: true)
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
-        func render(_ name: String, tab: Int, height: CGFloat = 560, state: String? = nil, dark: Bool = false) async {
+        /// `act` runs on the drawn panel before the picture, to show what an event does.
+        func render(_ name: String, tab: Int, height: CGFloat = 560, state: String? = nil, dark: Bool = false, act: (@MainActor (NSWindow) async -> Void)? = nil) async {
             let hosting = NSHostingView(rootView: panel(tab, height, state))
             hosting.frame = NSRect(x: 0, y: 0, width: 420, height: height)
             let window = NSWindow(contentRect: hosting.frame, styleMask: [.borderless], backing: .buffered, defer: false)
             window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
             window.contentView = hosting
             try? await Task.sleep(for: .milliseconds(900))
+            if let act { await act(window); try? await Task.sleep(for: .milliseconds(600)) }
             hosting.layoutSubtreeIfNeeded()
             guard let rep = hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds) else { return }
             hosting.cacheDisplay(in: hosting.bounds, to: rep)
@@ -87,6 +89,26 @@ enum SnapshotHarness {
             await render("mode-delete", tab: 0, state: "mode-delete")
             focusManager.manualSelection = manual
             focusManager.customModes.removeAll { $0.id == deepWork.id }
+            // Typing in the start time, then Return or a click on the panel's edge: the outline goes.
+            func typeInStartTime(then leave: (@MainActor (NSWindow) -> Void)? = nil) -> @MainActor (NSWindow) async -> Void {
+                { window in
+                    @MainActor func fields(_ view: NSView) -> [NSTextField] { ((view as? NSTextField).map { [$0] } ?? []) + view.subviews.flatMap(fields) }
+                    guard let field = window.contentView.map(fields)?.first(where: { $0.stringValue.contains(":") }) else { return }
+                    window.makeFirstResponder(field)
+                    try? await Task.sleep(for: .milliseconds(400))
+                    leave?(window)
+                }
+            }
+            let uptime = { ProcessInfo.processInfo.systemUptime }
+            await render("schedule-time-focused", tab: 1, height: 860, state: "new-schedule", act: typeInStartTime())
+            await render("schedule-time-return", tab: 1, height: 860, state: "new-schedule", act: typeInStartTime { window in
+                window.sendEvent(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: uptime(), windowNumber: window.windowNumber, context: nil, characters: "\r", charactersIgnoringModifiers: "\r", isARepeat: false, keyCode: 36)!)
+            })
+            await render("schedule-time-click-away", tab: 1, height: 860, state: "new-schedule", act: typeInStartTime { window in
+                for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
+                    NSApp.sendEvent(NSEvent.mouseEvent(with: type, location: NSPoint(x: 6, y: window.frame.height - 160), modifierFlags: [], timestamp: uptime(), windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 1)!)
+                }
+            })
             await render("chat", tab: 2, state: "empty")
             await render("chat-intro", tab: 2, state: "chat-intro")
             await render("chat-no-agent", tab: 2, state: "chat-no-agent")
