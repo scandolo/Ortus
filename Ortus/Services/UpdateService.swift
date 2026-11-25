@@ -243,27 +243,8 @@ final class UpdateService: ObservableObject {
     /// don't exit within ~60s (e.g. a focus session traps the quit) so it can't
     /// hang around or swap the bundle out from under a still-running app.
     private func launchUpdaterAndQuit(_ download: Download, targetBundle: String) throws {
-        let pid = ProcessInfo.processInfo.processIdentifier
-        let script = """
-        #!/bin/bash
-        TARGET="\(targetBundle)"
-        SRC="\(download.app.path)"
-        WORK="\(download.folder.path)"
-        for _ in $(seq 1 300); do
-            kill -0 \(pid) 2>/dev/null || break
-            sleep 0.2
-        done
-        # If Ortus is still running, the quit was blocked — abort without touching it.
-        if kill -0 \(pid) 2>/dev/null; then
-            rm -rf "$WORK"
-            exit 0
-        fi
-        rm -rf "$TARGET"
-        mv "$SRC" "$TARGET"
-        xattr -dr com.apple.quarantine "$TARGET" 2>/dev/null || true
-        open "$TARGET"
-        rm -rf "$WORK"
-        """
+        let script = UpdateInstaller.script(target: URL(fileURLWithPath: targetBundle), source: download.app,
+                                            work: download.folder, pid: ProcessInfo.processInfo.processIdentifier)
         let scriptURL = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("ortus-update-\(UUID().uuidString).sh")
         try script.write(to: scriptURL, atomically: true, encoding: .utf8)
