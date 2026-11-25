@@ -114,9 +114,12 @@ struct ScheduleRow: View {
                         .monospacedDigit()
 
                     HStack(spacing: 6) {
-                        OrtusIcon(isLocked ? .locked : .blocked, size: 12)
-                            .foregroundStyle(isLocked ? OrtusTheme.accent : OrtusTheme.textMuted)
-                        Text(isLocked ? "Active until \(activeEndTimeString) · \(modeDescription)" : modeDescription)
+                        if isLocked {
+                            OrtusIcon(.locked, size: 12).foregroundStyle(OrtusTheme.accent)
+                            Text("Active until \(activeEndTimeString) · \(modeDescription)")
+                        } else {
+                            Text("Blocks \(modeDescription)")
+                        }
                     }
                     .font(OrtusTheme.Typo.caption)
                     .foregroundStyle(OrtusTheme.textMuted)
