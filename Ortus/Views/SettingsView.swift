@@ -252,6 +252,14 @@ struct SettingsView: View {
 
     private var updateRow: AnyView? {
         switch updateService.state {
+        case let .available(version) where !updateService.canInstallInPlace:
+            return AnyView(OrtusListRow(title: "Update available",
+                                        subtitle: "Version \(version) · Ortus can’t update itself from this Mac account") {
+                OrtusIcon(.update, size: 18)
+            } trailing: {
+                Button("Download") { NSWorkspace.shared.open(UpdateService.downloadPage) }
+                    .buttonStyle(OrtusPrimaryButtonStyle(size: .small))
+            })
         case let .available(version):
             return AnyView(OrtusListRow(title: "Update available",
                                         subtitle: !updateService.installsAfterFocus ? "Version \(version)"
@@ -426,20 +434,24 @@ private struct AgentSetupSheet: View {
                     tile(.update)
                     headline("Installing \(name)")
                 }
-                VStack(spacing: 8) {
-                    if let fraction = installFraction {
+                if let fraction = installFraction {
+                    VStack(spacing: 8) {
                         OrtusLineProgress(fraction: fraction)
-                    } else {
-                        ProgressView().controlSize(.small)
-                    }
-                    HStack {
-                        Text(installLabel).font(OrtusTheme.Typo.caption.weight(.bold))
-                        Spacer()
-                        if case .downloading(let received, let total) = installer.phase, total > 0 {
-                            Text("\(Self.megabytes(received)) of \(Self.megabytes(total)) MB")
-                                .font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
-                                .monospacedDigit()
+                        HStack {
+                            Text(installLabel).font(OrtusTheme.Typo.caption.weight(.bold))
+                            Spacer()
+                            if case .downloading(let received, let total) = installer.phase, total > 0 {
+                                Text("\(Self.megabytes(received)) of \(Self.megabytes(total)) MB")
+                                    .font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
+                                    .monospacedDigit()
+                            }
                         }
+                    }
+                } else {
+                    // No size to count against (Codex, and the setup step): a spinner and the step.
+                    HStack(spacing: 8) {
+                        ProgressView().controlSize(.small)
+                        Text(installLabel).font(OrtusTheme.Typo.caption.weight(.bold))
                     }
                 }
                 caption("You can close this. Setup carries on.")

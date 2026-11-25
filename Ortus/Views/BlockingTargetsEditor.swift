@@ -151,18 +151,6 @@ struct ModeEditor: View {
             VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
                 TextField("Mode name", text: $mode.name).textFieldStyle(OrtusTextFieldStyle())
                 BlockingTargetsEditor(selection: $mode.blocked)
-                if let duplicate {
-                    // A new mode starts from the current list, so matching a mode there is a
-                    // starting point, not a problem: a quiet hint instead of the warning.
-                    HStack(alignment: .top, spacing: 8) {
-                        if isExisting { OrtusProblemIcon(size: 16) }
-                        Text(isExisting ? "Same as \(duplicate.name). Change the list to save it."
-                                        : "Same list as \(duplicate.name). Add or remove something to save it.")
-                            .font(OrtusTheme.Typo.caption)
-                            .foregroundStyle(isExisting ? OrtusTheme.text : OrtusTheme.textMuted)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
                 HStack {
                     if isExisting {
                         Button("Delete mode") { confirmingDelete = true }
@@ -358,12 +346,23 @@ struct ClosingBrowserRow: View {
     @EnvironmentObject var router: PanelRouter
     @Environment(\.snapshotState) private var snapshotState
 
+    private var snapshotClosing: WebsiteBlockingService.ClosingBrowser? {
+        switch snapshotState {
+        case "closing-browser": .init(name: "Arc", closesAt: .now + 42)
+        case "closing-browser-incognito": .init(name: "Google Chrome", closesAt: .now + 42, bundleID: "com.google.Chrome", incognitoOff: true)
+        default: nil
+        }
+    }
+
     var body: some View {
-        if let closing = service.closingBrowser ?? (snapshotState == "closing-browser" ? .init(name: "Arc", closesAt: .now + 42) : nil) {
+        if let closing = service.closingBrowser ?? snapshotClosing {
             TimelineView(.periodic(from: .now, by: 1)) { context in
                 OrtusProblemCard(title: "\(closing.name) closes in \(FocusView.formatDuration(max(0, closing.closesAt.timeIntervalSince(context.date))))",
-                                 detail: "The Ortus extension is off, removed or not allowed in incognito.",
-                                 action: "Fix") { router.modal = .browserSetup }
+                                 detail: closing.incognitoOff ? "The Ortus extension isn’t allowed in incognito."
+                                     : "The Ortus extension is off, removed or not allowed in incognito.",
+                                 action: closing.incognitoOff ? "Allow" : "Fix") {
+                    if closing.incognitoOff { service.openIncognitoSetting(browserID: closing.bundleID) } else { router.modal = .browserSetup }
+                }
             }
         } else if showSetupProblem {
             OrtusProblemCard(title: "Website blocking isn’t set up", detail: "Sites stay open this session.", action: "Set up") {

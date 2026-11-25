@@ -11,6 +11,48 @@
   <link rel="preload" href="/assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/assets/fonts/archivo-black-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/styles.css" />
+  <style>
+    [hidden] { display: none !important; }
+    /* A simplified extension Details page: the cursor turns on the incognito switch. */
+    .demo { margin: 20px 0 16px; }
+    .demo-window { position: relative; overflow: hidden; border-radius: 12px; background: #fff; color: #202124; font-size: 14px; }
+    .demo-bar { display: flex; align-items: center; gap: 6px; padding: 10px 12px; background: #e8eaed; }
+    .demo-bar > span { width: 10px; height: 10px; border-radius: 50%; background: #c4c7cc; }
+    .demo-url { margin-left: 10px; flex: 1; padding: 4px 12px; border-radius: 14px; background: #fff; color: #5f6368; font-size: 13px; }
+    .demo-page { padding: 6px 20px 14px; }
+    .demo-head { display: flex; align-items: center; gap: 10px; padding: 12px 0; font-weight: 700; font-size: 15px; }
+    .demo-head img { width: 24px; height: 24px; }
+    .demo-row { position: relative; display: flex; align-items: center; justify-content: space-between; min-height: 46px;
+                margin: 0 -10px; padding: 0 10px; border-top: 1px solid #e8eaed; border-radius: 8px; }
+    .demo-row.muted { color: #9aa0a6; }
+    .demo-row em { width: 120px; height: 8px; border-radius: 4px; background: #e8eaed; }
+    .demo-switch { position: relative; width: 34px; height: 14px; border-radius: 7px; background: #bdc1c6; }
+    .demo-switch::after { content: ""; position: absolute; top: -3px; left: -2px; width: 20px; height: 20px; border-radius: 50%;
+                          background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+    .demo-switch.on { background: #8ab4f8; }
+    .demo-switch.on::after { left: 16px; background: #1a73e8; }
+    .demo-row.target { font-weight: 700; animation: target 5s infinite; }
+    .demo-row.target .demo-switch { animation: track 5s infinite; }
+    .demo-row.target .demo-switch::after { animation: knob 5s infinite; }
+    .demo-cursor { position: absolute; right: 8px; top: 24px; width: 22px; height: 22px; animation: cursor 5s infinite; pointer-events: none; }
+    @keyframes cursor {
+      0% { transform: translate(-150px, 90px); opacity: 0; }
+      12% { opacity: 1; }
+      40% { transform: translate(0, 0) scale(1); }
+      45% { transform: translate(0, 0) scale(.8); }
+      50%, 85% { transform: translate(0, 0) scale(1); opacity: 1; }
+      95%, 100% { transform: translate(0, 0); opacity: 0; }
+    }
+    @keyframes knob { 0%, 45% { left: -2px; background: #fff; } 47%, 95% { left: 16px; background: #1a73e8; } 100% { left: -2px; background: #fff; } }
+    @keyframes track { 0%, 45% { background: #bdc1c6; } 47%, 95% { background: #8ab4f8; } 100% { background: #bdc1c6; } }
+    @keyframes target { 0%, 45% { background: transparent; } 50%, 90% { background: #e8f0fe; } 100% { background: transparent; } }
+    @media (prefers-reduced-motion: reduce) {
+      .demo-row.target, .demo-row.target .demo-switch, .demo-row.target .demo-switch::after, .demo-cursor { animation: none; }
+      .demo-row.target { background: #e8f0fe; }
+      .demo-row.target .demo-switch { background: #8ab4f8; }
+      .demo-row.target .demo-switch::after { left: 16px; background: #1a73e8; }
+    }
+  </style>
 </head>
 <body class="locked">
   <header class="nav">
@@ -22,20 +64,43 @@
   </header>
 
   <!-- Opened by Ortus in a browser whose extension went off during a focus session:
-       /extension-off?browser=Arc&closes=<unix seconds> -->
+       /extension-off?browser=Arc&closes=<unix seconds>
+       When the extension is on but not allowed in incognito, Ortus adds
+       &reason=incognito&app=<bundle id>&scheme=<its URL scheme>. -->
   <main class="doc">
     <div class="doc-wrap">
       <h1 id="title">Your browser closes soon</h1>
-      <p class="lede">The Ortus extension is off, removed or not allowed in incognito, so your blocked websites aren't fully blocked. Until focus ends, Ortus closes this browser. If you reopen it, the countdown starts again.</p>
+      <p class="lede" id="lede">The Ortus extension is off, removed or not allowed in incognito, so your blocked websites aren't fully blocked. Until focus ends, Ortus closes this browser. If you reopen it, the countdown starts again.</p>
 
-      <section class="doc-card" aria-labelledby="fix-title">
+      <section class="doc-card" id="generic" aria-labelledby="fix-title">
         <h2 id="fix-title">Keep it open</h2>
         <ol>
           <li>Click the Ortus icon in your menu bar, then <strong>Fix</strong>.</li>
           <li>Turn the Ortus extension back on, or add it again if you removed it.</li>
           <li>Open its <strong>Details</strong> and turn on <strong>Allow in Incognito</strong>.</li>
         </ol>
-        <p class="small">Is the extension already on? <a id="report" href="mailto:support@ortusmode.com?subject=Ortus%20closed%20my%20browser">Report a bug</a>.</p>
+        <p class="small">Is the extension already on? <a class="report" href="mailto:support@ortusmode.com?subject=Ortus%20closed%20my%20browser">Report a bug</a>.</p>
+      </section>
+
+      <section class="doc-card" id="incognito" aria-labelledby="incognito-title" hidden>
+        <h2 id="incognito-title">Turn on <span class="setting">Allow in Incognito</span></h2>
+        <p>It's one switch on the extension's page. Once it's on, this tab closes by itself.</p>
+        <a class="btn btn-primary" id="open-setting" hidden>Open the setting</a>
+        <figure class="demo" aria-hidden="true">
+          <div class="demo-window">
+            <div class="demo-bar"><span></span><span></span><span></span><div class="demo-url" id="demo-url">chrome://extensions</div></div>
+            <div class="demo-page">
+              <div class="demo-head"><img src="/assets/favicon.svg" alt="" />Ortus · Website blocking</div>
+              <div class="demo-row"><span>On</span><i class="demo-switch on"></i></div>
+              <div class="demo-row muted"><span>Site access</span><em></em></div>
+              <div class="demo-row target"><span class="setting">Allow in Incognito</span><i class="demo-switch"></i>
+                <svg class="demo-cursor" viewBox="0 0 24 24"><path d="M4 2l15 11-6.5 1 4 7.5-3 1.5-4-7.5L4 20z" fill="#202124" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="demo-row muted"><span>Allow access to file URLs</span><i class="demo-switch"></i></div>
+            </div>
+          </div>
+        </figure>
+        <p class="small">Or open <strong>Extensions</strong>, then <strong>Ortus · Website blocking</strong>, then <strong>Details</strong>. Is it already on? <a class="report" href="mailto:support@ortusmode.com?subject=Ortus%20closed%20my%20browser">Report a bug</a>.</p>
       </section>
     </div>
   </main>
@@ -46,8 +111,30 @@
       var browser = (params.get("browser") || "Your browser").slice(0, 40);
       var closes = Number(params.get("closes")) * 1000;
       var title = document.getElementById("title");
-      document.getElementById("report").href = "mailto:support@ortusmode.com?subject=" +
-        encodeURIComponent("Ortus closed " + browser + " but the extension was on");
+      document.querySelectorAll(".report").forEach(function (link) {
+        link.href = "mailto:support@ortusmode.com?subject=" + encodeURIComponent("Ortus closed " + browser + " but the extension was on");
+      });
+
+      // The extension is on but not allowed in incognito: say exactly that, and offer the setting.
+      if (params.get("reason") === "incognito") {
+        var app = params.get("app") || "";
+        var scheme = params.get("scheme") || "";
+        var pages = { "com.google.Chrome": "chrome", "company.thebrowser.Browser": "arc", "com.microsoft.edgemac": "edge", "com.brave.Browser": "brave" };
+        var setting = app === "com.microsoft.edgemac" ? "Allow in InPrivate" : "Allow in Incognito";
+        document.title = "Turn on " + setting + " for Ortus";
+        document.getElementById("lede").textContent = "The Ortus extension is on, but it isn't allowed in private windows, so they can still open the sites you blocked. Turn it on and " + browser + " stays open.";
+        document.querySelectorAll(".setting").forEach(function (node) { node.textContent = setting; });
+        document.getElementById("demo-url").textContent = (pages[app] || "chrome") + "://extensions";
+        document.getElementById("generic").hidden = true;
+        document.getElementById("incognito").hidden = false;
+        // Web pages can't link to the browser's settings, so the button asks Ortus to open them.
+        if (/^ortus(-[a-z]+)?$/.test(scheme) && /^[A-Za-z0-9.-]{1,100}$/.test(app)) {
+          var button = document.getElementById("open-setting");
+          button.href = scheme + "://incognito?browser=" + encodeURIComponent(app);
+          button.hidden = false;
+        }
+      }
+
       var tick = function () {
         var left = Math.max(0, Math.ceil((closes - Date.now()) / 1000));
         if (!closes) { title.textContent = browser + " closes soon"; return; }

@@ -61,6 +61,7 @@ struct OrtusBrowserBridge {
             let parent = NSRunningApplication(processIdentifier: getppid())?.bundleIdentifier ?? ""
             let detected = parent.hasPrefix("company.thebrowser.Browser") ? "Arc" : parent.hasPrefix("com.brave") ? "Brave" : parent.hasPrefix("com.microsoft.edgemac") ? "Edge" : nil
             let browser = detected ?? (["Chrome", "Arc", "Edge", "Brave", "Chromium"].contains(hello.browser) ? hello.browser : "Chromium")
+            let extensionID = CommandLine.arguments.dropFirst().lazy.compactMap(BrowserCompanion.extensionID(fromOrigin:)).first
             let acknowledgement = Acknowledgement()
             // Exit when the browser closes its port; an orphan must not claim to be connected.
             Task.detached {
@@ -107,7 +108,7 @@ struct OrtusBrowserBridge {
                 let output = try encoder.encode(policy)
                 if output != previous || now.timeIntervalSince(lastHeartbeat) >= 5 {
                     try FileHandle.standardOutput.write(contentsOf: NativeMessage.frame(output))
-                    try BrowserPaths.write(BrowserClient(id: hello.clientID, browser: browser, updatedAt: now.timeIntervalSince1970, state: await acknowledgement.state, bundleID: parent.isEmpty ? nil : parent, incognito: hello.incognito), to: clientURL)
+                    try BrowserPaths.write(BrowserClient(id: hello.clientID, browser: browser, updatedAt: now.timeIntervalSince1970, state: await acknowledgement.state, bundleID: parent.isEmpty ? nil : parent, incognito: hello.incognito, extensionID: extensionID), to: clientURL)
                     previous = output; lastHeartbeat = now
                 }
                 try await Task.sleep(for: .milliseconds(500))
