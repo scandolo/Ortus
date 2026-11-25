@@ -73,6 +73,7 @@ struct UpdateTests {
 
         let writable = root.appendingPathComponent("Applications/Ortus.app", isDirectory: true)
         try makeApp(writable, version: "old")
+        expect(UpdateInstaller.canReplace(bundleAt: writable))
         expect(try update(writable) == writable.path)
         expect(version(writable) == "new")
         expect(try files.contentsOfDirectory(atPath: writable.deletingLastPathComponent().path) == ["Ortus.app"])
@@ -82,9 +83,17 @@ struct UpdateTests {
         try files.setAttributes([.posixPermissions: 0o555], ofItemAtPath: readOnly.deletingLastPathComponent().path)
         locked.append(readOnly.deletingLastPathComponent())
         expect(!files.isWritableFile(atPath: readOnly.deletingLastPathComponent().path)) // as root nothing is read-only
+        expect(!UpdateInstaller.canReplace(bundleAt: readOnly)) // so Settings offers the download instead
         expect(try update(readOnly) == readOnly.path)
         expect(version(readOnly) == "old")
         expect(!files.fileExists(atPath: readOnly.appendingPathComponent("Ortus.app").path))
+
+        // An app another user installed: the folder is writable but the app isn't.
+        let someoneElses = root.appendingPathComponent("Shared/Ortus.app", isDirectory: true)
+        try makeApp(someoneElses, version: "old")
+        try files.setAttributes([.posixPermissions: 0o555], ofItemAtPath: someoneElses.path)
+        locked.append(someoneElses)
+        expect(!UpdateInstaller.canReplace(bundleAt: someoneElses))
     }
 
     private func expectFailure(_ body: () throws -> String, file: StaticString = #file, line: UInt = #line) {

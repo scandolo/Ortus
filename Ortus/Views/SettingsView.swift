@@ -225,6 +225,14 @@ struct SettingsView: View {
 
     private var updateRow: AnyView? {
         switch updateService.state {
+        case let .available(version) where !updateService.canInstallInPlace:
+            return AnyView(OrtusListRow(title: "Update available",
+                                        subtitle: "Version \(version) · Ortus can’t update itself from this Mac account") {
+                OrtusIcon(.update, size: 18)
+            } trailing: {
+                Button("Download") { NSWorkspace.shared.open(UpdateService.downloadPage) }
+                    .buttonStyle(OrtusPrimaryButtonStyle(size: .small))
+            })
         case let .available(version):
             return AnyView(OrtusListRow(title: "Update available",
                                         subtitle: !updateService.installsAfterFocus ? "Version \(version)"
