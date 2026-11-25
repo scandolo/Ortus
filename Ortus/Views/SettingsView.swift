@@ -109,11 +109,16 @@ struct SettingsView: View {
         }
     }
 
+    /// "Ready" only means Claude Code was found on this Mac, as in Agent setup.
     private var chatRow: some View {
-        OrtusListRow(title: "Agent", subtitle: claudeCodeService.isConfigured ? "Claude Code detected" : "Claude Code not found") {
-            if claudeCodeService.isConfigured { OrtusIcon(.agent, size: 18) } else { OrtusProblemIcon(size: 18) }
+        OrtusListRow(title: "Agent", subtitle: claudeCodeService.isConfigured ? "Ready" : "Not set up") {
+            if claudeCodeService.isConfigured { OrtusIcon(.check, size: 18) } else { OrtusProblemIcon(size: 18) }
         } trailing: {
-            Button(claudeCodeService.isConfigured ? "Configure" : "Set up") { router.modal = .chatSetup }.buttonStyle(OrtusRowButtonStyle())
+            if claudeCodeService.isConfigured {
+                Button("Change") { router.modal = .chatSetup }.buttonStyle(OrtusGhostButtonStyle())
+            } else {
+                Button("Set up") { router.modal = .chatSetup }.buttonStyle(OrtusPrimaryButtonStyle(size: .small))
+            }
         }
     }
 
