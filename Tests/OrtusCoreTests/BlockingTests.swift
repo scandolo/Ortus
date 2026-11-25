@@ -291,12 +291,13 @@ struct CoreChecks {
         update.feedOnlyPointsAtOurHosts()
         update.versionsCompareNumerically()
         try update.verifierRejectsCodeThatIsntOurRelease()
+        try update.updateNeverLeavesABrokenApp()
         let credentials = CredentialTests()
         credentials.migrationKeepsTheKeychainValueAndCopiesTheRest()
         credentials.migrationKeepsTheFileWhenAWriteFails()
         let companion = CompanionTests()
         try companion.hostManifestsDoNotWaitForTheUnpackedFolder()
         try companion.registrationCopiesTheExtensionAndFollowsAMovedApp()
-        print("PASS: 30 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, store extension, framing, modes, chat stream, chat blocks, update feed, update verification, credential migration, companion registration)")
+        print("PASS: 31 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, store extension, framing, modes, chat stream, chat blocks, update feed, update verification, safe update swap, credential migration, companion registration)")
     }
 }
