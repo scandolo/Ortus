@@ -1,0 +1,282 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Ortus agent setup: mock-ups</title>
+<!-- MOCK-UP, not a render of the app. Built at the panel's real size (420 x 560 pt) from the
+     OrtusTheme tokens in Ortus/Views/OrtusTheme.swift and OrtusComponents.swift. -->
+<style>
+@font-face { font-family: "Archivo"; src: url("FONTS/archivo.woff2") format("woff2"); font-weight: 100 900; }
+@font-face { font-family: "Archivo Black"; src: url("FONTS/archivo-black.woff2") format("woff2"); }
+
+/* First Light tokens (OrtusTheme.swift). Free = bone, locked = ink. */
+.free   { --canvas:#F2EEE8; --card:#FFFFFF; --fill:#E3DED5; --inset:#F2EEE8; --chip:#E3DED5; --line:#E3DED5;
+          --text:#1C1C19; --muted:#5E5C55; --strong:#1C1C19; --onStrong:#F2EEE8; --scrim:rgba(28,28,25,.42); }
+.locked { --canvas:#1C1C19; --card:#2E2D29; --fill:#2E2D29; --inset:#1C1C19; --chip:#1C1C19; --line:#3A3934;
+          --text:#F2EEE8; --muted:#9A978E; --strong:#F2EEE8; --onStrong:#1C1C19; --scrim:rgba(28,28,25,.55); }
+:root { --accent:#FE701C; }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background:#888; font-family:"Archivo"; -webkit-font-smoothing: antialiased; padding: 20px; display:flex; flex-wrap:wrap; gap:20px; }
+
+.panel { width:420px; height:560px; position:relative; overflow:hidden; background:var(--canvas); color:var(--text); padding:16px; }
+.label { position:absolute; left:0; bottom:0; right:0; z-index:9; font:700 10px "Archivo"; letter-spacing:1.2px; text-transform:uppercase;
+         color:#fff; background:rgba(28,28,25,.0); padding:6px 10px; text-align:right; opacity:.85; }
+.label span { background:var(--accent); color:#1C1C19; padding:3px 6px; border-radius:5px; }
+
+/* Tab bar (ContentView) */
+.tabs { height:44px; border-radius:14px; background:var(--fill); display:flex; align-items:center; padding:4px; gap:4px; }
+.tab { flex:1; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; gap:8px;
+       font:700 13px "Archivo"; color:var(--muted); }
+.tab.sel { background:var(--strong); color:var(--onStrong); }
+.tab.gear { flex:0 0 44px; }
+.tab svg { width:16px; height:16px; }
+
+/* Background content (dimmed behind the modal) */
+.empty { position:absolute; left:16px; right:16px; top:60px; bottom:90px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; text-align:center; }
+.empty h2 { font:30px "Archivo Black"; letter-spacing:-1px; line-height:1.05; }
+.empty p { font:14px "Archivo"; color:var(--muted); padding:0 22px; }
+.inputbar { position:absolute; left:16px; right:16px; bottom:16px; height:50px; border-radius:18px; background:var(--fill);
+            display:flex; align-items:center; padding:0 6px 0 14px; font:15px "Archivo"; color:var(--muted); justify-content:space-between; }
+.inputbar .send { width:34px; height:34px; border-radius:10px; background:var(--chip); }
+.settings-bg { position:absolute; left:16px; right:16px; top:72px; }
+
+/* Modal (OrtusModal) */
+.scrim { position:absolute; inset:0; background:var(--scrim); display:flex; align-items:center; padding:16px; }
+.sheet { width:100%; background:var(--card); border-radius:18px; }
+.sheet-head { display:flex; align-items:flex-start; gap:12px; padding:20px 20px 16px; }
+.sheet-head h1 { flex:1; font:700 19px "Archivo"; line-height:1.2; }
+.sheet-head h1.big { font:26px "Archivo Black"; letter-spacing:-0.7px; line-height:1.08; }
+.close { flex:0 0 30px; height:30px; border-radius:9px; background:var(--chip); display:flex; align-items:center; justify-content:center; color:var(--muted); }
+.close svg { width:12px; height:12px; }
+.sheet-body { padding:0 20px 20px; display:flex; flex-direction:column; gap:16px; }
+
+.callout { font:14px "Archivo"; color:var(--muted); line-height:1.35; }
+.caption { font:13px "Archivo"; color:var(--muted); line-height:1.35; }
+
+/* Group and rows (OrtusGroup / OrtusListRow) */
+.group { border-radius:18px; background:var(--card); border:1.5px solid var(--line); overflow:hidden; }
+.row { display:flex; align-items:center; gap:14px; padding:10px 16px; min-height:50px; }
+.row + .row { border-top:1px solid var(--line); }
+.row .ic { flex:0 0 22px; height:22px; display:flex; align-items:center; justify-content:center; color:var(--text); }
+.row .ic svg { width:18px; height:18px; }
+.row .txt { flex:1; display:flex; flex-direction:column; gap:3px; }
+.row .t { font:600 15px "Archivo"; line-height:1.2; }
+.row .s { font:13px "Archivo"; color:var(--muted); line-height:1.3; }
+.row.dim .t { color:var(--muted); }
+.row.dim .ic { color:var(--muted); }
+
+.radio { width:20px; height:20px; border-radius:7px; border:2px solid var(--muted); }
+.radio.on { border:none; background:var(--strong); display:flex; align-items:center; justify-content:center; }
+.radio.on::after { content:""; width:8px; height:8px; border-radius:3px; background:var(--onStrong); }
+.row.sel { background:var(--inset); }
+
+.step { width:22px; height:22px; border-radius:7px; background:var(--strong); color:var(--onStrong);
+        font:700 12px "Archivo"; display:flex; align-items:center; justify-content:center; }
+.pending { width:18px; height:18px; border-radius:6px; border:2px solid var(--line); }
+
+.spinner { width:18px; height:18px; border-radius:50%; border:2.5px solid var(--line); border-top-color:var(--text); }
+
+/* Buttons */
+.btn { height:44px; border-radius:12px; padding:0 18px; font:700 15px "Archivo"; display:inline-flex; align-items:center; justify-content:center; white-space:nowrap; }
+.btn.lg { height:52px; font-size:17px; padding:0 24px; }
+.btn.full { width:100%; }
+.btn.primary { background:var(--strong); color:var(--onStrong); }
+.btn.secondary { background:var(--chip); color:var(--text); }
+.btn.rowbtn { height:34px; padding:0 12px; font-size:13px; border:2px solid var(--text); color:var(--text); background:transparent; }
+.ghost { font:700 13px "Archivo"; text-decoration:underline; color:var(--text); }
+.btnrow { display:flex; gap:8px; align-items:center; justify-content:space-between; }
+.center { text-align:center; }
+
+/* Progress (OrtusLineProgress) */
+.line { position:relative; height:10px; display:flex; align-items:center; }
+.line .track { position:absolute; left:0; right:0; height:4px; background:var(--line); }
+.line .bar { position:absolute; left:0; height:10px; background:var(--accent); }
+
+.problem { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; background:var(--inset); font:13px "Archivo"; }
+.problem .warn { color:var(--accent); flex:0 0 22px; }
+.problem .warn svg { width:22px; height:22px; }
+.problem .fix { font:700 13px "Archivo"; text-decoration:underline; white-space:nowrap; }
+.warnic { color:var(--accent); }
+
+.chips { display:flex; flex-wrap:wrap; gap:6px; }
+.chip { font:500 13px "Archivo"; padding:8px 12px; border-radius:12px; background:var(--chip); }
+
+.field { height:44px; border-radius:12px; background:var(--chip); display:flex; align-items:center; padding:0 14px;
+         font:14px ui-monospace, Menlo, monospace; color:var(--muted); }
+.sec { font:700 11px "Archivo"; letter-spacing:1.3px; text-transform:uppercase; color:var(--muted); padding:0 4px 10px; }
+</style>
+</head>
+<body>
+<script>
+// Icons: the SVG paths from Ortus/Views/OrtusIcons.swift (24 grid, even-odd unless noted).
+const P = {
+  agent: [["M4 7h16v13H4ZM8 11h3v3H8ZM13 11h3v3h-3Z"], ["M10.8 3h2.4v4h-2.4Z", 0]],
+  focus: [["M3 15a9 9 0 0 1 18 0Z", 0], ["M1.5 16.5h21v2.6h-21Z", 0], ["M4 20.6h16v1.8H4Z", 0]],
+  schedule: [["M3 5h18v16H3ZM6 11h12v7H6Z"], ["M7 2h3v5H7Z", 0], ["M14 2h3v5h-3Z", 0]],
+  check: [["M9.5 15.2L19.3 5.4l2.2 2.2L9.5 19.6L2.6 12.7l2.2-2.2Z", 0]],
+  warn: [["M12 2l11 19H1ZM10.8 9h2.4v5.5h-2.4ZM10.8 16h2.4v2.4h-2.4Z"]],
+  close: [["M5.6 3.6L12 10l6.4-6.4l2 2L14 12l6.4 6.4l-2 2L12 14l-6.4 6.4l-2-2L10 12L3.6 5.6Z", 0]],
+  terminal: [["M2 4h20v16H2ZM4.6 6.6v10.8h14.8V6.6Z"], ["M6.5 9.2l1.6-1.6l4 4l-4 4l-1.6-1.6l2.4-2.4ZM12.5 14h5v2.2h-5Z", 0]],
+  link: [["M3 9h9v6H3ZM5.4 11.2v1.6h4.4v-1.6Z"], ["M12 9h9v6h-9ZM14.2 11.2v1.6h4.4v-1.6Z"]],
+  shield: [["M12 2l9 3.5v6.5c0 5-3.8 8.8-9 10c-5.2-1.2-9-5-9-10V5.5ZM10.6 13.1l-2.4-2.4l-1.8 1.8l4.2 4.2l7.2-7.2l-1.8-1.8Z"]],
+  key: [["M8 6a6 6 0 1 1 0 12a6 6 0 1 1 0-12ZM8 10.2a1.8 1.8 0 1 0 0 3.6a1.8 1.8 0 1 0 0-3.6Z"], ["M13 10.6h9v2.8h-9Z", 0], ["M18.2 13h2.8v4h-2.8Z", 0]],
+  update: [["M12 2a10 10 0 1 1 0 20a10 10 0 1 1 0-20ZM10.8 6h2.4v6.2l2.6-2.6l1.7 1.7L12 16.8l-5.5-5.5l1.7-1.7l2.6 2.6Z"]],
+  folder: [["M2 4h8l2 2.5h10V20H2Z", 0]],
+  app: [["M3 3h18v18H3ZM5.6 8.2v10.2h12.8V8.2Z"]],
+  globe: [["M12 2a10 10 0 1 1 0 20a10 10 0 1 1 0-20Z", 0]],
+};
+const icon = (n) => `<svg viewBox="0 0 24 24" fill="currentColor">${(P[n]||[]).map(([d, eo]) => `<path d="${d}" fill-rule="${eo === 0 ? 'nonzero' : 'evenodd'}"/>`).join('')}</svg>`;
+const gear = `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="5.6" width="20" height="2.8"/><rect x="2" y="15.6" width="20" height="2.8"/><rect x="13" y="3" width="5" height="8" rx="1.2"/><rect x="5.5" y="13" width="5" height="8" rx="1.2"/></svg>`;
+
+const tabs = (sel) => `<div class="tabs">
+  <div class="tab ${sel==='focus'?'sel':''}">${icon('focus')}Focus</div>
+  <div class="tab ${sel==='schedule'?'sel':''}">${icon('schedule')}Schedule</div>
+  <div class="tab ${sel==='agent'?'sel':''}">${icon('agent')}Agent</div>
+  <div class="tab gear ${sel==='settings'?'sel':''}">${gear}</div></div>`;
+
+const agentBg = `${tabs('agent')}<div class="empty">${icon('agent').replace('<svg','<svg style="width:36px;height:36px"')}
+  <h2>Your agent isn’t set up.</h2><p>Ask for what you need from blocked apps, without opening them.</p></div>
+  <div class="inputbar">What do you need?<div class="send"></div></div>`;
+
+const settingsBg = `${tabs('settings')}<div class="settings-bg"><div class="sec">Connections</div><div class="group">
+  <div class="row"><div class="ic">${icon('globe')}</div><div class="txt"><div class="t">Website blocking</div><div class="s">Chrome connected</div></div></div>
+  <div class="row"><div class="ic">${icon('agent')}</div><div class="txt"><div class="t">Agent</div><div class="s">Claude Code · signed in</div></div><div class="btn rowbtn">Change</div></div>
+  </div></div>`;
+
+const sheet = (title, body, {big=false} = {}) => `<div class="scrim"><div class="sheet">
+  <div class="sheet-head"><h1 class="${big?'big':''}">${title}</h1><div class="close">${icon('close')}</div></div>
+  <div class="sheet-body">${body}</div></div></div>`;
+
+const row = (ic, t, s, trailing='', cls='') => `<div class="row ${cls}"><div class="ic">${ic}</div><div class="txt"><div class="t">${t}</div>${s?`<div class="s">${s}</div>`:''}</div>${trailing}</div>`;
+const radio = (on) => `<div class="radio ${on?'on':''}"></div>`;
+const step = (n) => `<div class="step">${n}</div>`;
+const warnIc = `<span class="warnic">${icon('warn')}</span>`;
+
+const frames = [];
+const frame = (id, label, bg, content, mode='free') => frames.push({id, label, html:
+  `<div class="panel ${mode}" id="${id}">${bg}${content}<div class="label"><span>Mock-up · ${label}</span></div></div>`});
+
+// ---------- 1. No agent on this Mac: choose by the plan you already have ----------
+frame('01-choose', 'no agent found', agentBg, sheet('No agent on this Mac yet.', `
+  <div class="callout">Ortus runs the agent that comes with a plan you already pay for. Which one do you have?</div>
+  <div class="group">
+    ${row(radio(true), 'Claude', 'Pro, Max or Team plan · installs Claude Code', '', 'sel')}
+    ${row(radio(false), 'ChatGPT', 'Plus, Pro or Business plan · installs Codex')}
+  </div>
+  <div class="btn primary full">Install Claude Code</div>
+  <div class="caption center">About 380 MB from Anthropic, into your home folder.<br>No password needed.<br><br><span class="ghost">Already have it somewhere else? Find it</span></div>
+`, {big:true}));
+
+// ---------- 2. Installing ----------
+const installing = sheet('Installing Claude Code', `
+  <div class="line"><div class="track"></div><div class="bar" style="width:46%"></div></div>
+  <div class="group">
+    ${row('<div class="spinner"></div>', 'Downloading from Anthropic', '140 of 380 MB')}
+    ${row('<div class="pending"></div>', 'Checking it’s signed by Anthropic', '', '', 'dim')}
+    ${row('<div class="pending"></div>', 'Setting it up in your home folder', '', '', 'dim')}
+  </div>
+  <div class="caption">You can close the panel. Ortus keeps going and tells you when it’s done.</div>
+  <div class="btnrow"><div class="btn secondary">Cancel</div></div>
+`);
+frame('02-installing', 'install progress', agentBg, installing);
+
+// ---------- 3. Install failed: the problem where it bites ----------
+frame('03-install-failed', 'install stopped', agentBg, sheet('Installing Claude Code', `
+  <div class="line"><div class="track"></div><div class="bar" style="width:46%;background:var(--muted)"></div></div>
+  <div class="group">
+    ${row(warnIc, 'Download stopped', 'No connection at 140 of 380 MB. Nothing was installed.', '<div class="btn rowbtn">Try again</div>')}
+    ${row('<div class="pending"></div>', 'Checking it’s signed by Anthropic', '', '', 'dim')}
+    ${row('<div class="pending"></div>', 'Setting it up in your home folder', '', '', 'dim')}
+  </div>
+  <div class="caption">Rather do it yourself? <span class="ghost">Copy the Terminal command</span></div>
+`));
+
+// ---------- 4. Sign in (Claude) ----------
+frame('04-sign-in-claude', 'sign in, Claude', agentBg, sheet('Sign in to Claude Code', `
+  <div class="callout">Claude Code is installed. Sign in once with the Claude account that has your plan. Ortus never sees your password.</div>
+  <div class="group">
+    ${row(step(1), 'Approve in your browser', 'claude.com opens on its own')}
+    ${row(step(2), 'Come back here', 'Ortus notices and moves on by itself')}
+  </div>
+  <div class="btn primary full">Sign in to Claude Code</div>
+  <div class="caption center"><span class="ghost">Use an Anthropic Console account instead</span></div>
+`));
+
+// ---------- 5. Waiting for the browser ----------
+frame('05-waiting', 'waiting for the browser', agentBg, sheet('Sign in to Claude Code', `
+  <div class="group">
+    ${row('<div class="spinner"></div>', 'Waiting for your browser', 'Approve Claude Code on claude.com', '<div class="btn rowbtn">Open again</div>')}
+  </div>
+  <div class="caption">The page shows a code instead? <span class="ghost">Paste the code</span></div>
+  <div class="btnrow"><div class="btn secondary">Cancel</div></div>
+`));
+
+// ---------- 6. Ready (Claude) ----------
+frame('06-ready-claude', 'ready, Claude Code', agentBg, sheet('Your agent is ready.', `
+  <div class="group">
+    ${row(icon('agent'), 'Claude Code', 'Signed in · Max plan')}
+    ${row(icon('link'), 'Slack, Gmail and Google Calendar', 'Connected in your Claude account')}
+  </div>
+  <div class="callout">Try it on your own apps:</div>
+  <div class="chips"><div class="chip">Anything urgent in Slack?</div><div class="chip">What’s on my calendar today?</div></div>
+  <div class="btn primary full">Ask your agent</div>
+`, {big:true}));
+
+// ---------- 7. Codex already on the Mac, signed out ----------
+frame('07-sign-in-codex', 'Codex user, signed out', agentBg, sheet('Sign in to Codex', `
+  <div class="callout">Codex is on this Mac. Sign in once with the ChatGPT account that has your plan. Ortus never sees your password.</div>
+  <div class="group">
+    ${row(step(1), 'Approve in your browser', 'auth.openai.com opens on its own')}
+    ${row(step(2), 'Come back here', 'Ortus notices and moves on by itself')}
+  </div>
+  <div class="btn primary full">Sign in to Codex</div>
+  <div class="caption center"><span class="ghost">Use an OpenAI API key instead</span></div>
+`));
+
+// ---------- 8. Ready (Codex), no connectors yet ----------
+frame('08-ready-codex', 'ready, Codex', agentBg, sheet('Your agent is ready.', `
+  <div class="group">
+    ${row(icon('agent'), 'Codex', 'Signed in with ChatGPT')}
+    ${row(icon('link'), 'No apps connected yet', 'Your agent can search the web, but not Slack or Gmail', '<div class="btn rowbtn">Add</div>')}
+  </div>
+  <div class="btn primary full">Ask your agent</div>
+`, {big:true}));
+
+// ---------- 9. Both on the Mac: pick one ----------
+frame('09-both', 'both installed', agentBg, sheet('Two agents on this Mac.', `
+  <div class="callout">Pick the one Ortus asks. You can switch in Settings.</div>
+  <div class="group">
+    ${row(radio(true), 'Claude Code', 'Signed in · Max plan · Slack, Gmail', '', 'sel')}
+    ${row(radio(false), 'Codex', 'Signed in with ChatGPT · no apps')}
+  </div>
+  <div class="btn primary full">Use Claude Code</div>
+`, {big:true}));
+
+// ---------- 10. Only the Claude desktop app ----------
+frame('10-desktop-only', 'only the Claude app', agentBg, sheet('Claude is here, Claude Code isn’t.', `
+  <div class="callout">The Claude app keeps a private copy of Claude Code that moves when the app updates. Ortus installs its own copy instead. Same account, nothing extra to pay.</div>
+  <div class="btn primary full">Install Claude Code</div>
+  `, {big:true}));
+
+// ---------- 11. Settings: the agent row opens this ----------
+frame('11-settings', 'Settings, choose the engine', settingsBg, sheet('Agent', `
+  <div class="group">
+    ${row(radio(true), 'Claude Code', 'Signed in · Max plan · 2.1.330', '', 'sel')}
+    ${row(radio(false), 'Codex', 'Not on this Mac', '<div class="btn rowbtn">Install</div>')}
+  </div>
+  <div class="group">
+    ${row(icon('key'), 'Account', 'you@example.com', '<div class="btn rowbtn">Sign out</div>')}
+    ${row(icon('folder'), 'Location', '~/.local/bin/claude', '<div class="btn rowbtn">Change</div>')}
+  </div>
+  <div class="btnrow"><span></span><div class="btn primary">Done</div></div>
+`));
+
+// ---------- 12. Installing during a locked session (ink) ----------
+frame('12-installing-locked', 'install during a session', agentBg, installing, 'locked');
+
+document.body.innerHTML = frames.map(f => f.html).join('');
+window.FRAMES = frames.map(f => f.id);
+</script>
+</body>
+</html>
