@@ -73,6 +73,7 @@ enum SnapshotHarness {
             await render("schedule", tab: 1)
             await render("schedule-editor", tab: 1, height: 860, state: "new-schedule")
             // Modes and schedules. A copy of Socials, as older versions could save one.
+            await render("schedule-modes", tab: 1, height: 860, state: "schedule-modes")
             let copy = FocusMode(name: "Socials copy", blocked: FocusMode.social.blocked)
             focusManager.customModes.append(copy)
             await render("focus-modes-duplicate", tab: 0, height: 760, state: "modes")

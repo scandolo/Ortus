@@ -62,7 +62,7 @@ struct ModePicker: View {
             }
         }
         .modifier(BoxedCard(boxed: boxed))
-        .onAppear { if snapshotState == "modes" { expanded = true } }
+        .onAppear { if snapshotState == "modes" || snapshotState == "schedule-modes" { expanded = true } }
     }
 
     private func modeRow(_ mode: FocusMode) -> some View {
@@ -76,16 +76,10 @@ struct ModePicker: View {
         return HStack(spacing: 12) {
             Button(action: select) {
                 HStack(spacing: 12) {
-                    ZStack {
-                        if isCurrent {
-                            RoundedRectangle(cornerRadius: 7, style: .continuous).fill(OrtusTheme.strong)
-                            OrtusIcon(.check, size: 12).foregroundStyle(OrtusTheme.onStrong)
-                        } else {
-                            RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(OrtusTheme.text, lineWidth: 2)
-                        }
-                    }
-                    .frame(width: 20, height: 20)
-                    Text(mode.name).font(OrtusTheme.Typo.headline)
+                    // One choice, as in a macOS menu: a check by the chosen mode, nothing by the rest.
+                    Color.clear.frame(width: 20, height: 20)
+                        .overlay { if isCurrent { OrtusIcon(.check, size: 14) } }
+                    Text(mode.name).font(isCurrent ? OrtusFont.text(15, .bold) : OrtusTheme.Typo.headline)
                     Spacer(minLength: 4)
                 }
                 .padding(.vertical, 7)

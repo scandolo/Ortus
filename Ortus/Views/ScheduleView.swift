@@ -86,7 +86,7 @@ struct ScheduleView: View {
             .disabled(isAddingNew)
             .padding([.horizontal, .bottom], OrtusTheme.spacingMD)
         }
-        .onAppear { if snapshotState == "new-schedule" { isAddingNew = true } }
+        .onAppear { if snapshotState == "new-schedule" || snapshotState == "schedule-modes" { isAddingNew = true } }
     }
 }
 
