@@ -11,6 +11,8 @@ public enum AgentCommand {
             "-c", "developer_instructions=" + tomlString(systemPrompt),
         ]
         if let threadID { arguments += ["resume", threadID] }
+        // "- list my emails" would read as a flag: end the options first.
+        if prompt.hasPrefix("-") { arguments.append("--") }
         arguments.append(prompt)
         return arguments
     }

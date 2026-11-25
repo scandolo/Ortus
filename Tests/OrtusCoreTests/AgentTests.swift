@@ -223,6 +223,8 @@ struct AgentTests {
         expect(first == flags + ["What's new?"])
         let next = AgentCommand.codexTurn(prompt: "And Gmail?", systemPrompt: "Be brief.\nDraft first.", threadID: "019ab3c2", workingDirectory: "/tmp/agent")
         expect(next == flags + ["resume", "019ab3c2", "And Gmail?"])
+        let dashed = AgentCommand.codexTurn(prompt: "- list my emails", systemPrompt: "Be brief.\nDraft first.", threadID: nil, workingDirectory: "/tmp/agent")
+        expect(dashed == flags + ["--", "- list my emails"])
     }
 
     // MARK: - Finding the CLI
