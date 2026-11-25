@@ -17,12 +17,15 @@ final class WebsiteBlockingService: ObservableObject {
          .init(id: "com.brave.Browser", name: "Brave", page: "brave://extensions")]
             .filter { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0.id) != nil }
     }
-    /// The next browser Ortus will close because its extension is off.
-    struct ClosingBrowser: Equatable { let name: String; let closesAt: Date }
+    /// The next browser Ortus will close because its extension is off. `incognitoOff`: the
+    /// extension is on but not allowed in incognito, so one switch on its Details page fixes it.
+    struct ClosingBrowser: Equatable { let name: String; let closesAt: Date; var bundleID = ""; var incognitoOff = false }
     @Published private(set) var closingBrowser: ClosingBrowser?
     private var browserGuard = BrowserGuard()
     /// Browsers with a working extension right now, by bundle ID.
     private var protectedBrowsers: Set<String> = []
+    /// Browsers whose extension is connected but not allowed in incognito, mapped to its id.
+    private var incognitoOff: [String: String] = [:]
     @Published private(set) var error: String?
     @Published private(set) var enforcementError: String?
     @Published private(set) var setupError: String?
@@ -67,6 +70,7 @@ final class WebsiteBlockingService: ObservableObject {
         let ready = clients.filter { $0.state == "ready" }
         // A connected extension that fails to apply rules is Ortus's problem, not a reason to close the browser.
         protectedBrowsers = Set(clients.filter { $0.incognito != false }.compactMap(\.bundleID))
+        incognitoOff = BrowserCompanion.incognitoOff(clients)
         let guarded = Set(UserDefaults.standard.stringArray(forKey: "guardedBrowsers") ?? [])
         let seen = guarded.union(ready.compactMap(\.bundleID))
         if seen != guarded { UserDefaults.standard.set(seen.sorted(), forKey: "guardedBrowsers") }
@@ -97,13 +101,21 @@ final class WebsiteBlockingService: ObservableObject {
                 let site = UserDefaults.standard.string(forKey: "webBase") ?? "https://ortusmode.com"
                 guard var page = URLComponents(string: site + "/extension-off") else { break }
                 page.queryItems = [URLQueryItem(name: "browser", value: name), URLQueryItem(name: "closes", value: String(Int(closesAt.timeIntervalSince1970)))]
+                // The page then says exactly what's wrong, and its button asks Ortus to open the setting.
+                if let id = app.bundleIdentifier, incognitoOff[id] != nil, let scheme = AppDelegate.urlScheme {
+                    page.queryItems? += [URLQueryItem(name: "reason", value: "incognito"), URLQueryItem(name: "app", value: id),
+                                         URLQueryItem(name: "scheme", value: scheme)]
+                }
                 if let url = page.url, let browser = app.bundleURL {
                     NSWorkspace.shared.open([url], withApplicationAt: browser, configuration: .init(), completionHandler: nil)
                 }
             case .close: app.terminate()
             case nil: break
             }
-            if next.map({ closesAt < $0.closesAt }) ?? true { next = ClosingBrowser(name: name, closesAt: closesAt) }
+            if next.map({ closesAt < $0.closesAt }) ?? true {
+                let id = app.bundleIdentifier ?? ""
+                next = ClosingBrowser(name: name, closesAt: closesAt, bundleID: id, incognitoOff: incognitoOff[id] != nil)
+            }
         }
         if closingBrowser != next { closingBrowser = next }
     }
@@ -186,6 +198,15 @@ final class WebsiteBlockingService: ObservableObject {
                 Task { @MainActor in self.setupError = "Open the Chrome Web Store in \(name) and add Ortus." }
             }
         }
+    }
+
+    /// Opens the Ortus extension's Details page, where Allow in Incognito is, in that browser.
+    /// Reached from the warning page's button (through the URL scheme) and the panel.
+    func openIncognitoSetting(browserID: String) {
+        guard let choice = availableBrowsers.first(where: { $0.id == browserID }),
+              let browser = NSWorkspace.shared.urlForApplication(withBundleIdentifier: choice.id),
+              let target = URL(string: "\(choice.page)/?id=\(incognitoOff[browserID] ?? BrowserCompanion.storeExtensionID)") else { return }
+        NSWorkspace.shared.open([target], withApplicationAt: browser, configuration: .init(), completionHandler: nil)
     }
 
     func openExtensionsPage(browserID: String) {

@@ -87,6 +87,7 @@ enum SnapshotHarness {
                 await render("settings-focus", tab: 3, height: 760)
                 await render("end-focus-early", tab: 3, state: "end-focus-early")
                 await render("focus-closing-browser", tab: 0, state: "closing-browser")
+                await render("focus-closing-browser-incognito", tab: 0, state: "closing-browser-incognito")
                 await render("chat-answer-locked", tab: 2, state: "chat-answer")
                 await render("chat-compose-locked", tab: 2, state: "chat-compose")
                 await render("schedule-locked", tab: 1)

@@ -66,14 +66,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         if let url = page.url { NSWorkspace.shared.open(url) }
     }
 
-    private static var urlScheme: String? {
+    static var urlScheme: String? {
         let types = Bundle.main.object(forInfoDictionaryKey: "CFBundleURLTypes") as? [[String: Any]]
         return (types?.first?["CFBundleURLSchemes"] as? [String])?.first
     }
 
-    /// The welcome page sends ortus://welcome?login=1&analytics=0. Any page can open this
-    /// link (after the browser asks), and it only changes these two settings.
+    /// The welcome page sends ortus://welcome?login=1&analytics=0, and the extension-off page
+    /// sends ortus://incognito?browser=<bundle id>. Any page can open these links (after the
+    /// browser asks): one changes these two settings, the other opens a browser's extension settings.
     func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls where url.host == "incognito" {
+            let browser = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "browser" }?.value
+            if let browser { (focusManager ?? FocusManager.current)?.websites.openIncognitoSetting(browserID: browser) }
+        }
         for url in urls where url.host == "welcome" {
             let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
             func choice(_ name: String) -> Bool? { items.first { $0.name == name }?.value.map { $0 == "1" } }
