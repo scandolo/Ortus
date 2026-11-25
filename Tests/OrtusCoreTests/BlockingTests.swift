@@ -268,6 +268,24 @@ struct BlockingTests {
         expect(origins == ["chrome-extension://\(unpackedID)/", "chrome-extension://\(BrowserCompanion.storeExtensionID)/"])
     }
 
+    /// The extension is connected but not allowed in incognito: Ortus names that exact problem
+    /// and opens that extension's Details page. Any profile allowed in incognito protects its browser.
+    func connectedButNotInIncognitoIsNamed() {
+        let store = BrowserCompanion.storeExtensionID
+        expect(BrowserCompanion.extensionID(fromOrigin: "chrome-extension://\(store)/") == store)
+        for bad in ["chrome-extension://short/", "https://\(store)/", "chrome-extension://\(String(repeating: "z", count: 32))/"] {
+            expect(BrowserCompanion.extensionID(fromOrigin: bad) == nil)
+        }
+        func client(_ bundleID: String, _ incognito: Bool?, _ extensionID: String? = nil) -> BrowserClient {
+            BrowserClient(id: UUID().uuidString, browser: "x", updatedAt: 0, bundleID: bundleID, incognito: incognito, extensionID: extensionID)
+        }
+        let unpacked = String(repeating: "b", count: 32)
+        expect(BrowserCompanion.incognitoOff([client("com.google.Chrome", false, unpacked)]) == ["com.google.Chrome": unpacked])
+        expect(BrowserCompanion.incognitoOff([client("com.google.Chrome", false)]) == ["com.google.Chrome": store]) // older bridge
+        expect(BrowserCompanion.incognitoOff([client("company.thebrowser.Browser", false), client("company.thebrowser.Browser", true)]).isEmpty)
+        expect(BrowserCompanion.incognitoOff([client("com.google.Chrome", nil)]).isEmpty) // an extension too old to say
+    }
+
     func nativeFramingIsLittleEndianAndBounded() {
         let data = Data("{\"hello\":true}".utf8)
         let frame = NativeMessage.frame(data)
@@ -304,6 +322,7 @@ struct CoreChecks {
         checks.selectionDeduplicatesAndKeepsEscapeToolsAvailable()
         try checks.storeAndUnpackedExtensionsAreBothAllowed()
         checks.nativeFramingIsLittleEndianAndBounded()
+        checks.connectedButNotInIncognitoIsNamed()
         try checks.onlyOneAppCanOwnFocusAtATime()
         checks.presetEditingPreservesUnrelatedTargets()
         checks.partialPresetsDescribeActualCoverage()
@@ -322,6 +341,7 @@ struct CoreChecks {
         update.feedOnlyPointsAtOurHosts()
         update.versionsCompareNumerically()
         try update.verifierRejectsCodeThatIsntOurRelease()
+        try update.updateNeverLeavesABrokenApp()
         let credentials = CredentialTests()
         credentials.migrationKeepsTheKeychainValueAndCopiesTheRest()
         credentials.migrationKeepsTheFileWhenAWriteFails()
@@ -329,6 +349,6 @@ struct CoreChecks {
         try companion.hostManifestsDoNotWaitForTheUnpackedFolder()
         try companion.registrationCopiesTheExtensionAndFollowsAMovedApp()
         BuildProfileTests().developerModeIsPreviewOnly()
-        print("PASS: 34 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, store extension, framing, modes, mode migration, duplicate modes, chat stream, chat blocks, Claude Code location, update feed, update verification, credential migration, companion registration, preview-only developer mode)")
+        print("PASS: 36 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, incognito off, store extension, framing, modes, mode migration, duplicate modes, chat stream, chat blocks, Claude Code location, update feed, update verification, safe update swap, credential migration, companion registration, preview-only developer mode)")
     }
 }

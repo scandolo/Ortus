@@ -169,7 +169,7 @@ struct FocusView: View {
     // MARK: - Active Focus
 
     private var hasSessionProblem: Bool {
-        focusManager.websites.closingBrowser != nil || snapshotState == "closing-browser"
+        focusManager.websites.closingBrowser != nil || snapshotState?.hasPrefix("closing-browser") == true
             || (!focusManager.activeSelection.websites.isEmpty && focusManager.websites.connectedBrowsers.isEmpty && snapshotState != "browser-connected")
     }
 

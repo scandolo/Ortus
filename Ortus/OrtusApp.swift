@@ -66,14 +66,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         if let url = page.url { NSWorkspace.shared.open(url) }
     }
 
-    private static var urlScheme: String? {
+    static var urlScheme: String? {
         let types = Bundle.main.object(forInfoDictionaryKey: "CFBundleURLTypes") as? [[String: Any]]
         return (types?.first?["CFBundleURLSchemes"] as? [String])?.first
     }
 
-    /// The welcome page sends ortus://welcome?analytics=0 (older copies also sent login=1).
-    /// Any page can open this link (after the browser asks), and it only changes these two settings.
+    /// The welcome page sends ortus://welcome?analytics=0 (older copies also sent login=1), and
+    /// the extension-off page sends ortus://incognito?browser=<bundle id>. Any page can open these
+    /// links (after the browser asks): one changes these settings, the other opens a browser's
+    /// extension settings.
     func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls where url.host == "incognito" {
+            let browser = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "browser" }?.value
+            if let browser { (focusManager ?? FocusManager.current)?.websites.openIncognitoSetting(browserID: browser) }
+        }
         for url in urls where url.host == "welcome" {
             let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
             func choice(_ name: String) -> Bool? { items.first { $0.name == name }?.value.map { $0 == "1" } }
@@ -256,6 +262,7 @@ struct OrtusApp: App {
             switch state {
             case "up-to-date": updateService.pinForSnapshot(.upToDate)
             case "update-available": updateService.pinForSnapshot(.available(version: "1.2.0"))
+            case "update-download": updateService.pinForSnapshot(.available(version: "1.2.0"), canInstallInPlace: false)
             case "update-unverified": updateService.pinForSnapshot(.failed(UpdateService.unverifiedMessage))
             case "browser-setup-folder-error": focusManager.websites.pinFolderErrorForSnapshot()
             default: break
