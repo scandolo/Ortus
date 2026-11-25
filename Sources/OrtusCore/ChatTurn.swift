@@ -1,31 +1,48 @@
 import Foundation
 
-/// One chat answer rebuilt from Claude Code's `--output-format stream-json` events:
-/// what Claude did on the way (the activity) and the text it ends with (the answer).
+/// One chat answer rebuilt from an agent's JSON events: what it did on the way (the
+/// activity) and the text it ends with (the answer). Reads Claude Code's
+/// `--output-format stream-json` and Codex's `exec --json`.
 ///
 /// Built from recorded runs. Claude Code also sends plumbing that should never look
 /// like work: `ToolSearch` loading tool definitions, reads of results it saved to disk
 /// because they were too large, and thinking blocks whose text is always empty.
 public struct ChatTurn: Equatable, Sendable {
+    public enum Format: Sendable { case claudeCode, codex }
+
     public private(set) var activity: ChatActivity
     /// Text written after the last tool call. Text written before a tool call is
     /// narration ("Let me check Slack") and moves into the activity instead.
     public private(set) var answer = ""
     public private(set) var failure: String?
     public private(set) var didStartSession = false
+    /// The session id Codex picked, kept for `resume` on the next turn.
+    public private(set) var threadID: String?
     public var isFinished: Bool { activity.finishedAt != nil }
 
+    private let format: Format
     private var pendingText: [String] = []
     private var thinkingSince: Date?
+    private var lastEventAt: Date
+    private var lastError: String?
 
-    public init(startedAt: Date) {
+    public init(startedAt: Date, format: Format = .claudeCode) {
         activity = ChatActivity(startedAt: startedAt)
+        self.format = format
+        lastEventAt = startedAt
     }
 
     public mutating func consume(_ line: String, at now: Date) {
         guard let data = line.data(using: .utf8),
               let event = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let type = event["type"] as? String else { return }
+        switch format {
+        case .claudeCode: consumeClaude(event, type: type, at: now)
+        case .codex: consumeCodex(event, type: type, at: now)
+        }
+    }
+
+    private mutating func consumeClaude(_ event: [String: Any], type: String, at now: Date) {
         // Events from inside a helper agent: its own tool calls are not ours to show.
         if event["parent_tool_use_id"] is String { return }
 
@@ -62,24 +79,102 @@ public struct ChatTurn: Equatable, Sendable {
     private mutating func consumeAssistant(_ block: [String: Any], at now: Date) {
         switch block["type"] as? String {
         case "text":
-            guard let text = block["text"] as? String, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-            pendingText.append(text)
-            answer = pendingText.joined(separator: "\n\n")
+            addText(block["text"] as? String)
         case "thinking":
             // The thinking text itself is empty; only its duration is worth showing.
-            if let since = thinkingSince { activity.addThought(seconds: max(1, Int(now.timeIntervalSince(since).rounded()))) }
+            if let since = thinkingSince { addThought(since: since, at: now) }
             thinkingSince = nil
         case "tool_use":
-            if !pendingText.isEmpty {
-                activity.addNote(pendingText.joined(separator: " "))
-                pendingText = []
-                answer = ""
-            }
-            guard let id = block["id"] as? String, let name = block["name"] as? String else { return }
-            activity.startTool(id: id, name: name, input: block["input"] as? [String: Any] ?? [:])
+            startTool(id: block["id"] as? String, name: block["name"] as? String, input: block["input"] as? [String: Any] ?? [:])
         default:
             break
         }
+    }
+
+    // MARK: - Codex
+
+    /// Codex `exec --json` lines (codex-rs/exec/src/exec_events.rs). Tools come as
+    /// `item.started` then `item.completed`; messages and reasoning only as completed.
+    /// Unknown types are ignored, so new events can't break a turn.
+    private mutating func consumeCodex(_ event: [String: Any], type: String, at now: Date) {
+        defer { lastEventAt = now }
+        switch type {
+        case "thread.started":
+            didStartSession = true
+            threadID = event["thread_id"] as? String ?? threadID
+        case "item.started", "item.completed":
+            guard let item = event["item"] as? [String: Any], let id = item["id"] as? String else { return }
+            consumeCodexItem(item, id: id, completed: type == "item.completed", at: now)
+        case "turn.completed":
+            finish(at: now)
+        case "turn.failed":
+            let message = ((event["error"] as? [String: Any])?["message"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+            failure = message ?? lastError ?? "Codex stopped with an error."
+            finish(at: now)
+        case "error":
+            lastError = (event["message"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? lastError
+        default:
+            break
+        }
+    }
+
+    private mutating func consumeCodexItem(_ item: [String: Any], id: String, completed: Bool, at now: Date) {
+        let failed = item["status"] as? String == "failed"
+        switch item["type"] as? String {
+        case "agent_message":
+            if completed { addText(item["text"] as? String) }
+        case "reasoning":
+            guard completed else { thinkingSince = now; return }
+            addThought(since: thinkingSince ?? lastEventAt, at: now)
+            thinkingSince = nil
+        case "command_execution":
+            let exitCode = item["exit_code"] as? Int ?? 0
+            codexTool(id, "Bash", ["command": item["command"] as? String ?? ""], completed: completed, failed: failed || exitCode != 0)
+        case "mcp_tool_call":
+            let server = item["server"] as? String ?? "", tool = item["tool"] as? String ?? ""
+            // ChatGPT's connected apps all come from one server: the tool name says which app.
+            let name = "mcp__\(server == "codex_apps" ? tool : server)__\(tool)"
+            let hasError = item["error"].map { !($0 is NSNull) } ?? false
+            codexTool(id, name, item["arguments"] as? [String: Any] ?? [:], completed: completed, failed: failed || hasError)
+        case "web_search":
+            codexTool(id, "WebSearch", ["query": item["query"] as? String ?? ""], completed: completed, failed: false)
+        default:
+            break
+        }
+    }
+
+    /// The end of a tool call may be the first we hear of it. It also carries the fullest
+    /// details: a web search's query arrives only then.
+    private mutating func codexTool(_ id: String, _ name: String, _ input: [String: Any], completed: Bool, failed: Bool) {
+        if !activity.steps.contains(where: { $0.id == id }) {
+            startTool(id: id, name: name, input: input)
+        } else if completed {
+            activity.rename(step: id, name: name, input: input)
+        }
+        if completed { activity.complete(step: id, failed: failed) }
+    }
+
+    // MARK: - Shared
+
+    private mutating func addText(_ text: String?) {
+        guard let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        pendingText.append(text)
+        answer = pendingText.joined(separator: "\n\n")
+    }
+
+    private mutating func addThought(since: Date, at now: Date) {
+        activity.addThought(seconds: max(1, Int(now.timeIntervalSince(since).rounded())))
+    }
+
+    /// Text written before a tool call was narration: it moves into the activity.
+    private mutating func startTool(id: String?, name: String?, input: [String: Any]) {
+        if !pendingText.isEmpty {
+            activity.addNote(pendingText.joined(separator: " "))
+            pendingText = []
+            answer = ""
+        }
+        guard let id, let name else { return }
+        activity.startTool(id: id, name: name, input: input)
     }
 }
 
@@ -158,6 +253,13 @@ public struct ChatActivity: Equatable, Sendable {
         }
         guard let step = Self.describe(id: id, name: name, input: input) else { return }
         steps.append(step)
+    }
+
+    /// Names a step again from fuller details, keeping its status.
+    mutating func rename(step id: String, name: String, input: [String: Any]) {
+        guard let index = steps.firstIndex(where: { $0.id == id }), var renamed = Self.describe(id: id, name: name, input: input) else { return }
+        renamed.status = steps[index].status
+        steps[index] = renamed
     }
 
     mutating func complete(step id: String, failed: Bool) {
