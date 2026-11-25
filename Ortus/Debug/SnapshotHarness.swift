@@ -89,6 +89,13 @@ enum SnapshotHarness {
             await render("mode-delete", tab: 0, state: "mode-delete")
             focusManager.manualSelection = manual
             focusManager.customModes.removeAll { $0.id == deepWork.id }
+            // A schedule that's on next to the default one, which is off. It starts in three
+            // hours, so it never starts a session while rendering.
+            let hour = (Calendar.current.component(.hour, from: .now) + 3) % 24
+            let writing = FocusSchedule(name: "Writing", days: Set(Weekday.allCases), startHour: hour, endHour: (hour + 2) % 24, blocked: FocusMode.social.blocked)
+            focusManager.addSchedule(writing)
+            await render("schedule-on-off", tab: 1)
+            focusManager.deleteSchedule(writing)
             // Typing in the start time, then Return or a click on the panel's edge: the outline goes.
             func typeInStartTime(then leave: (@MainActor (NSWindow) -> Void)? = nil) -> @MainActor (NSWindow) async -> Void {
                 { window in

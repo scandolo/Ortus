@@ -124,6 +124,9 @@ struct ScheduleRow: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
+                // Off reads as off: the text fades, the toggle stays at full strength.
+                .opacity(schedule.isEnabled || isLocked ? 1 : 0.5)
+                .animation(.easeOut(duration: 0.25), value: schedule.isEnabled)
                 .opacity(isHovering && !isLocked ? 0.75 : 1)
             }
             .buttonStyle(OrtusPressableStyle(highlight: false))
