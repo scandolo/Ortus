@@ -329,6 +329,8 @@ struct CoreChecks {
         try companion.hostManifestsDoNotWaitForTheUnpackedFolder()
         try companion.registrationCopiesTheExtensionAndFollowsAMovedApp()
         BuildProfileTests().developerModeIsPreviewOnly()
-        print("PASS: 34 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, store extension, framing, modes, mode migration, duplicate modes, chat stream, chat blocks, Claude Code location, update feed, update verification, credential migration, companion registration, preview-only developer mode)")
+        try AgentTests.runAll()
+        try InstallerTests.runAll()
+        print("PASS: 48 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, store extension, framing, modes, mode migration, duplicate modes, chat stream, chat blocks, Claude Code location, update feed, update verification, credential migration, companion registration, preview-only developer mode, agent engines: Codex events, sign-in status, Codex commands, desktop app copies, Claude Code release manifest, install signature checks)")
     }
 }

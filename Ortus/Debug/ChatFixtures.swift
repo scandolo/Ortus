@@ -16,12 +16,35 @@ enum ChatFixtures {
     }
 
     #if DEBUG
-    /// Opens Agent setup as if Claude Code weren't on this Mac: "agent-setup-missing",
-    /// "agent-setup-checking" (still looking) and "agent-setup-error" (a file that can't run).
+    /// Opens Agent setup for the "agent-setup-…" and "codex-setup-…" states.
     @MainActor static func applySetup(_ state: String?, to service: ClaudeCodeService, router: PanelRouter) {
-        guard let state, state.hasPrefix("agent-setup") else { return }
-        service.missingForSnapshot = true
+        guard let state, state.hasPrefix("agent-setup") || state.hasPrefix("codex-setup") else { return }
         router.modal = .chatSetup
+    }
+
+    /// Pins the agent's engine, install and sign-in for a snapshot state, before the panel
+    /// renders. Setup states: "-missing", "-checking" (still looking), "-error" (a file
+    /// that can't run), "-installing", "-install-failed", "-sign-in", "-waiting", "-ready".
+    @MainActor static func applyAgent(_ state: String, to service: ClaudeCodeService) {
+        let codex = state.hasPrefix("codex") || state == "settings-codex"
+        let signedOut = state.hasSuffix("-sign-in") || state.hasSuffix("-waiting") || state == "chat-signed-out"
+        let pinned: AgentSignIn = signedOut ? .signedOut
+            : .signedIn(email: codex ? nil : "you@example.com", plan: codex ? "ChatGPT" : "Max plan")
+        let waiting = state.hasSuffix("-waiting")
+        // Pinned before and after the switch: switching engines resets the sign-in.
+        service.pinForSnapshot(signIn: pinned, waiting: waiting)
+        service.engine = codex ? .codex : .claudeCode
+        service.pinForSnapshot(signIn: pinned, waiting: waiting)
+        let missing = ["-missing", "-checking", "-error", "-installing", "-install-failed"].contains { state.hasSuffix($0) }
+        service.missingForSnapshot = missing || state == "chat-no-agent" || state == "chat-intro-no-agent"
+        switch state {
+        case let s where s.hasSuffix("-installing"):
+            service.installer.pinForSnapshot(codex ? .settingUp : .downloading(received: 152_000_000, total: 381_464_176))
+        case let s where s.hasSuffix("-install-failed"):
+            service.installer.pinForSnapshot(.failed(message: "Ortus couldn’t reach \(codex ? "OpenAI" : "Anthropic"). Check your connection and try again.", details: ""))
+        default:
+            service.installer.pinForSnapshot(.idle)
+        }
     }
     #endif
 
