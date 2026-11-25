@@ -89,6 +89,7 @@ enum SnapshotHarness {
             await render("chat-compose-sent", tab: 2, state: "chat-compose-sent")
             await render("chat-compose-failed", tab: 2, state: "chat-compose-failed")
             await render("chat-draft", tab: 2, state: "chat-draft")
+            await render("chat-send-hover", tab: 2, state: "chat-send-hover")
             await render("chat-feedback", tab: 2, height: 760, state: "chat-feedback")
             await render("chat-feedback-copy", tab: 2, height: 760, state: "chat-feedback-copy")
             await render("settings", tab: 3)

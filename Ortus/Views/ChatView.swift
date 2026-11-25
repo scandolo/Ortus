@@ -30,6 +30,7 @@ struct ChatView: View {
             #if DEBUG
             ChatFixtures.applySetup(snapshotState, to: claudeCodeService, router: router)
             #endif
+            if snapshotState == "chat-send-hover" { inputText = "And the press list?" }
             if ChatFixtures.apply(snapshotState, to: claudeCodeService) { return }
             if snapshotState == "chat-draft" {
                 claudeCodeService.messages = [
@@ -173,11 +174,10 @@ struct ChatView: View {
         // The whole bar is the field: clicks on its padding focus the text box.
         .contentShape(inputBarShape)
         .onTapGesture { isInputFocused = true }
-        .onHover { hovering in
-            isBarHovering = hovering
-            // The whole bar behaves like the text field, cursor included.
-            if hovering { NSCursor.iBeam.push() } else { NSCursor.pop() }
-        }
+        .onHover { isBarHovering = $0 }
+        // The whole bar behaves like the text field, cursor included. Its buttons show
+        // the hand over this.
+        .hoverCursor(.iBeam)
         .padding([.horizontal, .bottom], OrtusTheme.spacingMD)
         .animation(.easeOut(duration: 0.18), value: isInputFocused)
     }
@@ -207,6 +207,7 @@ struct ChatView: View {
         .help("New chat")
         .accessibilityLabel("New chat")
         .disabled(claudeCodeService.isProcessing)
+        .hoverCursor(.pointingHand, enabled: !claudeCodeService.isProcessing)
     }
 
     @ViewBuilder private var sendButton: some View {
@@ -256,35 +257,98 @@ struct ChatView: View {
 private struct ChatSendButton: View {
     let canSend: Bool
     let action: () -> Void
+    @Environment(\.snapshotState) private var snapshotState
+    @State private var isHovering = false
 
     var body: some View {
+        // Hover lifts the ink a step, so it reads as clickable before the press.
+        let hovering = canSend && (isHovering || snapshotState == "chat-send-hover")
         Button(action: action) {
             OrtusIcon(.send, size: 15)
                 .foregroundStyle(canSend ? OrtusTheme.onStrong : OrtusTheme.textMuted)
                 .frame(width: 34, height: 34)
-                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(canSend ? OrtusTheme.strong : OrtusTheme.cardChip))
+                .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(canSend ? OrtusTheme.strong.opacity(hovering ? 0.78 : 1) : OrtusTheme.cardChip))
         }
-        .buttonStyle(OrtusPressableStyle(cornerRadius: 10))
+        .buttonStyle(ChatBarButtonStyle())
         .disabled(!canSend)
+        .onHover { isHovering = $0 }
+        .hoverCursor(.pointingHand, enabled: canSend)
         .help("Send message")
         .accessibilityLabel("Send")
         .animation(.easeOut(duration: 0.15), value: canSend)
+        .animation(.easeOut(duration: 0.12), value: hovering)
     }
 }
 
 private struct ChatStopButton: View {
     let action: () -> Void
+    @State private var isHovering = false
 
     var body: some View {
         Button(action: action) {
             OrtusIcon(.stop, size: 14)
                 .foregroundStyle(OrtusTheme.onStrong)
                 .frame(width: 34, height: 34)
-                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(OrtusTheme.strong))
+                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(OrtusTheme.strong.opacity(isHovering ? 0.78 : 1)))
         }
-        .buttonStyle(OrtusPressableStyle(cornerRadius: 10))
+        .buttonStyle(ChatBarButtonStyle())
+        .onHover { isHovering = $0 }
+        .hoverCursor(.pointingHand)
         .help("Stop")
         .accessibilityLabel("Stop")
+        .animation(.easeOut(duration: 0.12), value: isHovering)
+    }
+}
+
+/// Send and Stop: the fill shows hover, so no highlight on top, and a clear press-in.
+private struct ChatBarButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .contentShape(Rectangle())
+            .scaleEffect(configuration.isPressed ? 0.9 : 1)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
+// MARK: - Cursor
+
+extension View {
+    /// Shows `cursor` while the pointer is over the view, or the arrow while `enabled`
+    /// is false.
+    fileprivate func hoverCursor(_ cursor: NSCursor, enabled: Bool = true) -> some View {
+        modifier(HoverCursor(cursor: cursor, enabled: enabled))
+    }
+}
+
+/// Pushes at most one cursor and always pops it, also when the view turns off or goes
+/// away under the pointer (Send turns into Stop as you click it), so nothing is left on
+/// the cursor stack.
+private struct HoverCursor: ViewModifier {
+    let cursor: NSCursor
+    let enabled: Bool
+    @State private var isHovering = false
+    @State private var pushed: NSCursor?
+
+    func body(content: Content) -> some View {
+        content
+            .onHover { hovering in
+                isHovering = hovering
+                update(hovering: hovering, enabled: enabled)
+            }
+            .onChange(of: enabled) { _, enabled in update(hovering: isHovering, enabled: enabled) }
+            .onDisappear {
+                isHovering = false
+                update(hovering: false, enabled: enabled)
+            }
+    }
+
+    private func update(hovering: Bool, enabled: Bool) {
+        let wanted = hovering ? (enabled ? cursor : NSCursor.arrow) : nil
+        guard wanted !== pushed else { return }
+        if pushed != nil { NSCursor.pop() }
+        wanted?.push()
+        pushed = wanted
     }
 }
 

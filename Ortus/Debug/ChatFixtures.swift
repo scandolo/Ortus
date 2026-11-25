@@ -66,7 +66,7 @@ enum ChatFixtures {
     /// The chat rows for a snapshot state, or nil when the state isn't a chat fixture.
     private static func messages(for state: String?) -> [ChatMessage]? {
         switch state {
-        case "chat-answer", "chat-steps":
+        case "chat-answer", "chat-steps", "chat-send-hover":
             return [
                 ChatMessage(role: .user, content: "what did the team decide about the launch date?"),
                 ChatMessage(role: .assistant, content: "", kind: .activity(launchThread.activity)),
