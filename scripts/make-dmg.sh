@@ -4,7 +4,7 @@ set -euo pipefail
 # Usage: scripts/make-dmg.sh <Some.app> <out.dmg>
 #
 # Packs the app into a drag-to-Applications disk image. Needs no signing, so it runs
-# on any Mac. With dmgbuild (pip install dmgbuild==1.6.5) the window is the designed
+# on any Mac. With dmgbuild (pip install dmgbuild==2.0.0, as release.yml does) the window is the designed
 # one from scripts/dmg/. Without it, or if dmgbuild fails for any reason, the image is
 # the plain one (the app next to an Applications shortcut) so a release never breaks.
 # Set ORTUS_DMG_PLAIN=1 to force the plain one. Signing and notarizing are the caller's.
