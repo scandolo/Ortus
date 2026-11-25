@@ -167,7 +167,7 @@ final class ClaudeCodeService: ObservableObject {
         guard !trimmed.isEmpty else { return }
         guard let binary = resolvedBinaryPath else {
             failedPrompt = trimmed
-            recordFailure("Claude Code could not be found. Open assistant setup to connect your installation.")
+            recordFailure("Claude Code could not be found. Open Agent setup to connect your installation.")
             return
         }
 
@@ -267,7 +267,7 @@ final class ClaudeCodeService: ObservableObject {
         do {
             try process.run()
         } catch {
-            recordFailure("Claude Code could not start. Check its location in assistant setup, then retry.", details: error.localizedDescription)
+            recordFailure("Claude Code could not start. Check its location in Agent setup, then retry.", details: error.localizedDescription)
             return
         }
 
@@ -341,7 +341,7 @@ final class ClaudeCodeService: ObservableObject {
 
         guard current.isFinished, !wasFinished else { return }
         if let failure = current.failure {
-            recordFailure("Claude Code could not finish this request. Check assistant setup or retry.", details: failure)
+            recordFailure("Claude Code could not finish this request. Check Agent setup or retry.", details: failure)
         }
     }
 

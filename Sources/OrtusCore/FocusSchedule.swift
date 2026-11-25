@@ -18,7 +18,7 @@ public struct FocusSchedule: Identifiable, Codable, Equatable, Sendable {
     public var isEnabled: Bool
     public var blocked: BlockSelection
 
-    public init(id: UUID = UUID(), name: String = "Focus Time", days: Set<Weekday> = [.monday, .tuesday, .wednesday, .thursday, .friday], startHour: Int = 9, startMinute: Int = 0, endHour: Int = 12, endMinute: Int = 0, isEnabled: Bool = true, blocked: BlockSelection = .standard) {
+    public init(id: UUID = UUID(), name: String = "Focus Time", days: Set<Weekday> = [.monday, .tuesday, .wednesday, .thursday, .friday], startHour: Int = 8, startMinute: Int = 0, endHour: Int = 12, endMinute: Int = 0, isEnabled: Bool = true, blocked: BlockSelection = .standard) {
         self.id = id; self.name = name; self.days = days
         self.startHour = startHour; self.startMinute = startMinute
         self.endHour = endHour; self.endMinute = endMinute
@@ -65,6 +65,10 @@ public struct FocusSchedule: Identifiable, Codable, Equatable, Sendable {
 }
 
 public enum ScheduleStore {
+    /// False until the first launch saves the default schedule: a fresh install.
+    public static func hasSaved(defaults: UserDefaults = .standard) -> Bool {
+        defaults.data(forKey: "focusSchedules") != nil
+    }
     public static func load(defaults: UserDefaults = .standard) -> [FocusSchedule] {
         guard let data = defaults.data(forKey: "focusSchedules") else {
             // First-run schedules are offered as drafts, never activated silently.

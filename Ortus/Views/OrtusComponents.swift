@@ -20,6 +20,8 @@ final class PanelRouter: ObservableObject {
     @Published var modal: PanelModal?
     /// A tab to switch to from outside the panel, like a notification click.
     @Published var requestedTab: Int?
+    /// Set by Start in Agent setup: the Agent tab puts the cursor in its text box.
+    @Published var focusChatInput = false
     init(modal: PanelModal? = nil) { self.modal = modal }
 }
 

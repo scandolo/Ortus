@@ -62,11 +62,16 @@ struct ModePicker: View {
             }
         }
         .modifier(BoxedCard(boxed: boxed))
-        .onAppear { if snapshotState == "modes" { expanded = true } }
+        .onAppear {
+            if snapshotState == "modes" || snapshotState == "schedule-modes" { expanded = true }
+            if snapshotState == "mode-edit" || snapshotState == "mode-delete", let current, !current.isBuiltIn { edit(current) }
+        }
     }
 
     private func modeRow(_ mode: FocusMode) -> some View {
-        let isCurrent = mode.blocked == selection
+        // Only the first mode with this list, as in the row above, even if an older
+        // version saved two modes with the same list.
+        let isCurrent = mode.id == current?.id
         let select = {
             selection = mode.blocked
             withAnimation(.easeOut(duration: 0.18)) { expanded = false }
@@ -74,16 +79,10 @@ struct ModePicker: View {
         return HStack(spacing: 12) {
             Button(action: select) {
                 HStack(spacing: 12) {
-                    ZStack {
-                        if isCurrent {
-                            RoundedRectangle(cornerRadius: 7, style: .continuous).fill(OrtusTheme.strong)
-                            OrtusIcon(.check, size: 12).foregroundStyle(OrtusTheme.onStrong)
-                        } else {
-                            RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(OrtusTheme.text, lineWidth: 2)
-                        }
-                    }
-                    .frame(width: 20, height: 20)
-                    Text(mode.name).font(OrtusTheme.Typo.headline)
+                    // One choice, as in a macOS menu: a check by the chosen mode, nothing by the rest.
+                    Color.clear.frame(width: 20, height: 20)
+                        .overlay { if isCurrent { OrtusIcon(.check, size: 14) } }
+                    Text(mode.name).font(isCurrent ? OrtusFont.text(15, .bold) : OrtusTheme.Typo.headline)
                     Spacer(minLength: 4)
                 }
                 .padding(.vertical, 7)
@@ -122,27 +121,49 @@ struct ModeEditor: View {
     @EnvironmentObject var router: PanelRouter
     @State var mode: FocusMode
     let onSave: (FocusMode) -> Void
+    @State private var confirmingDelete = false
+    @Environment(\.snapshotState) private var snapshotState
 
-    private var isExisting: Bool { focusManager.customModes.contains { $0.id == mode.id } }
+    /// The mode as saved, before any edits in this sheet.
+    private var saved: FocusMode? { focusManager.customModes.first { $0.id == mode.id } }
+    private var isExisting: Bool { saved != nil }
+    /// A mode that already blocks exactly this list. Saving would make a copy of it.
+    private var duplicate: FocusMode? { FocusMode.duplicate(of: mode, in: focusManager.modes) }
 
     var body: some View {
+        Group {
+            if confirmingDelete, let saved {
+                // Replaces the editor, so Cancel goes back to it with any edits kept.
+                OrtusAlert(title: "Delete \(saved.name)?", message: "Schedules that use it keep their apps and sites.",
+                           cancel: "Cancel", confirm: "Delete", onCancel: { confirmingDelete = false }) {
+                    focusManager.deleteMode(saved)
+                    router.modal = nil
+                }
+            } else {
+                editor
+            }
+        }
+        .onAppear { if snapshotState == "mode-delete" { confirmingDelete = true } }
+    }
+
+    private var editor: some View {
         OrtusModal(title: isExisting ? "Edit mode" : "New mode", largeTitle: true, onClose: { router.modal = nil }) {
             VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
                 TextField("Mode name", text: $mode.name).textFieldStyle(OrtusTextFieldStyle())
                 BlockingTargetsEditor(selection: $mode.blocked)
                 HStack {
                     if isExisting {
-                        Button("Delete mode") { focusManager.deleteMode(mode); router.modal = nil }
+                        Button("Delete mode") { confirmingDelete = true }
                             .buttonStyle(OrtusGhostButtonStyle())
                     }
                     Spacer()
-                    Button("Save mode") {
+                    Button(isExisting ? "Save mode" : "Create mode") {
                         focusManager.saveMode(mode)
                         onSave(mode)
                         router.modal = nil
                     }
                     .buttonStyle(OrtusPrimaryButtonStyle())
-                    .disabled(mode.name.trimmingCharacters(in: .whitespaces).isEmpty || mode.blocked.isEmpty)
+                    .disabled(mode.name.trimmingCharacters(in: .whitespaces).isEmpty || mode.blocked.isEmpty || duplicate != nil)
                 }
             }
         }

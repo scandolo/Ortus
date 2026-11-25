@@ -40,13 +40,20 @@ final class FocusManager: ObservableObject {
     @AppStorage("relaunchSlackOnEnd") var relaunchSlackOnEnd = false
     @AppStorage("showNotifications") var showNotifications = true
     @AppStorage("lastEmergencyEndTimestamp") var lastEmergencyEndTimestamp: Double = 0
-    @AppStorage("developerModeEnabled") var developerModeEnabled = false
+    @AppStorage("developerModeEnabled") private var developerModeStored = false
     @AppStorage("emergencyScheduleSuppressUntil") var emergencyScheduleSuppressUntil: Double = 0
     @AppStorage("slackStatusEnabled") var slackStatusEnabled = true
     @AppStorage("slackStatusText") var slackStatusText = "Ortus mode"
     @AppStorage("slackStatusEmoji") var slackStatusEmoji = ":no_entry_sign:"
     @AppStorage("slackDndEnabled") var slackDndEnabled = true
     var slackService: SlackService? { didSet { applySlackStatusForFocus() } }
+
+    /// Developer tools, like "End focus (dev)". Preview builds only: in a release this
+    /// stays false and the seven taps in Settings change nothing.
+    var developerModeEnabled: Bool {
+        get { BuildProfile.developerMode(stored: developerModeStored) }
+        set { if BuildProfile.isPreview { developerModeStored = newValue } }
+    }
 
     var canUseEmergencyEnd: Bool {
         guard lastEmergencyEndTimestamp > 0 else { return true }
@@ -59,6 +66,8 @@ final class FocusManager: ObservableObject {
 
     init() {
         Self.current = self
+        // Read before load(), which saves the default schedule on a fresh install.
+        let freshInstall = !ScheduleStore.hasSaved()
         schedules = ScheduleStore.load()
         if let data = UserDefaults.standard.data(forKey: "manualBlockSelection"), let selection = try? JSONDecoder().decode(BlockSelection.self, from: data) { manualSelection = selection }
         if let data = UserDefaults.standard.data(forKey: "activeFocusTimeline"), let saved = try? JSONDecoder().decode(FocusTimeline.self, from: data) { timeline = saved }
@@ -66,7 +75,7 @@ final class FocusManager: ObservableObject {
             timeline.suppressedUntil = Date(timeIntervalSince1970: emergencyScheduleSuppressUntil)
         }
         if let data = UserDefaults.standard.data(forKey: "customFocusModes"), let saved = try? JSONDecoder().decode([FocusMode].self, from: data) { customModes = saved }
-        migrateToModesIfNeeded()
+        migrateToModesIfNeeded(freshInstall: freshInstall)
         websites.registerCompanion()
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
@@ -92,18 +101,16 @@ final class FocusManager: ObservableObject {
 
     var modes: [FocusMode] { FocusMode.builtIn + customModes }
     func mode(for selection: BlockSelection) -> FocusMode? { FocusMode.matching(selection, in: modes) }
-    var nextCustomModeName: String {
-        var n = customModes.count + 1
-        while customModes.contains(where: { $0.name == "Custom \(n)" }) { n += 1 }
-        return "Custom \(n)"
-    }
+    var nextCustomModeName: String { FocusMode.nextCustomName(in: customModes) }
 
-    /// Saves a custom mode. Anything that used the mode's previous targets follows the edit.
+    /// Saves a custom mode, unless another mode has the same targets. Anything that used
+    /// the mode's previous targets follows the edit, unless another mode still has them.
     func saveMode(_ mode: FocusMode) {
-        guard !mode.isBuiltIn, !mode.blocked.isEmpty else { return }
+        guard !mode.isBuiltIn, !mode.blocked.isEmpty, FocusMode.duplicate(of: mode, in: modes) == nil else { return }
         let previous = customModes.first { $0.id == mode.id }
         if let index = customModes.firstIndex(where: { $0.id == mode.id }) { customModes[index] = mode } else { customModes.append(mode) }
-        guard let previous, previous.blocked != mode.blocked else { return }
+        // A copy of Socials saved by an older version must not drag Socials' schedules along.
+        guard let previous, previous.blocked != mode.blocked, self.mode(for: previous.blocked) == nil else { return }
         if manualSelection == previous.blocked { manualSelection = mode.blocked }
         for schedule in schedules where schedule.blocked == previous.blocked {
             var updated = schedule; updated.blocked = mode.blocked; updateSchedule(updated)
@@ -114,15 +121,14 @@ final class FocusManager: ObservableObject {
         if manualSelection == mode.blocked { manualSelection = FocusMode.social.blocked }
     }
 
-    /// One-time move to modes: new sessions default to Social, and any schedule whose
-    /// targets match no built-in mode keeps them as a named custom mode.
-    private func migrateToModesIfNeeded() {
+    /// One-time move to modes: new sessions default to Social, and an upgrader's schedule
+    /// whose targets match no mode keeps them as a named custom mode. Runs on fresh
+    /// installs too, which only set the flag (`AppDelegate.isFreshInstall` reads it).
+    private func migrateToModesIfNeeded(freshInstall: Bool) {
         let key = "focusModesMigrated"
         guard !UserDefaults.standard.bool(forKey: key) else { return }
         UserDefaults.standard.set(true, forKey: key)
-        for schedule in schedules where !schedule.blocked.isEmpty && mode(for: schedule.blocked) == nil {
-            customModes.append(FocusMode(name: nextCustomModeName, blocked: schedule.blocked))
-        }
+        customModes = FocusMode.migrated(schedules: schedules, custom: customModes, freshInstall: freshInstall)
         manualSelection = FocusMode.social.blocked
     }
 

@@ -21,7 +21,7 @@ struct ContentView: View {
     private let tabs: [(String, OrtusIcon.Name, Int)] = [
         ("Focus", .focus, 0),
         ("Schedule", .schedule, 1),
-        ("Chat", .chat, 2),
+        ("Agent", .agent, 2),
     ]
 
     var body: some View {

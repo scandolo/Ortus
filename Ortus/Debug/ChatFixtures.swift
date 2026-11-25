@@ -15,6 +15,16 @@ enum ChatFixtures {
         return true
     }
 
+    #if DEBUG
+    /// Opens Agent setup as if Claude Code weren't on this Mac: "agent-setup-missing",
+    /// "agent-setup-checking" (still looking) and "agent-setup-error" (a file that can't run).
+    @MainActor static func applySetup(_ state: String?, to service: ClaudeCodeService, router: PanelRouter) {
+        guard let state, state.hasPrefix("agent-setup") else { return }
+        service.missingForSnapshot = true
+        router.modal = .chatSetup
+    }
+    #endif
+
     /// A Slack reply drafted by Claude, and after Send: "-sent" or "-failed".
     /// "-email" is a Gmail reply instead, before Send.
     @MainActor private static func applyDraft(after phase: String, to service: ClaudeCodeService) {
@@ -56,7 +66,7 @@ enum ChatFixtures {
     /// The chat rows for a snapshot state, or nil when the state isn't a chat fixture.
     private static func messages(for state: String?) -> [ChatMessage]? {
         switch state {
-        case "chat-answer", "chat-steps":
+        case "chat-answer", "chat-steps", "chat-send-hover":
             return [
                 ChatMessage(role: .user, content: "what did the team decide about the launch date?"),
                 ChatMessage(role: .assistant, content: "", kind: .activity(launchThread.activity)),

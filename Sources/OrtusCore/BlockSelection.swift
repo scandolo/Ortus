@@ -138,8 +138,34 @@ public struct FocusMode: Codable, Equatable, Identifiable, Sendable {
     /// `social` is the default for new sessions.
     public static let builtIn = [social, messages, everything]
 
-    /// The mode whose targets are exactly `selection`, if any.
+    /// The mode whose targets are exactly `selection`, if any. Older versions could save
+    /// two modes with one list; the first is the one a picker shows as chosen.
     public static func matching(_ selection: BlockSelection, in modes: [Self]) -> Self? {
         modes.first { $0.blocked == selection }
+    }
+
+    /// Another mode with exactly `mode`'s targets. A custom mode that has one can't be
+    /// saved: two modes with one list can't be told apart in a picker.
+    public static func duplicate(of mode: Self, in modes: [Self]) -> Self? {
+        modes.first { $0.id != mode.id && $0.blocked == mode.blocked }
+    }
+
+    /// "Custom 1", "Custom 2"…: the first such name no custom mode uses.
+    public static func nextCustomName(in custom: [Self]) -> String {
+        var n = custom.count + 1
+        while custom.contains(where: { $0.name == "Custom \(n)" }) { n += 1 }
+        return "Custom \(n)"
+    }
+
+    /// Custom modes after the one-time move to modes: each schedule whose targets match
+    /// no mode keeps them as a named mode. A fresh install adds none, because its
+    /// default schedule is the app's suggestion, not a list the user made.
+    public static func migrated(schedules: [FocusSchedule], custom: [Self], freshInstall: Bool) -> [Self] {
+        guard !freshInstall else { return custom }
+        var custom = custom
+        for schedule in schedules where !schedule.blocked.isEmpty && matching(schedule.blocked, in: builtIn + custom) == nil {
+            custom.append(Self(name: nextCustomName(in: custom), blocked: schedule.blocked))
+        }
+        return custom
     }
 }

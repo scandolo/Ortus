@@ -109,11 +109,16 @@ struct SettingsView: View {
         }
     }
 
+    /// "Ready" only means Claude Code was found on this Mac, as in Agent setup.
     private var chatRow: some View {
-        OrtusListRow(title: "Chat", subtitle: claudeCodeService.isConfigured ? "Claude Code detected" : "Claude Code not found") {
-            if claudeCodeService.isConfigured { OrtusIcon(.agent, size: 18) } else { OrtusProblemIcon(size: 18) }
+        OrtusListRow(title: "Agent", subtitle: claudeCodeService.isConfigured ? "Ready" : "Not set up") {
+            if claudeCodeService.isConfigured { OrtusIcon(.check, size: 18) } else { OrtusProblemIcon(size: 18) }
         } trailing: {
-            Button(claudeCodeService.isConfigured ? "Configure" : "Set up") { router.modal = .chatSetup }.buttonStyle(OrtusRowButtonStyle())
+            if claudeCodeService.isConfigured {
+                Button("Change") { router.modal = .chatSetup }.buttonStyle(OrtusGhostButtonStyle())
+            } else {
+                Button("Set up") { router.modal = .chatSetup }.buttonStyle(OrtusPrimaryButtonStyle(size: .small))
+            }
         }
     }
 
@@ -208,7 +213,7 @@ struct SettingsView: View {
     }
 
     private var feedbackRow: some View {
-        OrtusListRow(title: "Send feedback", subtitle: "Bugs and ideas go to support@ortusmode.com") {
+        OrtusListRow(title: "Send feedback") {
             OrtusIcon(.mail, size: 18)
         } trailing: {
             Button("Email us") { NSWorkspace.shared.open(feedbackEmail) }.buttonStyle(OrtusRowButtonStyle())
@@ -287,81 +292,156 @@ struct SettingsView: View {
     }
 }
 
-// MARK: - Chat setup
+// MARK: - Agent setup
 
 struct ChatSetupModal: View {
     @EnvironmentObject var claudeCodeService: ClaudeCodeService
     @EnvironmentObject var router: PanelRouter
-    @State private var binaryPath = ""
-    @State private var initialBinaryPath = ""
+    @Environment(\.snapshotState) private var snapshotState
     @State private var pathError: String?
 
-    var body: some View {
-        OrtusModal(title: "Chat setup", onClose: { router.modal = nil }) {
-            VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
-                HStack(spacing: 8) {
-                    if claudeCodeService.isConfigured { OrtusIcon(.check, size: 14) } else { OrtusProblemIcon(size: 16) }
-                    Text(claudeCodeService.isConfigured ? "Claude Code found on this Mac" : "Claude Code not found on this Mac")
-                        .font(OrtusFont.text(14))
-                }
-                VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
-                    Text("Claude Code location").font(OrtusFont.text(14, .bold))
-                    TextField("", text: $binaryPath, prompt: Text(claudeCodeService.resolvedBinaryPath ?? "/opt/homebrew/bin/claude").foregroundStyle(OrtusTheme.textMuted))
-                        .textFieldStyle(OrtusTextFieldStyle(monospaced: true))
-                        .accessibilityLabel("Claude Code location")
-                    Text("Leave empty to find it automatically.")
-                        .font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
-                }
-                if let pathError {
-                    HStack(alignment: .top, spacing: 8) {
-                        OrtusProblemIcon(size: 16)
-                        Text(pathError).font(OrtusTheme.Typo.caption)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                if !claudeCodeService.isConfigured {
-                    Link("Install Claude Code", destination: URL(string: "https://docs.claude.com/claude-code")!)
-                        .font(OrtusFont.text(14, .bold))
-                        .underline()
-                        .foregroundStyle(OrtusTheme.text)
-                }
-                HStack {
-                    Button("Check again") { applyPath() }.buttonStyle(OrtusSecondaryButtonStyle())
-                    Spacer()
-                    Button("Done") {
-                        if applyPath() { router.modal = nil }
-                    }
-                    .buttonStyle(OrtusPrimaryButtonStyle())
-                    .keyboardShortcut(.defaultAction)
-                }
-            }
-        }
-        .onAppear {
-            initialBinaryPath = claudeCodeService.claudeBinaryPath.isEmpty
-                ? claudeCodeService.resolvedBinaryPath ?? ""
-                : claudeCodeService.claudeBinaryPath
-            binaryPath = initialBinaryPath
-        }
-        .onChange(of: binaryPath) { _, _ in pathError = nil }
+    private static let notRunnable = "That file can’t be run. Choose the file named claude."
+
+    /// Still looking (the login-shell search takes a moment): don't call it missing yet.
+    private var isChecking: Bool {
+        claudeCodeService.isDetecting || snapshotState == "agent-setup-checking"
     }
 
-    @discardableResult
-    private func applyPath() -> Bool {
-        let path = (binaryPath.trimmingCharacters(in: .whitespacesAndNewlines) as NSString).expandingTildeInPath
-        var isDirectory: ObjCBool = false
-        guard path.isEmpty || (path.hasPrefix("/")
-            && FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory)
-            && !isDirectory.boolValue && FileManager.default.isExecutableFile(atPath: path)) else {
-            pathError = "No executable found at this location. Check the path or clear it to find it automatically."
-            return false
+    var body: some View {
+        OrtusModal(title: "Agent setup", onClose: { router.modal = nil }) {
+            // The whole sheet changes when Claude Code turns up, so the switch can't be missed.
+            Group {
+                if claudeCodeService.isConfigured {
+                    ready.transition(.opacity.combined(with: .scale(scale: 0.94)))
+                } else if isChecking {
+                    checking.transition(.opacity)
+                } else {
+                    notFound.transition(.opacity)
+                }
+            }
+            .animation(.easeOut(duration: 0.25), value: claudeCodeService.isConfigured)
         }
-        if path != initialBinaryPath {
-            claudeCodeService.claudeBinaryPath = path
-            initialBinaryPath = path
+        .onAppear {
+            if snapshotState == "agent-setup-error" { pathError = Self.notRunnable }
         }
-        binaryPath = path
-        claudeCodeService.redetect()
-        return true
+    }
+
+    /// Found: a done screen. "Ready" means Claude Code is on this Mac, not that it's
+    /// signed in.
+    private var ready: some View {
+        VStack(spacing: OrtusTheme.spacingMD) {
+            OrtusIcon(.check, size: 30)
+                .foregroundStyle(OrtusTheme.onStrong)
+                .frame(width: 60, height: 60)
+                .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).fill(OrtusTheme.strong))
+            VStack(spacing: 4) {
+                Text("Your agent is ready")
+                    .font(OrtusTheme.Typo.titleSmall)
+                    .tracking(-1)
+                    .multilineTextAlignment(.center)
+                HStack(spacing: 2) {
+                    Text(((claudeCodeService.resolvedBinaryPath ?? "") as NSString).abbreviatingWithTildeInPath)
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundStyle(OrtusTheme.textMuted)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Button("Change", action: chooseClaude)
+                        .buttonStyle(OrtusGhostButtonStyle())
+                        .help("Choose another Claude Code")
+                }
+            }
+            if let pathError { problemLine(pathError) }
+            Button("Start", action: start)
+                .buttonStyle(OrtusPrimaryButtonStyle(fullWidth: true))
+                .keyboardShortcut(.defaultAction)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    /// Closes the popup and puts the cursor in the Agent tab's text box.
+    private func start() {
+        router.modal = nil
+        router.requestedTab = 2
+        router.focusChatInput = true
+    }
+
+    /// Not found: the headline, then two equal ways forward (get it, or point Ortus at
+    /// the copy you have), then a quiet check for after installing.
+    private var notFound: some View {
+        VStack(spacing: OrtusTheme.spacingMD) {
+            VStack(spacing: 10) {
+                OrtusProblemIcon(size: 28)
+                Text("Claude Code was not found on this Mac.")
+                    .font(OrtusTheme.Typo.cardTitle)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            // Small, so both labels fit side by side in the sheet.
+            HStack(spacing: OrtusTheme.spacingSM) {
+                Link(destination: URL(string: "https://docs.claude.com/claude-code")!) { Text("Install Claude Code") }
+                    .buttonStyle(OrtusSecondaryButtonStyle(size: .small, fullWidth: true))
+                Button("Find my Claude Code", action: chooseClaude)
+                    .buttonStyle(OrtusSecondaryButtonStyle(size: .small, fullWidth: true))
+            }
+            if let pathError { problemLine(pathError) }
+            Button {
+                pathError = nil
+                claudeCodeService.redetect()
+            } label: {
+                HStack(spacing: 7) {
+                    OrtusIcon(.reload, size: 13)
+                    Text("Check again")
+                }
+            }
+            .buttonStyle(OrtusSecondaryButtonStyle(size: .small))
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var checking: some View {
+        HStack(spacing: 10) {
+            ProgressView().controlSize(.small)
+            Text("Looking for Claude Code…").font(OrtusTheme.Typo.callout).foregroundStyle(OrtusTheme.textMuted)
+        }
+        .frame(maxWidth: .infinity, minHeight: 120)
+    }
+
+    private func problemLine(_ message: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            OrtusProblemIcon(size: 16)
+            Text(message).font(OrtusTheme.Typo.caption)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// The file picker behind "Find my Claude Code" and "Change". Hidden folders show,
+    /// since the installer puts claude in ~/.local/bin.
+    private func chooseClaude() {
+        let panel = NSOpenPanel()
+        panel.title = "Find Claude Code"
+        panel.message = "Choose the file named claude."
+        panel.prompt = "Choose"
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.showsHiddenFiles = true
+        // Keep ~/.local/bin/claude as chosen, not the version folder it links to: that
+        // changes every time Claude Code updates itself.
+        panel.resolvesAliases = false
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let localBin = home.appendingPathComponent(".local/bin", isDirectory: true)
+        panel.directoryURL = claudeCodeService.resolvedBinaryPath.map { URL(fileURLWithPath: $0).deletingLastPathComponent() }
+            ?? (FileManager.default.fileExists(atPath: localBin.path) ? localBin : home)
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            guard ClaudeLocation.isRunnable(url.path) else {
+                pathError = Self.notRunnable
+                return
+            }
+            pathError = nil
+            claudeCodeService.claudeBinaryPath = url.path
+            claudeCodeService.redetect()
+        }
     }
 }
 

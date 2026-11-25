@@ -171,4 +171,23 @@ struct ChatTests {
         expect(label("2026-10-23T09:37:00Z").contains(":") && !label("2026-10-23T09:37:00Z").hasPrefix("Yesterday")) // weekday + time
         expect(!label("2026-10-01T09:37:00Z").contains(":")) // older: date only
     }
+
+    /// Agent setup's file picker only takes a file this user can run.
+    func claudeLocationMustBeARunnableFile() throws {
+        let files = FileManager.default
+        let folder = files.temporaryDirectory.appendingPathComponent("ortus-claude-\(UUID().uuidString)")
+        try files.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? files.removeItem(at: folder) }
+        let claude = folder.appendingPathComponent("claude")
+        try Data("#!/bin/sh\n".utf8).write(to: claude)
+        expect(!ClaudeLocation.isRunnable(claude.path)) // not executable yet
+        try files.setAttributes([.posixPermissions: 0o755], ofItemAtPath: claude.path)
+        expect(ClaudeLocation.isRunnable(claude.path))
+        let link = folder.appendingPathComponent("link")
+        try files.createSymbolicLink(at: link, withDestinationURL: claude)
+        expect(ClaudeLocation.isRunnable(link.path)) // like ~/.local/bin/claude
+        expect(!ClaudeLocation.isRunnable(folder.path)) // folders have the execute bit
+        expect(!ClaudeLocation.isRunnable("claude")) // relative
+        expect(!ClaudeLocation.isRunnable(folder.appendingPathComponent("missing").path))
+    }
 }

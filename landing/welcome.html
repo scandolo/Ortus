@@ -11,6 +11,7 @@
   <link rel="preload" href="/assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/assets/fonts/archivo-black-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/welcome.css" />
 </head>
 <body>
   <header class="nav">
@@ -21,63 +22,112 @@
     </div>
   </header>
 
-  <!-- Opened by Ortus on first launch. The choices go back to the app through its URL scheme. -->
+  <!-- Opened by Ortus on first launch. The choice goes back to the app through its URL scheme.
+       The script shows one step at a time; without it, every step shows, stacked. -->
   <main class="doc">
-    <div class="doc-wrap">
-      <h1>Ortus is running</h1>
-      <p class="lede">Look for the sun in your menu bar. Every session starts there.</p>
+    <div class="doc-wrap wz">
+      <div class="wz-progress" data-js hidden>
+        <p class="eyebrow" id="wz-count" aria-live="polite">Step 1 of 4</p>
+        <div class="wz-bar" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      </div>
 
-      <section class="doc-card" aria-labelledby="hardcore-title">
-        <h2 id="hardcore-title">Ortus is hardcore</h2>
+      <section class="wz-step" aria-labelledby="running-title">
+        <h1 id="running-title" tabindex="-1">Ortus is running</h1>
+        <p class="lede">Look for the sun in your menu bar. Every session starts there.</p>
+        <div class="wz-nav" data-js hidden>
+          <button class="btn wz-next" type="button" data-next>Next</button>
+        </div>
+      </section>
+
+      <section class="wz-step doc-card" aria-labelledby="hardcore-title">
+        <h2 id="hardcore-title" tabindex="-1">Ortus is hardcore</h2>
         <p>Once a session starts, it runs to the end. That's the point.</p>
         <ul>
           <li><strong>No off button.</strong> You get a short grace period to cancel a session you just started, then it's locked.</li>
-          <li><strong>No quitting.</strong> Ortus stays open until focus ends.</li>
-          <li><strong>No workarounds.</strong> Blocked apps close again if you reopen them, and turning off the browser extension won't get you out.</li>
+          <li><strong>No way out.</strong> Ortus stays open, blocked apps close again if you reopen them, and turning off the browser extension won't get you out.</li>
           <li><strong>One emergency exit a week</strong>, in Settings, for when something really can't wait.</li>
         </ul>
+        <div class="wz-nav" data-js hidden>
+          <button class="btn wz-next" type="button" data-next>Next</button>
+          <button class="btn wz-back" type="button" data-back>Back</button>
+        </div>
       </section>
 
-      <section class="doc-card" aria-labelledby="ext-title">
-        <h2 id="ext-title">Block websites too</h2>
+      <section class="wz-step doc-card" aria-labelledby="ext-title">
+        <h2 id="ext-title" tabindex="-1">Block websites too</h2>
         <p>Ortus closes Mac apps on its own. For websites, add its extension. Chrome, Arc, Edge and Brave all install it from the Chrome Web Store.</p>
-        <a class="btn btn-line" href="https://chromewebstore.google.com/detail/lheanmgemlbnpeonkdbbinmankaineao" target="_blank" rel="noopener">Add to Chrome</a>
+        <a class="btn btn-line" href="https://chromewebstore.google.com/detail/lheanmgemlbnpeonkdbbinmankaineao" target="_blank" rel="noopener">Add to Chrome to block sites</a>
         <p class="small">Then open its Details and turn on Allow in Incognito, so private windows are covered too. Safari and Firefox aren't supported yet.</p>
+        <div class="wz-nav" data-js hidden>
+          <button class="btn wz-next" type="button" data-next>Next</button>
+          <button class="btn wz-back" type="button" data-back>Back</button>
+        </div>
       </section>
 
-      <section class="doc-card" aria-labelledby="choices-title">
-        <h2 id="choices-title">Two choices</h2>
-        <label class="choice">
-          <input type="checkbox" id="login" checked />
-          <span><strong>Open Ortus when you log in</strong><br />Schedules only run while Ortus is open.</span>
-        </label>
+      <section class="wz-step doc-card" aria-labelledby="choices-title">
+        <h2 id="choices-title" tabindex="-1">One choice</h2>
         <label class="choice">
           <input type="checkbox" id="analytics" />
           <span><strong>Share anonymous usage</strong><br />Which features get used, never your messages or the sites you visit. <a href="/privacy">Privacy policy</a></span>
         </label>
-        <a class="btn btn-primary" id="save" href="ortus://welcome?login=1&amp;analytics=0">Save choices</a>
-        <p class="small" id="save-note">Your browser will ask to open Ortus. You can change both anytime in Ortus → Settings.</p>
+        <div class="wz-nav">
+          <a class="btn btn-primary" id="save" href="ortus://welcome?analytics=0">Save and finish</a>
+          <button class="btn wz-back" type="button" data-back data-js hidden>Back</button>
+        </div>
+        <p class="small">Your browser will ask to open Ortus. You can change it anytime in Ortus → Settings.</p>
+      </section>
+
+      <section class="wz-done doc-card" id="done" aria-labelledby="done-title" hidden>
+        <h2 id="done-title" tabindex="-1">All set</h2>
+        <p>Allow your browser to open Ortus to save your choice. Then start your first session from the sun in your menu bar.</p>
+        <p class="small">Didn't open? <a id="retry" href="ortus://welcome?analytics=0">Try again</a>.</p>
       </section>
     </div>
   </main>
 
   <script>
     (function () {
-      // Preview builds pass their own scheme (ortus-preview) so the choices reach them.
+      // Preview builds pass their own scheme (ortus-preview) so the choice reaches them.
       var scheme = new URLSearchParams(location.search).get("scheme");
       if (scheme !== "ortus-preview") scheme = "ortus";
       var save = document.getElementById("save");
-      var login = document.getElementById("login");
+      var retry = document.getElementById("retry");
       var analytics = document.getElementById("analytics");
       var update = function () {
-        save.href = scheme + "://welcome?login=" + (login.checked ? 1 : 0) + "&analytics=" + (analytics.checked ? 1 : 0);
+        save.href = retry.href = scheme + "://welcome?analytics=" + (analytics.checked ? 1 : 0);
       };
-      login.addEventListener("change", update);
       analytics.addEventListener("change", update);
       update();
-      save.addEventListener("click", function () {
-        document.getElementById("save-note").textContent = "Saved once you allow your browser to open Ortus. You can change both anytime in Ortus → Settings.";
+
+      // One step at a time: progress on top, focus on each new step's headline.
+      var steps = Array.prototype.slice.call(document.querySelectorAll(".wz-step"));
+      var views = steps.concat(document.getElementById("done"));
+      var count = document.getElementById("wz-count");
+      var segments = document.querySelectorAll(".wz-bar span");
+      var current = 0;
+      var show = function (index, moveFocus) {
+        current = index;
+        views.forEach(function (view, i) { view.hidden = i !== index; });
+        count.textContent = index < steps.length ? "Step " + (index + 1) + " of " + steps.length : "Done";
+        segments.forEach(function (segment, i) { segment.classList.toggle("on", i <= index); });
+        if (!moveFocus) return;
+        var view = views[index];
+        view.classList.remove("wz-enter");
+        void view.offsetWidth; // restarts the fade-in
+        view.classList.add("wz-enter");
+        window.scrollTo(0, 0);
+        view.querySelector("h1, h2").focus({ preventScroll: true });
+      };
+      document.querySelectorAll("[data-next]").forEach(function (button) {
+        button.addEventListener("click", function () { show(current + 1, true); });
       });
+      document.querySelectorAll("[data-back]").forEach(function (button) {
+        button.addEventListener("click", function () { show(current - 1, true); });
+      });
+      // The link still opens Ortus; the page moves on to the done state.
+      save.addEventListener("click", function () { show(steps.length, true); });
+      document.querySelectorAll("[data-js]").forEach(function (element) { element.hidden = false; });
+      show(0, false);
     })();
   </script>
 </body>

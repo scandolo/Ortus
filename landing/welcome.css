@@ -1,0 +1,52 @@
+/* Welcome page, one step at a time. Only the script turns steps into a flow:
+   without it every step shows, stacked, with the styles.css look. */
+
+.wz [hidden] { display: none !important; }
+
+.wz-progress { margin: 0 0 28px; }
+
+.wz-progress .eyebrow { margin-bottom: 10px; }
+
+.wz-bar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.wz-bar span { height: 4px; background: var(--sand); }
+
+.wz-bar span.on { background: var(--ink); }
+
+/* Headlines take focus when their step opens; they aren't controls, so no ring. */
+.wz [tabindex="-1"]:focus { outline: none; }
+
+.wz-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.doc .wz-nav .btn { margin: 0; }
+
+.wz-next { background: var(--ink); color: var(--bone); }
+.wz-next:hover { background: var(--ash); }
+
+.wz-back {
+  padding: 0 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.wz-back:hover { text-decoration-thickness: 2px; }
+
+.wz-enter { animation: wz-in 220ms ease-out both; }
+
+@keyframes wz-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wz-enter { animation: none; }
+}

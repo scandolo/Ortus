@@ -7,6 +7,9 @@ struct FocusView: View {
     @Environment(\.snapshotState) private var snapshotState
     @AppStorage("genZMode") private var genZ = false
     @AppStorage("didStartFocusSession") private var didStartFocusSession = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Counts "+15 min" presses, to give each one a springy press reaction.
+    @State private var extensions = 0
     @State private var manualDuration: Double = 90
     /// Drives "ends 15:24". A timer kept in state, because TimelineView froze in the
     /// menu bar panel once it had been closed and reopened.
@@ -44,12 +47,15 @@ struct FocusView: View {
     /// The primary action stays pinned and visible, like "Add schedule".
     @ViewBuilder private var footer: some View {
         if inGracePeriod {
+            // An exception to "the safe choice is primary": the user just chose to lock in,
+            // so locking in now is the main action, first on the left, and backing out the
+            // secondary one.
             HStack(spacing: OrtusTheme.spacingSM) {
-                Button(genZ ? "nvm" : "Never mind") { focusManager.revertFocusSession() }
-                    .buttonStyle(OrtusPrimaryButtonStyle(fullWidth: true))
                 Button(genZ ? "lock in now" : "Lock in now") { focusManager.skipGracePeriod() }
-                    .buttonStyle(OrtusSecondaryButtonStyle(fullWidth: true))
+                    .buttonStyle(OrtusPrimaryButtonStyle(fullWidth: true))
                     .help("End the cancellation window and lock in this session now")
+                Button(genZ ? "nvm" : "Never mind") { focusManager.revertFocusSession() }
+                    .buttonStyle(OrtusSecondaryButtonStyle(fullWidth: true))
             }
             .padding([.horizontal, .bottom], OrtusTheme.spacingMD)
         } else if !focusManager.isInFocus {
@@ -187,6 +193,7 @@ struct FocusView: View {
                                 .monospacedDigit()
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.5)
+                                .contentTransition(.numericText(value: remaining))
                                 .accessibilityLabel("\(Self.spokenDuration(remaining)) left")
                         }
                         .padding(.top, hasSessionProblem ? 4 : 18)
@@ -196,6 +203,7 @@ struct FocusView: View {
                             HStack {
                                 Spacer()
                                 Text("ends \(endTime.formatted(date: .omitted, time: .shortened))")
+                                    .contentTransition(.numericText(value: endTime.timeIntervalSince1970))
                             }
                             .font(OrtusTheme.Typo.caption)
                             .foregroundStyle(OrtusTheme.textMuted)
@@ -219,6 +227,7 @@ struct FocusView: View {
             }
 
             Button {
+                extensions += 1
                 focusManager.extendFocus(by: 15 * 60)
             } label: {
                 HStack(spacing: 8) {
@@ -227,6 +236,12 @@ struct FocusView: View {
                 }
             }
             .buttonStyle(OrtusSecondaryButtonStyle(fullWidth: true))
+            // A short squeeze, then a spring back past full size.
+            .phaseAnimator([1.0, 0.94], trigger: reduceMotion ? 0 : extensions) { button, scale in
+                button.scaleEffect(scale)
+            } animation: { scale in
+                scale < 1 ? .easeOut(duration: 0.07) : .spring(duration: 0.4, bounce: 0.55)
+            }
             .help("Add 15 minutes to this session")
             .accessibilityLabel("Add 15 minutes")
             .padding(.top, 4)
@@ -238,6 +253,10 @@ struct FocusView: View {
                 .buttonStyle(OrtusGhostButtonStyle())
             }
         }
+        // Only a new end time animates (+15 min): the digits roll up, the line eases back,
+        // and whatever moves below slides (the timer grows taller once it shows hours).
+        // The per-second tick doesn't change the end time, so it never animates.
+        .animation(reduceMotion ? nil : .spring(duration: 0.6, bounce: 0.2), value: focusManager.focusEndTime)
         .padding(.horizontal, 4)
     }
 
@@ -253,7 +272,16 @@ struct FocusView: View {
     private var idleState: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 10) {
-                OrtusMark(width: 46)
+                HStack(spacing: 10) {
+                    OrtusMark(width: 46)
+                    // Testers should know they're on a beta. Sand and ink: orange stays for the sun.
+                    Text("Beta")
+                        .font(OrtusTheme.Typo.badge)
+                        .foregroundStyle(OrtusTheme.text)
+                        .padding(.horizontal, 7)
+                        .frame(height: 22)
+                        .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(OrtusTheme.fill))
+                }
                 Text(genZ ? "ready to lock in?" : "Ready when you are")
                     .font(OrtusTheme.Typo.title)
                     .tracking(-1.2)
@@ -337,15 +365,14 @@ struct FocusIntroModal: View {
                 // What gets blocked: their own apps and websites, names on hover.
                 BlockedStack(items: items, ground: OrtusTheme.cardSurface, size: 32, limit: 5)
 
-                // How it goes: locked from the start until the end.
+                // How it goes: locked from the start until the end. Plain text and a
+                // line, so the Lock in button below stays the only thing to press.
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
                         OrtusIcon(.locked, size: 15).foregroundStyle(OrtusTheme.accent)
-                        Text("\(FocusView.lengthLabel(minutes: minutes)), locked").font(OrtusFont.text(14, .bold)).foregroundStyle(OrtusTheme.bone)
+                        Text("\(FocusView.lengthLabel(minutes: minutes)), locked").font(OrtusFont.text(14, .bold)).foregroundStyle(OrtusTheme.text)
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 40)
-                    .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(OrtusTheme.ink))
+                    OrtusLineProgress(fraction: 1, height: 4)
                     HStack {
                         Text("starts now")
                         Spacer()
