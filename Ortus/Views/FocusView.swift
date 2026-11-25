@@ -208,9 +208,6 @@ struct FocusView: View {
                             .foregroundStyle(OrtusTheme.textMuted)
                         }
                     }
-                    // Only a new end time animates (+15 min): the digits roll up and the line
-                    // eases back. The per-second tick doesn't change endTime, so it never animates.
-                    .animation(reduceMotion ? nil : .spring(duration: 0.6, bounce: 0.2), value: endTime)
                 }
             }
 
@@ -255,6 +252,10 @@ struct FocusView: View {
                 .buttonStyle(OrtusGhostButtonStyle())
             }
         }
+        // Only a new end time animates (+15 min): the digits roll up, the line eases back,
+        // and whatever moves below slides (the timer grows taller once it shows hours).
+        // The per-second tick doesn't change the end time, so it never animates.
+        .animation(reduceMotion ? nil : .spring(duration: 0.6, bounce: 0.2), value: focusManager.focusEndTime)
         .padding(.horizontal, 4)
     }
 
