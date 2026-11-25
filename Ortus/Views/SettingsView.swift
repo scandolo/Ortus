@@ -213,7 +213,7 @@ struct SettingsView: View {
     }
 
     private var feedbackRow: some View {
-        OrtusListRow(title: "Send feedback", subtitle: "Bugs and ideas go to support@ortusmode.com") {
+        OrtusListRow(title: "Send feedback") {
             OrtusIcon(.mail, size: 18)
         } trailing: {
             Button("Email us") { NSWorkspace.shared.open(feedbackEmail) }.buttonStyle(OrtusRowButtonStyle())
