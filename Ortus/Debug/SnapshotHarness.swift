@@ -78,6 +78,15 @@ enum SnapshotHarness {
             focusManager.customModes.append(copy)
             await render("focus-modes-duplicate", tab: 0, height: 760, state: "modes")
             focusManager.customModes.removeAll { $0.id == copy.id }
+            // A custom mode chosen on the Focus tab, opened to edit and to delete.
+            let deepWork = FocusMode(name: "Deep work", blocked: .union([FocusMode.messages.blocked, .init(websites: ["x.com", "twitter.com"])]))
+            let manual = focusManager.manualSelection
+            focusManager.customModes.append(deepWork)
+            focusManager.manualSelection = deepWork.blocked
+            await render("mode-edit", tab: 0, height: 760, state: "mode-edit")
+            await render("mode-delete", tab: 0, state: "mode-delete")
+            focusManager.manualSelection = manual
+            focusManager.customModes.removeAll { $0.id == deepWork.id }
             await render("chat", tab: 2, state: "empty")
             await render("chat-intro", tab: 2, state: "chat-intro")
             await render("chat-no-agent", tab: 2, state: "chat-no-agent")
