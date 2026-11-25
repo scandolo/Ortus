@@ -152,9 +152,14 @@ struct ModeEditor: View {
                 TextField("Mode name", text: $mode.name).textFieldStyle(OrtusTextFieldStyle())
                 BlockingTargetsEditor(selection: $mode.blocked)
                 if let duplicate {
+                    // A new mode starts from the current list, so matching a mode there is a
+                    // starting point, not a problem: a quiet hint instead of the warning.
                     HStack(alignment: .top, spacing: 8) {
-                        OrtusProblemIcon(size: 16)
-                        Text("Same as \(duplicate.name). Change the list to save it.").font(OrtusTheme.Typo.caption)
+                        if isExisting { OrtusProblemIcon(size: 16) }
+                        Text(isExisting ? "Same as \(duplicate.name). Change the list to save it."
+                                        : "Same list as \(duplicate.name). Add or remove something to save it.")
+                            .font(OrtusTheme.Typo.caption)
+                            .foregroundStyle(isExisting ? OrtusTheme.text : OrtusTheme.textMuted)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
