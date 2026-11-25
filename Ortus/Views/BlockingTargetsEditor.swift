@@ -164,7 +164,7 @@ struct ModeEditor: View {
                             .buttonStyle(OrtusGhostButtonStyle())
                     }
                     Spacer()
-                    Button("Save mode") {
+                    Button(isExisting ? "Save mode" : "Create mode") {
                         focusManager.saveMode(mode)
                         onSave(mode)
                         router.modal = nil
