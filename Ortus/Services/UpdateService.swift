@@ -27,6 +27,10 @@ final class UpdateService: ObservableObject {
     @Published private(set) var state: UpdateState = .idle
     /// The user asked to update during a focus session; it installs once focus is over.
     @Published private(set) var installsAfterFocus = false
+    /// False when this user can't swap the app bundle (a non-admin account, an app another
+    /// user installed, or Ortus running from the DMG). Settings then offers the download.
+    @Published private(set) var canInstallInPlace = true
+    nonisolated static let downloadPage = URL(string: "https://ortusmode.com/download")!
     private var focusEndWatch: AnyCancellable?
     /// How long to stay out of focus before a scheduled update restarts Ortus, so a
     /// user who starts another session right away isn't interrupted.
@@ -48,8 +52,9 @@ final class UpdateService: ObservableObject {
     #if DEBUG
     private var pinnedForSnapshot = false
     /// The snapshot harness shows a fixed state; checks leave it alone.
-    func pinForSnapshot(_ state: UpdateState) {
+    func pinForSnapshot(_ state: UpdateState, canInstallInPlace: Bool = true) {
         self.state = state
+        self.canInstallInPlace = canInstallInPlace
         pinnedForSnapshot = true
     }
     #endif
@@ -84,6 +89,7 @@ final class UpdateService: ObservableObject {
             let latest = entry.version
             if UpdateFeed.isVersion(latest, newerThan: currentVersion) {
                 latestZip = entry.zip
+                canInstallInPlace = UpdateInstaller.canReplace(bundleAt: Bundle.main.bundleURL)
                 state = .available(version: latest)
                 Analytics.capture("update_available", ["from": currentVersion, "to": latest])
             } else {
@@ -106,7 +112,7 @@ final class UpdateService: ObservableObject {
                 guard UserDefaults.standard.string(forKey: key) != version else { return }
                 UserDefaults.standard.set(version, forKey: key)
                 focusManager.sendNotification(title: "Ortus \(version) is ready",
-                                              body: "Open Settings to restart and update.",
+                                              body: self.canInstallInPlace ? "Open Settings to restart and update." : "Open Settings to download it.",
                                               identifier: Self.notificationID)
             }
         checkTimer = Timer.scheduledTimer(withTimeInterval: Self.checkInterval, repeats: true) { [weak self] _ in
@@ -123,6 +129,11 @@ final class UpdateService: ObservableObject {
     func downloadAndInstall(isInFocus: Bool) async {
         guard Bundle.main.object(forInfoDictionaryKey: "OrtusPreviewBuild") as? Bool != true else { return }
         guard case .available = state, let zip = latestZip else { return }
+        // Swapping the bundle would fail, so don't quit Ortus for it: Settings offers the download.
+        guard UpdateInstaller.canReplace(bundleAt: Bundle.main.bundleURL) else {
+            canInstallInPlace = false
+            return
+        }
         guard !isInFocus else {
             state = .failed("Finish your focus session before updating.")
             return
@@ -243,27 +254,8 @@ final class UpdateService: ObservableObject {
     /// don't exit within ~60s (e.g. a focus session traps the quit) so it can't
     /// hang around or swap the bundle out from under a still-running app.
     private func launchUpdaterAndQuit(_ download: Download, targetBundle: String) throws {
-        let pid = ProcessInfo.processInfo.processIdentifier
-        let script = """
-        #!/bin/bash
-        TARGET="\(targetBundle)"
-        SRC="\(download.app.path)"
-        WORK="\(download.folder.path)"
-        for _ in $(seq 1 300); do
-            kill -0 \(pid) 2>/dev/null || break
-            sleep 0.2
-        done
-        # If Ortus is still running, the quit was blocked — abort without touching it.
-        if kill -0 \(pid) 2>/dev/null; then
-            rm -rf "$WORK"
-            exit 0
-        fi
-        rm -rf "$TARGET"
-        mv "$SRC" "$TARGET"
-        xattr -dr com.apple.quarantine "$TARGET" 2>/dev/null || true
-        open "$TARGET"
-        rm -rf "$WORK"
-        """
+        let script = UpdateInstaller.script(target: URL(fileURLWithPath: targetBundle), source: download.app,
+                                            work: download.folder, pid: ProcessInfo.processInfo.processIdentifier)
         let scriptURL = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("ortus-update-\(UUID().uuidString).sh")
         try script.write(to: scriptURL, atomically: true, encoding: .utf8)

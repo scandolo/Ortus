@@ -73,6 +73,7 @@ enum SnapshotHarness {
             await render("settings-experimental", tab: 3, height: 760, state: "settings-experimental")
             await render("settings-up-to-date", tab: 3, height: 760, state: "up-to-date")
             await render("settings-update-available", tab: 3, height: 760, state: "update-available")
+            await render("settings-update-download", tab: 3, height: 760, state: "update-download")
             await render("settings-update-unverified", tab: 3, height: 760, state: "update-unverified")
             await render("chat-setup", tab: 3, state: "chat-setup")
             await render("chat-setup-small", tab: 3, height: 320, state: "chat-setup")

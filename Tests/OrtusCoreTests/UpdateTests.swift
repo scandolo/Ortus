@@ -34,6 +34,68 @@ struct UpdateTests {
         expectFailure { try UpdateVerifier.verify(appAt: empty, newerThan: "0") }
     }
 
+    /// Runs the real swap script on temporary folders. A swap that can't finish (a non-admin
+    /// account can't touch /Applications) must leave the old app whole and reopen it,
+    /// never empty it and nest the new app inside, which macOS then calls damaged.
+    func updateNeverLeavesABrokenApp() throws {
+        let files = FileManager.default
+        let root = files.temporaryDirectory.appendingPathComponent("OrtusUpdateChecks-\(UUID().uuidString)", isDirectory: true)
+        var locked: [URL] = []
+        defer {
+            for url in locked { try? files.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path) }
+            try? files.removeItem(at: root)
+        }
+        func makeApp(_ app: URL, version: String) throws {
+            try files.createDirectory(at: app.appendingPathComponent("Contents"), withIntermediateDirectories: true)
+            try Data(version.utf8).write(to: app.appendingPathComponent("Contents/version"))
+        }
+        func version(_ app: URL) -> String? { try? String(contentsOf: app.appendingPathComponent("Contents/version"), encoding: .utf8) }
+        // A process that has already exited, so the script doesn't wait.
+        let exited = Process()
+        exited.executableURL = URL(fileURLWithPath: "/usr/bin/true")
+        try exited.run()
+        exited.waitUntilExit()
+        /// Installs a new app over `target` and returns what the script reopened.
+        func update(_ target: URL) throws -> String {
+            let work = root.appendingPathComponent("work-\(UUID().uuidString)", isDirectory: true)
+            let source = work.appendingPathComponent("unzipped/Ortus.app", isDirectory: true)
+            try makeApp(source, version: "new")
+            let bash = Process(), output = Pipe()
+            bash.executableURL = URL(fileURLWithPath: "/bin/bash")
+            bash.arguments = ["-c", UpdateInstaller.script(target: target, source: source, work: work, pid: exited.processIdentifier, relaunch: "/bin/echo")]
+            bash.standardOutput = output
+            bash.standardError = FileHandle.nullDevice
+            try bash.run()
+            bash.waitUntilExit()
+            expect(!files.fileExists(atPath: work.path))
+            return String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self).trimmingCharacters(in: .newlines)
+        }
+
+        let writable = root.appendingPathComponent("Applications/Ortus.app", isDirectory: true)
+        try makeApp(writable, version: "old")
+        expect(UpdateInstaller.canReplace(bundleAt: writable))
+        expect(try update(writable) == writable.path)
+        expect(version(writable) == "new")
+        expect(try files.contentsOfDirectory(atPath: writable.deletingLastPathComponent().path) == ["Ortus.app"])
+
+        let readOnly = root.appendingPathComponent("Locked/Ortus.app", isDirectory: true)
+        try makeApp(readOnly, version: "old")
+        try files.setAttributes([.posixPermissions: 0o555], ofItemAtPath: readOnly.deletingLastPathComponent().path)
+        locked.append(readOnly.deletingLastPathComponent())
+        expect(!files.isWritableFile(atPath: readOnly.deletingLastPathComponent().path)) // as root nothing is read-only
+        expect(!UpdateInstaller.canReplace(bundleAt: readOnly)) // so Settings offers the download instead
+        expect(try update(readOnly) == readOnly.path)
+        expect(version(readOnly) == "old")
+        expect(!files.fileExists(atPath: readOnly.appendingPathComponent("Ortus.app").path))
+
+        // An app another user installed: the folder is writable but the app isn't.
+        let someoneElses = root.appendingPathComponent("Shared/Ortus.app", isDirectory: true)
+        try makeApp(someoneElses, version: "old")
+        try files.setAttributes([.posixPermissions: 0o555], ofItemAtPath: someoneElses.path)
+        locked.append(someoneElses)
+        expect(!UpdateInstaller.canReplace(bundleAt: someoneElses))
+    }
+
     private func expectFailure(_ body: () throws -> String, file: StaticString = #file, line: UInt = #line) {
         do { _ = try body(); preconditionFailure("Expected verification to fail", file: file, line: line) }
         catch UpdateVerifier.Failure.signature { }

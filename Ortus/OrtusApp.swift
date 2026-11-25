@@ -256,6 +256,7 @@ struct OrtusApp: App {
             switch state {
             case "up-to-date": updateService.pinForSnapshot(.upToDate)
             case "update-available": updateService.pinForSnapshot(.available(version: "1.2.0"))
+            case "update-download": updateService.pinForSnapshot(.available(version: "1.2.0"), canInstallInPlace: false)
             case "update-unverified": updateService.pinForSnapshot(.failed(UpdateService.unverifiedMessage))
             case "browser-setup-folder-error": focusManager.websites.pinFolderErrorForSnapshot()
             default: break
