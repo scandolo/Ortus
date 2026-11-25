@@ -48,6 +48,13 @@ struct ChatView: View {
                 router.modal = .chatIntro
             }
         }
+        // Start in Agent setup lands here, ready to type. Next run loop, so the popup
+        // has gone and the field exists.
+        .onChange(of: router.focusChatInput, initial: true) {
+            guard router.focusChatInput else { return }
+            router.focusChatInput = false
+            DispatchQueue.main.async { isInputFocused = true }
+        }
     }
 
     // MARK: - Empty state

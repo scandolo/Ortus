@@ -285,8 +285,6 @@ struct ChatSetupModal: View {
     @EnvironmentObject var claudeCodeService: ClaudeCodeService
     @EnvironmentObject var router: PanelRouter
     @Environment(\.snapshotState) private var snapshotState
-    @State private var binaryPath = ""
-    @State private var initialBinaryPath = ""
     @State private var pathError: String?
 
     private static let notRunnable = "That file can’t be run. Choose the file named claude."
@@ -298,50 +296,60 @@ struct ChatSetupModal: View {
 
     var body: some View {
         OrtusModal(title: "Agent setup", onClose: { router.modal = nil }) {
-            if claudeCodeService.isConfigured {
-                found
-            } else if isChecking {
-                checking
-            } else {
-                notFound
+            // The whole sheet changes when Claude Code turns up, so the switch can't be missed.
+            Group {
+                if claudeCodeService.isConfigured {
+                    ready.transition(.opacity.combined(with: .scale(scale: 0.94)))
+                } else if isChecking {
+                    checking.transition(.opacity)
+                } else {
+                    notFound.transition(.opacity)
+                }
             }
+            .animation(.easeOut(duration: 0.25), value: claudeCodeService.isConfigured)
         }
         .onAppear {
-            initialBinaryPath = claudeCodeService.claudeBinaryPath.isEmpty
-                ? claudeCodeService.resolvedBinaryPath ?? ""
-                : claudeCodeService.claudeBinaryPath
-            binaryPath = initialBinaryPath
             if snapshotState == "agent-setup-error" { pathError = Self.notRunnable }
         }
-        .onChange(of: binaryPath) { _, _ in pathError = nil }
     }
 
-    private var found: some View {
-        VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
-            HStack(spacing: 8) {
-                OrtusIcon(.check, size: 14)
-                Text("Claude Code found on this Mac")
-                    .font(OrtusFont.text(14))
-            }
-            VStack(alignment: .leading, spacing: OrtusTheme.spacingSM) {
-                Text("Claude Code location").font(OrtusFont.text(14, .bold))
-                TextField("", text: $binaryPath, prompt: Text(claudeCodeService.resolvedBinaryPath ?? "/opt/homebrew/bin/claude").foregroundStyle(OrtusTheme.textMuted))
-                    .textFieldStyle(OrtusTextFieldStyle(monospaced: true))
-                    .accessibilityLabel("Claude Code location")
-                Text("Leave empty to find it automatically.")
-                    .font(OrtusTheme.Typo.caption).foregroundStyle(OrtusTheme.textMuted)
+    /// Found: a done screen. "Ready" means Claude Code is on this Mac, not that it's
+    /// signed in.
+    private var ready: some View {
+        VStack(spacing: OrtusTheme.spacingMD) {
+            OrtusIcon(.check, size: 30)
+                .foregroundStyle(OrtusTheme.onStrong)
+                .frame(width: 60, height: 60)
+                .background(RoundedRectangle(cornerRadius: OrtusTheme.radiusLG, style: .continuous).fill(OrtusTheme.strong))
+            VStack(spacing: 4) {
+                Text("Your agent is ready")
+                    .font(OrtusTheme.Typo.titleSmall)
+                    .tracking(-1)
+                    .multilineTextAlignment(.center)
+                HStack(spacing: 2) {
+                    Text(((claudeCodeService.resolvedBinaryPath ?? "") as NSString).abbreviatingWithTildeInPath)
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundStyle(OrtusTheme.textMuted)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Button("Change", action: chooseClaude)
+                        .buttonStyle(OrtusGhostButtonStyle())
+                        .help("Choose another Claude Code")
+                }
             }
             if let pathError { problemLine(pathError) }
-            HStack {
-                Button("Check again") { applyPath() }.buttonStyle(OrtusSecondaryButtonStyle())
-                Spacer()
-                Button("Done") {
-                    if applyPath() { router.modal = nil }
-                }
-                .buttonStyle(OrtusPrimaryButtonStyle())
+            Button("Start", action: start)
+                .buttonStyle(OrtusPrimaryButtonStyle(fullWidth: true))
                 .keyboardShortcut(.defaultAction)
-            }
         }
+        .frame(maxWidth: .infinity)
+    }
+
+    /// Closes the popup and puts the cursor in the Agent tab's text box.
+    private func start() {
+        router.modal = nil
+        router.requestedTab = 2
+        router.focusChatInput = true
     }
 
     /// Not found: the headline, then two equal ways forward (get it, or point Ortus at
@@ -393,8 +401,8 @@ struct ChatSetupModal: View {
         }
     }
 
-    /// The file picker behind "Find my Claude Code". Hidden folders show, since the
-    /// installer puts claude in ~/.local/bin.
+    /// The file picker behind "Find my Claude Code" and "Change". Hidden folders show,
+    /// since the installer puts claude in ~/.local/bin.
     private func chooseClaude() {
         let panel = NSOpenPanel()
         panel.title = "Find Claude Code"
@@ -421,22 +429,6 @@ struct ChatSetupModal: View {
             claudeCodeService.claudeBinaryPath = url.path
             claudeCodeService.redetect()
         }
-    }
-
-    @discardableResult
-    private func applyPath() -> Bool {
-        let path = (binaryPath.trimmingCharacters(in: .whitespacesAndNewlines) as NSString).expandingTildeInPath
-        guard path.isEmpty || ClaudeLocation.isRunnable(path) else {
-            pathError = "No executable found at this location. Check the path or clear it to find it automatically."
-            return false
-        }
-        if path != initialBinaryPath {
-            claudeCodeService.claudeBinaryPath = path
-            initialBinaryPath = path
-        }
-        binaryPath = path
-        claudeCodeService.redetect()
-        return true
     }
 }
 
