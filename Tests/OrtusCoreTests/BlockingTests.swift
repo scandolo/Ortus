@@ -30,6 +30,7 @@ struct BlockingTests {
         expect(ScheduleStore.hasSaved(defaults: defaults))
         expect(firstLoad.first?.blocked == .standard)
         expect(firstLoad.first?.isEnabled == false)
+        expect(firstLoad.first?.startTimeString == "8:00" && firstLoad.first?.endTimeString == "12:00")
         expect(ScheduleStore.load(defaults: defaults) == firstLoad) // stable IDs across restarts
         ScheduleStore.save([], defaults: defaults)
         expect(ScheduleStore.load(defaults: defaults).isEmpty) // intentionally deleting all schedules persists
@@ -38,6 +39,7 @@ struct BlockingTests {
         """
         let schedule = try JSONDecoder().decode(FocusSchedule.self, from: Data(legacy.utf8))
         expect(schedule.blocked == .standard)
+        expect(schedule.startHour == 9) // a saved schedule keeps its time when the default changes
         let custom = try JSONDecoder().decode(FocusSchedule.self, from: Data(legacy.replacingOccurrences(of: "Focus Time", with: "Writing").utf8))
         expect(custom.blocked == .slackOnly)
         expect(try JSONDecoder().decode(FocusSchedule.self, from: JSONEncoder().encode(schedule)) == schedule)

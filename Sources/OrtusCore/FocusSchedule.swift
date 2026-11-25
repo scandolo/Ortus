@@ -18,7 +18,7 @@ public struct FocusSchedule: Identifiable, Codable, Equatable, Sendable {
     public var isEnabled: Bool
     public var blocked: BlockSelection
 
-    public init(id: UUID = UUID(), name: String = "Focus Time", days: Set<Weekday> = [.monday, .tuesday, .wednesday, .thursday, .friday], startHour: Int = 9, startMinute: Int = 0, endHour: Int = 12, endMinute: Int = 0, isEnabled: Bool = true, blocked: BlockSelection = .standard) {
+    public init(id: UUID = UUID(), name: String = "Focus Time", days: Set<Weekday> = [.monday, .tuesday, .wednesday, .thursday, .friday], startHour: Int = 8, startMinute: Int = 0, endHour: Int = 12, endMinute: Int = 0, isEnabled: Bool = true, blocked: BlockSelection = .standard) {
         self.id = id; self.name = name; self.days = days
         self.startHour = startHour; self.startMinute = startMinute
         self.endHour = endHour; self.endMinute = endMinute
