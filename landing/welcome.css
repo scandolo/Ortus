@@ -50,3 +50,132 @@
 @media (prefers-reduced-motion: reduce) {
   .wz-enter { animation: none; }
 }
+
+/* Step 1: a pointer goes up to the menu bar and clicks the Ortus tile.
+   One loop is 6s: travel, click, panel open, rest, fade. */
+
+.mb-demo {
+  --mb-loop: 6s;
+  position: relative;
+  height: 210px;
+  margin: 24px 0 20px;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% 120%, rgba(254, 112, 28, 0.45), transparent 60%),
+    linear-gradient(180deg, var(--sand), #EADFD0);
+  box-shadow: inset 0 0 0 1px rgba(28, 28, 25, 0.08);
+}
+
+.mb-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 32px;
+  padding: 0 14px;
+  background: rgba(242, 238, 232, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--ink);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.mb-left, .mb-right { display: flex; align-items: center; gap: 16px; }
+.mb-left { min-width: 0; overflow: hidden; }
+.mb-left b { font-weight: 700; }
+.mb-right { gap: 14px; flex: none; }
+.mb-right > svg, .mb-tile, .mb-apple { display: block; flex: none; }
+
+.mb-target {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 22px;
+  border-radius: 5px;
+  animation: mb-press var(--mb-loop) infinite;
+}
+
+/* A soft ring that calls attention to the tile before the pointer arrives. */
+.mb-target::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 7px;
+  border: 2px solid var(--persimmon);
+  opacity: 0;
+  animation: mb-ring var(--mb-loop) infinite;
+}
+
+.mb-cursor {
+  position: absolute;
+  left: 12px;
+  top: 10px;
+  z-index: 2;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+  animation: mb-cursor var(--mb-loop) cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+
+/* A sketch of the Ortus panel, not its real content. */
+.mb-panel {
+  position: absolute;
+  top: 28px;
+  right: -8px;
+  display: grid;
+  gap: 8px;
+  width: 168px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--bone);
+  box-shadow: 0 10px 30px rgba(28, 28, 25, 0.18), 0 0 0 1px rgba(28, 28, 25, 0.08);
+  transform-origin: top right;
+  opacity: 0;
+  animation: mb-panel var(--mb-loop) infinite;
+}
+
+.mb-panel i { display: block; height: 8px; border-radius: 4px; background: var(--sand); }
+.mb-panel i.short { width: 60%; }
+.mb-panel em { display: block; height: 26px; margin-top: 4px; border-radius: 8px; background: var(--ink); }
+
+@keyframes mb-cursor {
+  0%   { transform: translate(-190px, 140px); opacity: 0; }
+  8%   { transform: translate(-190px, 140px); opacity: 1; }
+  36%  { transform: translate(0, 0); }
+  40%  { transform: translate(0, 0) scale(0.86); }
+  44%  { transform: translate(0, 0) scale(1); }
+  70%  { transform: translate(-30px, 60px); opacity: 1; }
+  88%, 100% { transform: translate(-30px, 60px); opacity: 0; }
+}
+
+@keyframes mb-ring {
+  0%, 10%  { opacity: 0; transform: scale(1.4); }
+  24%      { opacity: 1; transform: scale(1); }
+  38%, 100% { opacity: 0; transform: scale(1); }
+}
+
+@keyframes mb-press {
+  0%, 39%  { background: transparent; }
+  41%, 80% { background: rgba(28, 28, 25, 0.12); }
+  90%, 100% { background: transparent; }
+}
+
+@keyframes mb-panel {
+  0%, 41%  { opacity: 0; transform: translateY(-4px) scale(0.96); }
+  47%, 82% { opacity: 1; transform: none; }
+  92%, 100% { opacity: 0; transform: none; }
+}
+
+/* Reduced motion: the end state, still. */
+@media (prefers-reduced-motion: reduce) {
+  .mb-target, .mb-target::before, .mb-cursor, .mb-panel { animation: none; }
+  .mb-target { background: rgba(28, 28, 25, 0.12); }
+  .mb-cursor { transform: translate(-30px, 60px); }
+  .mb-panel { opacity: 1; }
+}
+
+@media (max-width: 520px) {
+  .mb-left span { display: none; }
+  .mb-clock { display: none; }
+}
