@@ -46,9 +46,11 @@ public struct BrowserClient: Codable, Sendable {
     /// The browser app that launched the bridge, and whether the extension may run in incognito.
     public var bundleID: String?
     public var incognito: Bool?
-    public init(id: String, browser: String, updatedAt: Double, state: String = "connecting", bundleID: String? = nil, incognito: Bool? = nil) {
+    /// The extension that connected, so Ortus can open its Details page.
+    public var extensionID: String?
+    public init(id: String, browser: String, updatedAt: Double, state: String = "connecting", bundleID: String? = nil, incognito: Bool? = nil, extensionID: String? = nil) {
         self.id = id; self.browser = browser; self.updatedAt = updatedAt; self.state = state
-        self.bundleID = bundleID; self.incognito = incognito
+        self.bundleID = bundleID; self.incognito = incognito; self.extensionID = extensionID
     }
 }
 
@@ -108,6 +110,26 @@ public enum BrowserCompanion {
     public static func storeListingURL(extensionID: String = storeExtensionID) -> URL {
         URL(string: "https://chromewebstore.google.com/detail/\(extensionID)")
             ?? URL(string: "https://chromewebstore.google.com/detail/\(storeExtensionID)")!
+    }
+
+    /// The id in the origin Chromium passes the native host: `chrome-extension://<32 letters a-p>/`.
+    public static func extensionID(fromOrigin origin: String) -> String? {
+        guard origin.hasPrefix("chrome-extension://") else { return nil }
+        let id = origin.dropFirst("chrome-extension://".count).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        return id.count == 32 && id.allSatisfy({ ("a"..."p").contains($0) }) ? id : nil
+    }
+
+    /// Browsers whose extension is connected but not allowed in incognito, with no profile
+    /// that is, mapped to that extension's id. Ortus closes these during focus, and the fix
+    /// is one switch on the extension's Details page.
+    public static func incognitoOff(_ clients: [BrowserClient]) -> [String: String] {
+        let protected = Set(clients.filter { $0.incognito != false }.compactMap(\.bundleID))
+        var result: [String: String] = [:]
+        for client in clients where client.incognito == false {
+            guard let bundleID = client.bundleID, !protected.contains(bundleID), result[bundleID] == nil else { continue }
+            result[bundleID] = client.extensionID ?? storeExtensionID
+        }
+        return result
     }
 
     /// Chromium only launches the native host for these origins.
