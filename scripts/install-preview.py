@@ -28,6 +28,7 @@ if not args.browser_only:
     shutil.copytree(source, staging)
     if destination.exists():
         backup = root / '.context' / (app_name.replace(' ','-') + '-backup-' + datetime.datetime.now().strftime('%Y%m%d-%H%M%S') + '.app')
+        backup.parent.mkdir(exist_ok=True)  # .context/ is missing in a fresh worktree
         destination.rename(backup)
     staging.rename(destination)
 
