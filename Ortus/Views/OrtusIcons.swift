@@ -11,7 +11,7 @@ struct OrtusIcon: View {
         case focus, schedule, chat, settings, locked, blocked, addTime, agent
         // Same family
         case power, hide, bars, spark, update, globe, hash, mail, warn, close, plus, send
-        case copy, edit, chevronRight, chevronDown, check, undo, terminal, link, shield, folder, app, key, stop, reload
+        case copy, edit, chevronRight, chevronDown, check, undo, terminal, link, shield, folder, app, key, stop, reload, trash
     }
 
     let name: Name
@@ -132,6 +132,9 @@ struct OrtusIcon: View {
         case .reload:
             // A ring open at the top right; its arrowhead turns clockwise.
             return [stroke("M19.05 10.43A7.5 7.5 0 1 1 12 5.5", 2.8), fill("M12 1.5L17 5.5L12 9.5Z", evenOdd: false)]
+        case .trash:
+            // Handle, lid, and a tapered bin with two slots cut out.
+            return [rect(9, 2, 6, 3), rect(3, 4.5, 18, 2.6), fill("M4.5 9h15l-1.2 13H5.7ZM8.4 12h2.2v7H8.4ZM13.4 12h2.2v7h-2.2Z")]
         }
     }
 }

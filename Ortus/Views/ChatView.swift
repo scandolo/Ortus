@@ -199,13 +199,13 @@ struct ChatView: View {
         Button {
             claudeCodeService.clearConversation()
         } label: {
-            OrtusIcon(.edit, size: 15)
+            OrtusIcon(.trash, size: 15)
                 .foregroundStyle(OrtusTheme.textMuted)
                 .frame(width: 28, height: 28)
         }
         .buttonStyle(OrtusPressableStyle(cornerRadius: 8))
-        .help("New chat")
-        .accessibilityLabel("New chat")
+        .help("Clear chat")
+        .accessibilityLabel("Clear chat")
         .disabled(claudeCodeService.isProcessing)
         .hoverCursor(.pointingHand, enabled: !claudeCodeService.isProcessing)
     }
