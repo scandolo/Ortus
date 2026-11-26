@@ -1,5 +1,6 @@
-// PostHog, cookieless: events stay in memory, nothing is stored on the visitor's device,
-// so no cookie banner is needed. Empty key = no tracking and no network calls at all.
+// PostHog, EU cloud. One first-party cookie holds a random visitor ID, so a return visit counts as
+// the same visitor. /?notrack turns tracking off in that browser, /?track turns it back on.
+// Empty key = no tracking and no network calls at all.
 (() => {
   const KEY = 'phc_AJfuPPimgTTkTBAq4piciZ5HpmfViM3jCRE98R7pUEqa';                              // PostHog project API key (public by design), EU cloud
   const HOST = 'https://eu.i.posthog.com';
@@ -19,7 +20,15 @@
     hideTimer = setTimeout(hideToast, 9000);
   }));
 
-  if (!KEY) return;
+  // A per-browser off switch, for our own visits and for anyone who'd rather not be counted.
+  let off = false;
+  try {
+    const q = new URLSearchParams(location.search);
+    if (q.has('track')) localStorage.removeItem('ortus-notrack');
+    if (q.has('notrack')) { localStorage.setItem('ortus-notrack', '1'); alert('Done: visits from this browser won’t be counted.'); }
+    off = localStorage.getItem('ortus-notrack') === '1';
+  } catch (_) {}
+  if (!KEY || off) return;
 
   // How far people get: each section once, and scroll depth in quarters.
   const io = new IntersectionObserver((entries) => entries.forEach((e) => {
@@ -37,7 +46,7 @@
   s.async = true;
   s.onload = () => {
     window.posthog.init(KEY, {
-      api_host: HOST, persistence: 'memory', autocapture: false, capture_pageview: true, capture_pageleave: true,
+      api_host: HOST, persistence: 'cookie', autocapture: false, capture_pageview: true, capture_pageleave: true,
       // Only what the privacy page lists: no recordings, heatmaps, performance data, dead clicks or surveys,
       // even if they're switched on in the PostHog project.
       disable_session_recording: true, capture_heatmaps: false, capture_performance: false, capture_dead_clicks: false, disable_surveys: true,
