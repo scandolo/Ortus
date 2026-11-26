@@ -31,7 +31,7 @@
         <div class="wz-bar" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
       </div>
 
-      <section class="wz-step" aria-labelledby="running-title">
+      <section class="wz-step" data-step="menu_bar" aria-labelledby="running-title">
         <h1 id="running-title" tabindex="-1">Ortus is running</h1>
         <p class="lede">Look for the sun in your menu bar, at the top right of your screen. Every session starts there.</p>
         <!-- Decorative: a pointer goes up to the menu bar and clicks the Ortus icon.
@@ -59,7 +59,7 @@
         </div>
       </section>
 
-      <section class="wz-step doc-card" aria-labelledby="hardcore-title">
+      <section class="wz-step doc-card" data-step="hardcore" aria-labelledby="hardcore-title">
         <h2 id="hardcore-title" tabindex="-1">Ortus is hardcore</h2>
         <p>Once a session starts, it runs to the end. That's the point.</p>
         <ul>
@@ -73,10 +73,10 @@
         </div>
       </section>
 
-      <section class="wz-step doc-card" aria-labelledby="ext-title">
+      <section class="wz-step doc-card" data-step="extension" aria-labelledby="ext-title">
         <h2 id="ext-title" tabindex="-1">Block websites too</h2>
         <p>Ortus closes Mac apps on its own. For websites, add its extension. Chrome, Arc, Edge and Brave all install it from the Chrome Web Store.</p>
-        <a class="btn btn-line" href="https://chromewebstore.google.com/detail/lheanmgemlbnpeonkdbbinmankaineao" target="_blank" rel="noopener">Add to Chrome to block sites</a>
+        <a class="btn btn-line" data-ext href="https://chromewebstore.google.com/detail/lheanmgemlbnpeonkdbbinmankaineao" target="_blank" rel="noopener">Add to Chrome to block sites</a>
         <p class="small">Then open its Details and turn on Allow in Incognito, so private windows are covered too. Safari and Firefox aren't supported yet.</p>
         <div class="wz-nav" data-js hidden>
           <button class="btn wz-next" type="button" data-next>Next</button>
@@ -84,7 +84,7 @@
         </div>
       </section>
 
-      <section class="wz-step doc-card" aria-labelledby="choices-title">
+      <section class="wz-step doc-card" data-step="choice" aria-labelledby="choices-title">
         <h2 id="choices-title" tabindex="-1">One choice</h2>
         <label class="choice">
           <input type="checkbox" id="analytics" />
@@ -105,6 +105,7 @@
     </div>
   </main>
 
+  <script src="/analytics.js"></script>
   <script>
     (function () {
       // Preview builds pass their own scheme (ortus-preview) so the choice reaches them.
@@ -113,6 +114,12 @@
       var save = document.getElementById("save");
       var retry = document.getElementById("retry");
       var analytics = document.getElementById("analytics");
+      // Anonymous website events (see /privacy and analytics.js). Ortus opens this page once, on its
+      // first launch, so a fresh visit here is an install; reloads and back/forward don't count.
+      var track = window.ortusTrack || function () {};
+      var nav = window.performance && performance.getEntriesByType ? performance.getEntriesByType("navigation")[0] : null;
+      if (!nav || nav.type === "navigate") track("app_installed");
+      document.querySelector("[data-ext]").addEventListener("click", function () { track("extension_install_clicked"); });
       var update = function () {
         save.href = retry.href = scheme + "://welcome?analytics=" + (analytics.checked ? 1 : 0);
       };
@@ -138,6 +145,7 @@
         views.forEach(function (view, i) { view.hidden = i !== index; });
         count.textContent = index < steps.length ? "Step " + (index + 1) + " of " + steps.length : "Done";
         segments.forEach(function (segment, i) { segment.classList.toggle("on", i <= index); });
+        if (index < steps.length) track("onboarding_step_viewed", { step: index + 1, name: steps[index].dataset.step });
         if (!moveFocus) return;
         var view = views[index];
         view.classList.remove("wz-enter");
@@ -153,7 +161,10 @@
         button.addEventListener("click", function () { show(current - 1, true); });
       });
       // The link still opens Ortus; the page moves on to the done state.
-      save.addEventListener("click", function () { show(steps.length, true); });
+      save.addEventListener("click", function () {
+        track("onboarding_completed", { share_usage: analytics.checked });
+        show(steps.length, true);
+      });
       document.querySelectorAll("[data-js]").forEach(function (element) { element.hidden = false; });
       show(0, false);
     })();

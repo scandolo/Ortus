@@ -1,45 +1,54 @@
-// PostHog, EU cloud. One first-party cookie holds a random visitor ID, so a return visit counts as
-// the same visitor. /?notrack turns tracking off in that browser, /?track turns it back on.
+// PostHog, EU cloud, on the homepage and the welcome page. One first-party cookie holds a random
+// visitor ID, so a return visit counts as the same visitor, and someone who downloads on the homepage
+// and then installs shows up as one visitor. /?notrack turns tracking off in that browser, /?track
+// turns it back on. Preview builds (welcome?scheme=ortus-preview) are never counted.
 // Empty key = no tracking and no network calls at all.
 (() => {
   const KEY = 'phc_AJfuPPimgTTkTBAq4piciZ5HpmfViM3jCRE98R7pUEqa';                              // PostHog project API key (public by design), EU cloud
   const HOST = 'https://eu.i.posthog.com';
   const queue = [];
   const track = (event, props) => (window.posthog && window.posthog.__loaded ? window.posthog.capture(event, props) : queue.push([event, props]));
+  window.ortusTrack = track; // for page scripts, like the welcome page's steps
 
-  // Download clicks: count which button was used, and show one toast with the install steps.
+  // Download clicks (homepage): count which button was used, and show one toast with the install steps.
   const toast = document.getElementById('download-toast');
-  let hideTimer = 0;
-  const hideToast = () => { toast.classList.remove('show'); setTimeout(() => { toast.hidden = true; }, 450); };
-  toast.querySelector('.toast-close').addEventListener('click', hideToast);
-  document.querySelectorAll('[data-download]').forEach((a) => a.addEventListener('click', () => {
-    track('download_clicked', { location: a.dataset.download });
-    clearTimeout(hideTimer);
-    toast.hidden = false;
-    requestAnimationFrame(() => toast.classList.add('show'));
-    hideTimer = setTimeout(hideToast, 9000);
-  }));
+  if (toast) {
+    let hideTimer = 0;
+    const hideToast = () => { toast.classList.remove('show'); setTimeout(() => { toast.hidden = true; }, 450); };
+    toast.querySelector('.toast-close').addEventListener('click', hideToast);
+    document.querySelectorAll('[data-download]').forEach((a) => a.addEventListener('click', () => {
+      track('download_clicked', { location: a.dataset.download });
+      clearTimeout(hideTimer);
+      toast.hidden = false;
+      requestAnimationFrame(() => toast.classList.add('show'));
+      hideTimer = setTimeout(hideToast, 9000);
+    }));
+  }
 
   // A per-browser off switch, for our own visits and for anyone who'd rather not be counted.
-  let off = false;
+  const q = new URLSearchParams(location.search);
+  let off = q.get('scheme') === 'ortus-preview';
   try {
-    const q = new URLSearchParams(location.search);
     if (q.has('track')) localStorage.removeItem('ortus-notrack');
     if (q.has('notrack')) { localStorage.setItem('ortus-notrack', '1'); alert('Done: visits from this browser won’t be counted.'); }
-    off = localStorage.getItem('ortus-notrack') === '1';
+    off = off || localStorage.getItem('ortus-notrack') === '1';
   } catch (_) {}
   if (!KEY || off) return;
 
-  // How far people get: each section once, and scroll depth in quarters.
-  const io = new IntersectionObserver((entries) => entries.forEach((e) => {
-    if (e.isIntersecting) { track('section_reached', { section: e.target.getAttribute('aria-labelledby') || 'hero' }); io.unobserve(e.target); }
-  }), { threshold: 0.4 });
-  document.querySelectorAll('main > section').forEach((s) => io.observe(s));
-  const marks = [25, 50, 75, 100]; let next = 0;
-  addEventListener('scroll', () => {
-    const depth = (scrollY + innerHeight) / document.documentElement.scrollHeight * 100;
-    while (next < marks.length && depth >= marks[next]) track('scroll_depth', { percent: marks[next++] });
-  }, { passive: true });
+  // How far people get on pages built from sections (the homepage): each section once,
+  // and scroll depth in quarters.
+  const sections = document.querySelectorAll('main > section');
+  if (sections.length) {
+    const io = new IntersectionObserver((entries) => entries.forEach((e) => {
+      if (e.isIntersecting) { track('section_reached', { section: e.target.getAttribute('aria-labelledby') || 'hero' }); io.unobserve(e.target); }
+    }), { threshold: 0.4 });
+    sections.forEach((s) => io.observe(s));
+    const marks = [25, 50, 75, 100]; let next = 0;
+    addEventListener('scroll', () => {
+      const depth = (scrollY + innerHeight) / document.documentElement.scrollHeight * 100;
+      while (next < marks.length && depth >= marks[next]) track('scroll_depth', { percent: marks[next++] });
+    }, { passive: true });
+  }
 
   const s = document.createElement('script');
   s.src = 'https://eu-assets.i.posthog.com/static/array.js';
