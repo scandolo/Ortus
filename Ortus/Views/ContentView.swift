@@ -49,6 +49,7 @@ struct ContentView: View {
         // Bone while free, ink while locked, whatever macOS is set to.
         .ortusLockAppearance(locked: focusManager.isInFocus)
         .onAppear {
+            Analytics.panelOpened()
             claudeCodeService.detectIfNeeded()
             Task { await updateService.checkForUpdates() }
         }

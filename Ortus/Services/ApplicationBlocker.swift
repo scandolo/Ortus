@@ -8,6 +8,8 @@ final class ApplicationBlocker {
     private var timer: Timer?
     private var pending: [pid_t: Task<Void, Never>] = [:]
     private var closedApps: Set<URL> = []
+    /// Called each time Ortus closes a blocked app, for usage events.
+    var onClose: (() -> Void)?
 
     func update(_ applications: [BlockedApplication]) {
         let next = Set(applications.map(\.bundleID).filter(BlockedApplication.isBlockable))
@@ -34,6 +36,7 @@ final class ApplicationBlocker {
             if let url = app.bundleURL { closedApps.insert(url) }
             let pid = app.processIdentifier
             app.terminate()
+            onClose?()
             pending[pid] = Task { @MainActor [weak self] in
                 do { try await Task.sleep(for: .milliseconds(900)) } catch { return }
                 guard let self else { return }

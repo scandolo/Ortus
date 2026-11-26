@@ -87,11 +87,11 @@
       <section class="wz-step doc-card" data-step="choice" aria-labelledby="choices-title">
         <h2 id="choices-title" tabindex="-1">One choice</h2>
         <label class="choice">
-          <input type="checkbox" id="analytics" />
+          <input type="checkbox" id="analytics" checked />
           <span><strong>Share anonymous usage</strong><br />Which features get used, never your messages or the sites you visit. <a href="/privacy">Privacy policy</a></span>
         </label>
         <div class="wz-nav">
-          <a class="btn btn-primary" id="save" href="ortus://welcome?analytics=0">Save and finish</a>
+          <a class="btn btn-primary" id="save" href="ortus://welcome?analytics=1">Save and finish</a>
           <button class="btn wz-back" type="button" data-back data-js hidden>Back</button>
         </div>
         <p class="small">Your browser will ask to open Ortus. You can change it anytime in Ortus → Settings.</p>
@@ -100,7 +100,7 @@
       <section class="wz-done doc-card" id="done" aria-labelledby="done-title" hidden>
         <h2 id="done-title" tabindex="-1">All set</h2>
         <p>Allow your browser to open Ortus to save your choice. Then start your first session from the sun in your menu bar.</p>
-        <p class="small">Didn't open? <a id="retry" href="ortus://welcome?analytics=0">Try again</a>.</p>
+        <p class="small">Didn't open? <a id="retry" href="ortus://welcome?analytics=1">Try again</a>.</p>
       </section>
     </div>
   </main>
@@ -120,8 +120,14 @@
       var nav = window.performance && performance.getEntriesByType ? performance.getEntriesByType("navigation")[0] : null;
       if (!nav || nav.type === "navigate") track("app_installed");
       document.querySelector("[data-ext]").addEventListener("click", function () { track("extension_install_clicked"); });
+      // With sharing on, the app also gets this browser's website visitor ID, so the person's
+      // visit, download and setup line up with their app usage. Nothing is passed with it off.
+      var visitor = function () {
+        try { return analytics.checked && window.posthog && window.posthog.__loaded ? window.posthog.get_distinct_id() || "" : ""; } catch (e) { return ""; }
+      };
       var update = function () {
-        save.href = retry.href = scheme + "://welcome?analytics=" + (analytics.checked ? 1 : 0);
+        var id = visitor();
+        save.href = retry.href = scheme + "://welcome?analytics=" + (analytics.checked ? 1 : 0) + (id ? "&visitor=" + encodeURIComponent(id) : "");
       };
       analytics.addEventListener("change", update);
       update();
@@ -161,7 +167,9 @@
         button.addEventListener("click", function () { show(current - 1, true); });
       });
       // The link still opens Ortus; the page moves on to the done state.
+      retry.addEventListener("click", update);
       save.addEventListener("click", function () {
+        update(); // PostHog may have loaded since the page opened
         track("onboarding_completed", { share_usage: analytics.checked });
         show(steps.length, true);
       });

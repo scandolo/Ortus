@@ -349,6 +349,10 @@ struct CoreChecks {
         try companion.hostManifestsDoNotWaitForTheUnpackedFolder()
         try companion.registrationCopiesTheExtensionAndFollowsAMovedApp()
         BuildProfileTests().developerModeIsPreviewOnly()
-        print("PASS: 36 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, incognito off, store extension, framing, modes, mode migration, duplicate modes, chat stream, chat blocks, Claude Code location, update feed, update verification, safe update swap, credential migration, companion registration, preview-only developer mode)")
+        let usage = UsageAnalyticsTests()
+        usage.onlyAUUIDLinksAWebsiteVisitor()
+        usage.activeDayIsReportedOncePerCalendarDay()
+        usage.focusDescribesKindModeAndSizeWithoutNames()
+        print("PASS: 39 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, incognito off, store extension, framing, modes, mode migration, duplicate modes, chat stream, chat blocks, Claude Code location, update feed, update verification, safe update swap, credential migration, companion registration, preview-only developer mode, usage events)")
     }
 }
