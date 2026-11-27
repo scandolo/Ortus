@@ -129,6 +129,15 @@ chrome.runtime.onMessage.addListener((message, _sender, reply) => {
     connect();
   }
 });
+// The warning page on ortusmode.com can't open the browser's extension pages; this extension
+// can open its own Details page, where Allow in Incognito is.
+chrome.runtime.onMessageExternal.addListener((message, sender, reply) => {
+  if (message?.type !== 'open-incognito-setting') return;
+  const beside = sender.tab ? { windowId: sender.tab.windowId, index: sender.tab.index + 1 } : {};
+  chrome.tabs.create({ url: `chrome://extensions/?id=${chrome.runtime.id}`, ...beside })
+    .then(() => reply({ ok: true }), () => reply({ ok: false }));
+  return true;
+});
 chrome.runtime.onStartup.addListener(() => ready.then(connect));
 chrome.runtime.onInstalled.addListener(() => ready.then(connect));
 // Session rules survive service-worker suspension, but expire using the saved
