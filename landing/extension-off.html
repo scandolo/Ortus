@@ -119,7 +119,7 @@
       if (params.get("reason") === "incognito") {
         var app = params.get("app") || "";
         var scheme = params.get("scheme") || "";
-        var pages = { "com.google.Chrome": "chrome", "company.thebrowser.Browser": "arc", "com.microsoft.edgemac": "edge", "com.brave.Browser": "brave" };
+        var pages = { "com.google.Chrome": "chrome", "company.thebrowser.Browser": "arc", "company.thebrowser.dia": "dia", "com.microsoft.edgemac": "edge", "com.brave.Browser": "brave" };
         var setting = app === "com.microsoft.edgemac" ? "Allow in InPrivate" : "Allow in Incognito";
         document.title = "Turn on " + setting + " for Ortus";
         document.getElementById("lede").textContent = "The Ortus extension is on, but it isn't allowed in private windows, so they can still open the sites you blocked. Turn it on and " + browser + " stays open.";
