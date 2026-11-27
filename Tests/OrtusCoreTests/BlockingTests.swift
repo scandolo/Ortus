@@ -284,8 +284,8 @@ struct BlockingTests {
         expect(SupportedBrowser.suggested(installed: [chrome, arc], defaultBrowser: "com.apple.Safari", running: [], lastUsed: [:], connected: [], now: now) == [chrome, arc])
         // Everything used is connected: nothing left to add.
         expect(SupportedBrowser.suggested(installed: installed, defaultBrowser: chrome, running: [], lastUsed: [:], connected: [chrome], now: now).isEmpty)
-        expect(SupportedBrowser.names == "Chrome, Dia, Arc, Edge or Brave")
-        expect(CompanionRegistration.browserFolders.contains("Dia/User Data"))
+        expect(SupportedBrowser.names == "Chrome, Dia, Arc, Comet, Edge, Brave, Vivaldi or Opera")
+        expect(["Dia/User Data", "Comet", "Vivaldi", "com.operasoftware.Opera", "Google/Chrome"].allSatisfy(CompanionRegistration.browserFolders.contains))
     }
 
     func connectedButNotInIncognitoIsNamed() {

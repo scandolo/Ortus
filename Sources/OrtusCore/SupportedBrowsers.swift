@@ -13,11 +13,14 @@ public struct SupportedBrowser: Identifiable, Equatable, Sendable {
         .init(id: "com.google.Chrome", name: "Chrome", folder: "Google/Chrome", page: "chrome://extensions"),
         .init(id: "company.thebrowser.dia", name: "Dia", folder: "Dia/User Data", page: "dia://extensions"),
         .init(id: "company.thebrowser.Browser", name: "Arc", folder: "Arc/User Data", page: "arc://extensions"),
+        .init(id: "ai.perplexity.comet", name: "Comet", folder: "Comet", page: "chrome://extensions"),
         .init(id: "com.microsoft.edgemac", name: "Edge", folder: "Microsoft Edge", page: "edge://extensions"),
         .init(id: "com.brave.Browser", name: "Brave", folder: "BraveSoftware/Brave-Browser", page: "brave://extensions"),
+        .init(id: "com.vivaldi.Vivaldi", name: "Vivaldi", folder: "Vivaldi", page: "vivaldi://extensions"),
+        .init(id: "com.operasoftware.Opera", name: "Opera", folder: "com.operasoftware.Opera", page: "opera://extensions"),
     ]
 
-    /// "Chrome, Dia, Arc, Edge or Brave", for messages.
+    /// "Chrome, Dia, Arc, …, Vivaldi or Opera", for messages.
     public static var names: String {
         let names = all.map(\.name)
         return names.dropLast().joined(separator: ", ") + " or " + names.last!
