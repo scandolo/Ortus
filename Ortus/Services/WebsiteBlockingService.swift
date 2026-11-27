@@ -74,6 +74,7 @@ final class WebsiteBlockingService: ObservableObject {
         let guarded = Set(UserDefaults.standard.stringArray(forKey: "guardedBrowsers") ?? [])
         let seen = guarded.union(ready.compactMap(\.bundleID))
         if seen != guarded { UserDefaults.standard.set(seen.sorted(), forKey: "guardedBrowsers") }
+        Analytics.reportConnectedBrowsers(Set(ready.compactMap(\.bundleID)))
         connectedBrowsers = Array(Set(ready.map(\.browser))).sorted()
         connectionSummary = connectedBrowsers.map { name in
             let count = ready.filter { $0.browser == name }.count

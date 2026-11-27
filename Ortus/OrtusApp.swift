@@ -71,7 +71,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         return (types?.first?["CFBundleURLSchemes"] as? [String])?.first
     }
 
-    /// The welcome page sends ortus://welcome?analytics=0 (older copies also sent login=1), and
+    /// The welcome page sends ortus://welcome?analytics=1&visitor=<website visitor ID> (or
+    /// analytics=0; older copies also sent login=1), and
     /// the extension-off page sends ortus://incognito?browser=<bundle id>. Any page can open these
     /// links (after the browser asks): one changes these settings, the other opens a browser's
     /// extension settings.
@@ -86,7 +87,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             if let login = choice("login") {
                 try? login ? SMAppService.mainApp.register() : SMAppService.mainApp.unregister()
             }
-            if let analytics = choice("analytics") { Analytics.setConsent(analytics) }
+            if let analytics = choice("analytics") {
+                Analytics.setConsent(analytics)
+                if analytics { Analytics.linkWebsiteVisitor(items.first { $0.name == "visitor" }?.value) }
+            }
         }
     }
 

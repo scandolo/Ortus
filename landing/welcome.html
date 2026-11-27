@@ -31,15 +31,35 @@
         <div class="wz-bar" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
       </div>
 
-      <section class="wz-step" aria-labelledby="running-title">
+      <section class="wz-step" data-step="menu_bar" aria-labelledby="running-title">
         <h1 id="running-title" tabindex="-1">Ortus is running</h1>
-        <p class="lede">Look for the sun in your menu bar. Every session starts there.</p>
+        <p class="lede">Look for the sun in your menu bar, at the top right of your screen. Every session starts there.</p>
+        <!-- Decorative: a pointer goes up to the menu bar and clicks the Ortus icon.
+             The icon is the app's real menu bar tile (OrtusMenuBarTile, free state). -->
+        <div class="mb-demo" role="img" aria-label="The pointer moves to the Ortus icon at the top right of the menu bar and clicks it to open Ortus.">
+          <div class="mb-bar">
+            <span class="mb-left" aria-hidden="true">
+              <svg class="mb-apple" viewBox="0 0 14 17" width="12" height="14"><path fill="currentColor" d="M11.6 9c0-2.1 1.7-3.1 1.8-3.2-1-1.4-2.5-1.6-3-1.7-1.3-.1-2.5.8-3.1.8-.7 0-1.7-.8-2.7-.7C3.2 4.2 2 5 1.3 6.2c-1.5 2.5-.4 6.3 1 8.4.7 1 1.5 2.1 2.6 2.1 1 0 1.4-.7 2.7-.7s1.6.7 2.7.6c1.1 0 1.8-1 2.5-2 .8-1.1 1.1-2.2 1.1-2.3 0 0-2.3-.9-2.3-3.3zM9.6 2.9c.6-.7 1-1.6.9-2.6-.8 0-1.8.6-2.4 1.3-.5.6-1 1.6-.9 2.5.9.1 1.8-.5 2.4-1.2z"/></svg>
+              <b>Chrome</b><span>File</span><span>Edit</span><span>View</span>
+            </span>
+            <span class="mb-right" aria-hidden="true">
+              <span class="mb-target">
+                <svg class="mb-tile" viewBox="0 0 16 16" width="16" height="16"><rect x="0.7" y="0.7" width="14.6" height="14.6" rx="3.6" fill="none" stroke="currentColor" stroke-width="1.4"/><g transform="translate(2.6 4.4) scale(0.208)" fill="currentColor"><path d="M3.5 26.3a22.5 22.5 0 0 1 45 0Z"/><path d="M1.6 28.2H51L50.25 32.7H1Z"/><path d="M9.4 35H43L42.6 37.6H9Z"/></g></svg>
+                <span class="mb-panel"><i></i><i></i><i class="short"></i><em></em></span>
+                <svg class="mb-cursor" viewBox="0 0 16 24" width="16" height="24"><path d="M1.5 1.5v18.2l4.6-4.4 2.9 6.9 3-1.3-2.9-6.8h6.3z" fill="#1C1C19" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg>
+              </span>
+              <svg viewBox="0 0 18 14" width="16" height="12"><path fill="currentColor" d="M9 13.5 6.6 11a3.4 3.4 0 0 1 4.8 0zM3.9 8.4a7.2 7.2 0 0 1 10.2 0l-1.4 1.4a5.2 5.2 0 0 0-7.4 0zM1.2 5.7a11 11 0 0 1 15.6 0l-1.4 1.4a9 9 0 0 0-12.8 0z"/></svg>
+              <svg viewBox="0 0 26 12" width="24" height="11"><rect x="0.6" y="0.6" width="21.8" height="10.8" rx="3" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".5"/><rect x="2.2" y="2.2" width="15" height="7.6" rx="1.6" fill="currentColor"/><path d="M24 4v4a2 2 0 0 0 0-4z" fill="currentColor" opacity=".5"/></svg>
+              <span class="mb-clock" id="mb-clock">Wed 25 Nov 9:41</span>
+            </span>
+          </div>
+        </div>
         <div class="wz-nav" data-js hidden>
           <button class="btn wz-next" type="button" data-next>Next</button>
         </div>
       </section>
 
-      <section class="wz-step doc-card" aria-labelledby="hardcore-title">
+      <section class="wz-step doc-card" data-step="hardcore" aria-labelledby="hardcore-title">
         <h2 id="hardcore-title" tabindex="-1">Ortus is hardcore</h2>
         <p>Once a session starts, it runs to the end. That's the point.</p>
         <ul>
@@ -53,10 +73,10 @@
         </div>
       </section>
 
-      <section class="wz-step doc-card" aria-labelledby="ext-title">
+      <section class="wz-step doc-card" data-step="extension" aria-labelledby="ext-title">
         <h2 id="ext-title" tabindex="-1">Block websites too</h2>
         <p>Ortus closes Mac apps on its own. For websites, add its extension. Chrome, Arc, Edge and Brave all install it from the Chrome Web Store.</p>
-        <a class="btn btn-line" href="https://chromewebstore.google.com/detail/lheanmgemlbnpeonkdbbinmankaineao" target="_blank" rel="noopener">Add to Chrome to block sites</a>
+        <a class="btn btn-line" data-ext href="https://chromewebstore.google.com/detail/lheanmgemlbnpeonkdbbinmankaineao" target="_blank" rel="noopener">Add to Chrome to block sites</a>
         <p class="small">Then open its Details and turn on Allow in Incognito, so private windows are covered too. Safari and Firefox aren't supported yet.</p>
         <div class="wz-nav" data-js hidden>
           <button class="btn wz-next" type="button" data-next>Next</button>
@@ -64,14 +84,14 @@
         </div>
       </section>
 
-      <section class="wz-step doc-card" aria-labelledby="choices-title">
+      <section class="wz-step doc-card" data-step="choice" aria-labelledby="choices-title">
         <h2 id="choices-title" tabindex="-1">One choice</h2>
         <label class="choice">
-          <input type="checkbox" id="analytics" />
+          <input type="checkbox" id="analytics" checked />
           <span><strong>Share anonymous usage</strong><br />Which features get used, never your messages or the sites you visit. <a href="/privacy">Privacy policy</a></span>
         </label>
         <div class="wz-nav">
-          <a class="btn btn-primary" id="save" href="ortus://welcome?analytics=0">Save and finish</a>
+          <a class="btn btn-primary" id="save" href="ortus://welcome?analytics=1">Save and finish</a>
           <button class="btn wz-back" type="button" data-back data-js hidden>Back</button>
         </div>
         <p class="small">Your browser will ask to open Ortus. You can change it anytime in Ortus → Settings.</p>
@@ -80,11 +100,12 @@
       <section class="wz-done doc-card" id="done" aria-labelledby="done-title" hidden>
         <h2 id="done-title" tabindex="-1">All set</h2>
         <p>Allow your browser to open Ortus to save your choice. Then start your first session from the sun in your menu bar.</p>
-        <p class="small">Didn't open? <a id="retry" href="ortus://welcome?analytics=0">Try again</a>.</p>
+        <p class="small">Didn't open? <a id="retry" href="ortus://welcome?analytics=1">Try again</a>.</p>
       </section>
     </div>
   </main>
 
+  <script src="/analytics.js"></script>
   <script>
     (function () {
       // Preview builds pass their own scheme (ortus-preview) so the choice reaches them.
@@ -93,11 +114,31 @@
       var save = document.getElementById("save");
       var retry = document.getElementById("retry");
       var analytics = document.getElementById("analytics");
+      // Anonymous website events (see /privacy and analytics.js). Ortus opens this page once, on its
+      // first launch, so a fresh visit here is an install; reloads and back/forward don't count.
+      var track = window.ortusTrack || function () {};
+      var nav = window.performance && performance.getEntriesByType ? performance.getEntriesByType("navigation")[0] : null;
+      if (!nav || nav.type === "navigate") track("app_installed");
+      document.querySelector("[data-ext]").addEventListener("click", function () { track("extension_install_clicked"); });
+      // With sharing on, the app also gets this browser's website visitor ID, so the person's
+      // visit, download and setup line up with their app usage. Nothing is passed with it off.
+      var visitor = function () {
+        try { return analytics.checked && window.posthog && window.posthog.__loaded ? window.posthog.get_distinct_id() || "" : ""; } catch (e) { return ""; }
+      };
       var update = function () {
-        save.href = retry.href = scheme + "://welcome?analytics=" + (analytics.checked ? 1 : 0);
+        var id = visitor();
+        save.href = retry.href = scheme + "://welcome?analytics=" + (analytics.checked ? 1 : 0) + (id ? "&visitor=" + encodeURIComponent(id) : "");
       };
       analytics.addEventListener("change", update);
       update();
+
+      // The demo menu bar shows the visitor's own clock.
+      var clock = document.getElementById("mb-clock");
+      try {
+        var now = new Date();
+        clock.textContent = now.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }).replace(/,/g, "") +
+          " " + now.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+      } catch (e) {}
 
       // One step at a time: progress on top, focus on each new step's headline.
       var steps = Array.prototype.slice.call(document.querySelectorAll(".wz-step"));
@@ -110,6 +151,7 @@
         views.forEach(function (view, i) { view.hidden = i !== index; });
         count.textContent = index < steps.length ? "Step " + (index + 1) + " of " + steps.length : "Done";
         segments.forEach(function (segment, i) { segment.classList.toggle("on", i <= index); });
+        if (index < steps.length) track("onboarding_step_viewed", { step: index + 1, name: steps[index].dataset.step });
         if (!moveFocus) return;
         var view = views[index];
         view.classList.remove("wz-enter");
@@ -125,7 +167,12 @@
         button.addEventListener("click", function () { show(current - 1, true); });
       });
       // The link still opens Ortus; the page moves on to the done state.
-      save.addEventListener("click", function () { show(steps.length, true); });
+      retry.addEventListener("click", update);
+      save.addEventListener("click", function () {
+        update(); // PostHog may have loaded since the page opened
+        track("onboarding_completed", { share_usage: analytics.checked });
+        show(steps.length, true);
+      });
       document.querySelectorAll("[data-js]").forEach(function (element) { element.hidden = false; });
       show(0, false);
     })();
