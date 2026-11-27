@@ -270,6 +270,24 @@ struct BlockingTests {
 
     /// The extension is connected but not allowed in incognito: Ortus names that exact problem
     /// and opens that extension's Details page. Any profile allowed in incognito protects its browser.
+    /// The setup offers the browsers the user uses, default first, and not the ones already connected.
+    func setupSuggestsTheBrowsersInUse() {
+        let (chrome, dia, arc, edge) = ("com.google.Chrome", "company.thebrowser.dia", "company.thebrowser.Browser", "com.microsoft.edgemac")
+        let now = Date()
+        let installed = [chrome, dia, arc, edge]
+        let lastUsed = [chrome: now - 3600, arc: now - 86_400, edge: now - 90 * 86_400]
+        // Edge last ran three months ago, so it's left out; the default browser comes first.
+        expect(SupportedBrowser.suggested(installed: installed, defaultBrowser: dia, running: [], lastUsed: lastUsed, connected: [], now: now) == [dia, chrome, arc])
+        // A connected browser drops out; a running one counts as used.
+        expect(SupportedBrowser.suggested(installed: installed, defaultBrowser: dia, running: [edge], lastUsed: lastUsed, connected: [chrome], now: now) == [dia, edge, arc])
+        // Nothing looks used (a fresh Mac): every installed browser is offered.
+        expect(SupportedBrowser.suggested(installed: [chrome, arc], defaultBrowser: "com.apple.Safari", running: [], lastUsed: [:], connected: [], now: now) == [chrome, arc])
+        // Everything used is connected: nothing left to add.
+        expect(SupportedBrowser.suggested(installed: installed, defaultBrowser: chrome, running: [], lastUsed: [:], connected: [chrome], now: now).isEmpty)
+        expect(SupportedBrowser.names == "Chrome, Dia, Arc, Comet, Edge, Brave, Vivaldi or Opera")
+        expect(["Dia/User Data", "Comet", "Vivaldi", "com.operasoftware.Opera", "Google/Chrome"].allSatisfy(CompanionRegistration.browserFolders.contains))
+    }
+
     func connectedButNotInIncognitoIsNamed() {
         let store = BrowserCompanion.storeExtensionID
         expect(BrowserCompanion.extensionID(fromOrigin: "chrome-extension://\(store)/") == store)
@@ -323,6 +341,7 @@ struct CoreChecks {
         try checks.storeAndUnpackedExtensionsAreBothAllowed()
         checks.nativeFramingIsLittleEndianAndBounded()
         checks.connectedButNotInIncognitoIsNamed()
+        checks.setupSuggestsTheBrowsersInUse()
         try checks.onlyOneAppCanOwnFocusAtATime()
         checks.presetEditingPreservesUnrelatedTargets()
         checks.partialPresetsDescribeActualCoverage()
@@ -355,6 +374,6 @@ struct CoreChecks {
         usage.focusDescribesKindModeAndSizeWithoutNames()
         try AgentTests.runAll()
         try InstallerTests.runAll()
-        print("PASS: 53 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, incognito off, store extension, framing, modes, mode migration, duplicate modes, chat stream, chat blocks, Claude Code location, update feed, update verification, safe update swap, credential migration, companion registration, preview-only developer mode, usage events, agent engines: Codex events, sign-in status, Codex commands, desktop app copies, Claude Code release manifest, install signature checks)")
+        print("PASS: 54 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, incognito off, browser suggestions, store extension, framing, modes, mode migration, duplicate modes, chat stream, chat blocks, Claude Code location, update feed, update verification, safe update swap, credential migration, companion registration, preview-only developer mode, usage events, agent engines: Codex events, sign-in status, Codex commands, desktop app copies, Claude Code release manifest, install signature checks)")
     }
 }

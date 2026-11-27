@@ -380,22 +380,26 @@ struct BrowserSetupModal: View {
     @Environment(\.snapshotState) private var snapshotState
     @State private var showFolderInstall = false
 
-    private var storeDetail: String? {
+    /// Detail under step 1, for the browsers it offers.
+    private func storeDetail(_ suggested: [SupportedBrowser]) -> String? {
         if service.availableBrowsers.isEmpty { return "Safari and Firefox aren't supported." }
-        if service.availableBrowsers.count > 1 { return "Opens the Chrome Web Store in that browser." }
+        if suggested.isEmpty { return "Added in " + ListFormatter.localizedString(byJoining: service.connectedBrowsers) + "." }
+        if suggested.count > 1 { return "Opens the Chrome Web Store in that browser." }
         return nil
     }
 
     var body: some View {
+        // Only the browsers this person uses and hasn't connected yet, their default first.
+        let suggested = service.suggestedBrowsers
         OrtusModal(title: "Block websites in your browser", onClose: { router.modal = nil }) {
             VStack(alignment: .leading, spacing: OrtusTheme.spacingMD) {
-                Text("A one-time setup for each browser profile. Chrome, Arc, Edge and Brave install it from the Chrome Web Store.")
+                Text("A one-time setup in each browser you use, from the Chrome Web Store.")
                     .font(OrtusTheme.Typo.callout).foregroundStyle(OrtusTheme.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
                 OrtusGroup {
                     VStack(alignment: .leading, spacing: 0) {
-                        OrtusStepRow(number: 1, title: "Add the Ortus extension", detail: storeDetail) {
-                            if service.availableBrowsers.count == 1, let browser = service.availableBrowsers.first {
+                        OrtusStepRow(number: 1, title: "Add the Ortus extension", detail: storeDetail(suggested)) {
+                            if suggested.count == 1, let browser = suggested.first {
                                 Button("Add to \(browser.name)") { service.openStoreListing(browserID: browser.id) }
                                     .buttonStyle(OrtusSecondaryButtonStyle(size: .small))
                             } else if service.availableBrowsers.isEmpty {
@@ -403,9 +407,9 @@ struct BrowserSetupModal: View {
                                     .buttonStyle(OrtusSecondaryButtonStyle(size: .small))
                             }
                         }
-                        if service.availableBrowsers.count > 1 {
+                        if suggested.count > 1 {
                             FlowLayout {
-                                ForEach(service.availableBrowsers) { browser in
+                                ForEach(suggested) { browser in
                                     Button("Add to \(browser.name)") { service.openStoreListing(browserID: browser.id) }
                                         .buttonStyle(OrtusSecondaryButtonStyle(size: .small))
                                 }

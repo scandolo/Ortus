@@ -165,7 +165,7 @@
         var app = params.get("app") || "";
         var scheme = params.get("scheme") || "";
         var ext = /^[a-p]{32}$/.test(params.get("ext") || "") ? params.get("ext") : "lheanmgemlbnpeonkdbbinmankaineao";
-        var pages = { "com.google.Chrome": "chrome", "company.thebrowser.Browser": "arc", "company.thebrowser.dia": "dia", "com.microsoft.edgemac": "edge", "com.brave.Browser": "brave" };
+        var pages = { "com.google.Chrome": "chrome", "company.thebrowser.Browser": "arc", "company.thebrowser.dia": "dia", "com.microsoft.edgemac": "edge", "com.brave.Browser": "brave", "com.vivaldi.Vivaldi": "vivaldi", "com.operasoftware.Opera": "opera" };
         var page = (pages[app] || "chrome") + "://extensions";
         var setting = app === "com.microsoft.edgemac" ? "Allow in InPrivate" : "Allow in Incognito";
         document.title = "Turn on " + setting + " for Ortus";
