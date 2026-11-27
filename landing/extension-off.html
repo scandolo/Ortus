@@ -13,44 +13,65 @@
   <link rel="stylesheet" href="/styles.css" />
   <style>
     [hidden] { display: none !important; }
-    /* A simplified extension Details page: the cursor turns on the incognito switch. */
-    .demo { margin: 20px 0 16px; }
-    .demo-window { position: relative; overflow: hidden; border-radius: 12px; background: #fff; color: #202124; font-size: 14px; }
-    .demo-bar { display: flex; align-items: center; gap: 6px; padding: 10px 12px; background: #e8eaed; }
-    .demo-bar > span { width: 10px; height: 10px; border-radius: 50%; background: #c4c7cc; }
-    .demo-url { margin-left: 10px; flex: 1; padding: 4px 12px; border-radius: 14px; background: #fff; color: #5f6368; font-size: 13px; }
-    .demo-page { padding: 6px 20px 14px; }
-    .demo-head { display: flex; align-items: center; gap: 10px; padding: 12px 0; font-weight: 700; font-size: 15px; }
-    .demo-head img { width: 24px; height: 24px; }
-    .demo-row { position: relative; display: flex; align-items: center; justify-content: space-between; min-height: 46px;
-                margin: 0 -10px; padding: 0 10px; border-top: 1px solid #e8eaed; border-radius: 8px; }
-    .demo-row.muted { color: #9aa0a6; }
-    .demo-row em { width: 120px; height: 8px; border-radius: 4px; background: #e8eaed; }
-    .demo-switch { position: relative; width: 34px; height: 14px; border-radius: 7px; background: #bdc1c6; }
-    .demo-switch::after { content: ""; position: absolute; top: -3px; left: -2px; width: 20px; height: 20px; border-radius: 50%;
-                          background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
-    .demo-switch.on { background: #8ab4f8; }
-    .demo-switch.on::after { left: 16px; background: #1a73e8; }
-    .demo-row.target { font-weight: 700; animation: target 5s infinite; }
-    .demo-row.target .demo-switch { animation: track 5s infinite; }
-    .demo-row.target .demo-switch::after { animation: knob 5s infinite; }
-    .demo-cursor { position: absolute; right: 8px; top: 24px; width: 22px; height: 22px; animation: cursor 5s infinite; pointer-events: none; }
-    @keyframes cursor {
-      0% { transform: translate(-150px, 90px); opacity: 0; }
-      12% { opacity: 1; }
-      40% { transform: translate(0, 0) scale(1); }
-      45% { transform: translate(0, 0) scale(.8); }
-      50%, 85% { transform: translate(0, 0) scale(1); opacity: 1; }
-      95%, 100% { transform: translate(0, 0); opacity: 0; }
-    }
-    @keyframes knob { 0%, 45% { left: -2px; background: #fff; } 47%, 95% { left: 16px; background: #1a73e8; } 100% { left: -2px; background: #fff; } }
-    @keyframes track { 0%, 45% { background: #bdc1c6; } 47%, 95% { background: #8ab4f8; } 100% { background: #bdc1c6; } }
-    @keyframes target { 0%, 45% { background: transparent; } 50%, 90% { background: #e8f0fe; } 100% { background: transparent; } }
+    /* Three steps, each with a picture of the browser's own extension pages (dark, like Chrome and Dia). */
+    .doc .fix-steps { list-style: none; margin: 22px 0 18px; padding: 0; display: grid; gap: 26px; }
+    .doc .fix-steps > li { margin: 0; }
+    .doc .fix-steps h3 { display: flex; gap: 12px; align-items: baseline; margin: 0 0 10px; }
+    .n { flex: none; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+         background: var(--bone); color: var(--ink); font-size: 14px; transform: translateY(-2px); }
+    .step-body { padding-left: 38px; }
+    .doc .step-body p { margin: 0 0 10px; }
+    .addr { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .doc .addr code { padding: 10px 14px; border-radius: 10px; background: var(--ink); color: var(--bone); font-size: 15px; user-select: all; }
+    .copy { height: 40px; padding: 0 16px; border: 0; border-radius: 10px; background: var(--line-on-ink); color: var(--bone);
+            font: 700 14px/1 var(--font); cursor: pointer; }
+    .open-note { margin: -4px 0 0; }
+    .shot { position: relative; margin: 0; overflow: hidden; border-radius: 12px; background: #202124; color: #e8eaed;
+            font: 14px/1.35 -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; box-shadow: 0 0 0 1px rgba(242,238,232,.08); }
+    .shot-bar { display: flex; align-items: center; gap: 6px; padding: 9px 12px; background: #2b2c2f; }
+    .shot-bar > span { width: 10px; height: 10px; border-radius: 50%; background: #5f6368; }
+    .shot-url { margin-left: 10px; flex: 1; min-width: 0; padding: 4px 12px; border-radius: 14px; background: #202124; color: #9aa0a6;
+                font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .shot-page { padding: 16px; }
+    .ext-card { max-width: 400px; padding: 14px 16px 12px; border-radius: 10px; background: #2b2c2f; }
+    .ext-head { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; }
+    .ext-head img { width: 28px; height: 28px; }
+    .ext-name { font-weight: 600; }
+    .ext-desc { margin-top: 3px; color: #9aa0a6; font-size: 13px; }
+    .ext-actions { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+    .ext-btn { position: relative; padding: 6px 14px; border: 1px solid #5f6368; border-radius: 16px; color: #8ab4f8; font-weight: 600; font-size: 13px; }
+    .ext-actions .sw { margin-left: auto; }
+    .rows { border-radius: 10px; background: #2b2c2f; }
+    .row { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; border-top: 1px solid #3c4043; }
+    .row:first-child { border-top: 0; }
+    .row.dim { color: #9aa0a6; }
+    .warn { display: block; margin-top: 3px; color: #9aa0a6; font-size: 12.5px; }
+    .sw { position: relative; flex: none; width: 34px; height: 14px; border-radius: 7px; background: #5f6368; }
+    .sw::after { content: ""; position: absolute; top: -3px; left: -2px; width: 20px; height: 20px; border-radius: 50%;
+                 background: #dadce0; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
+    .sw.on { background: #4b6a9b; }
+    .sw.on::after { left: 16px; background: #8ab4f8; }
+    .cursor { position: absolute; width: 22px; height: 22px; pointer-events: none; }
+    .ext-btn .cursor { left: 55%; top: 55%; animation: cursor-a 5s infinite; }
+    .ext-btn.target { animation: press 5s infinite; }
+    .row.target { animation: target 5s infinite; }
+    .row.target .cursor { right: 6px; top: 50%; animation: cursor-b 5s infinite; }
+    .row.target .sw { animation: track 5s infinite; }
+    .row.target .sw::after { animation: knob 5s infinite; }
+    @keyframes cursor-a { 0% { transform: translate(140px, 70px); opacity: 0; } 12% { opacity: 1; } 40% { transform: none; }
+      45% { transform: scale(.8); } 50%, 85% { transform: none; opacity: 1; } 95%, 100% { opacity: 0; } }
+    @keyframes cursor-b { 0% { transform: translate(-150px, 70px); opacity: 0; } 12% { opacity: 1; } 40% { transform: none; }
+      45% { transform: scale(.8); } 50%, 85% { transform: none; opacity: 1; } 95%, 100% { opacity: 0; } }
+    @keyframes press { 0%, 44% { background: transparent; } 46%, 90% { background: rgba(138,180,248,.16); } 100% { background: transparent; } }
+    @keyframes target { 0%, 44% { background: transparent; } 50%, 90% { background: rgba(138,180,248,.10); } 100% { background: transparent; } }
+    @keyframes knob { 0%, 45% { left: -2px; background: #dadce0; } 47%, 95% { left: 16px; background: #8ab4f8; } 100% { left: -2px; background: #dadce0; } }
+    @keyframes track { 0%, 45% { background: #5f6368; } 47%, 95% { background: #4b6a9b; } 100% { background: #5f6368; } }
     @media (prefers-reduced-motion: reduce) {
-      .demo-row.target, .demo-row.target .demo-switch, .demo-row.target .demo-switch::after, .demo-cursor { animation: none; }
-      .demo-row.target { background: #e8f0fe; }
-      .demo-row.target .demo-switch { background: #8ab4f8; }
-      .demo-row.target .demo-switch::after { left: 16px; background: #1a73e8; }
+      .cursor, .ext-btn.target, .row.target, .row.target .sw, .row.target .sw::after { animation: none; }
+      .ext-btn.target { background: rgba(138,180,248,.16); }
+      .row.target { background: rgba(138,180,248,.10); }
+      .row.target .sw { background: #4b6a9b; }
+      .row.target .sw::after { left: 16px; background: #8ab4f8; }
     }
   </style>
 </head>
@@ -66,7 +87,7 @@
   <!-- Opened by Ortus in a browser whose extension went off during a focus session:
        /extension-off?browser=Arc&closes=<unix seconds>
        When the extension is on but not allowed in incognito, Ortus adds
-       &reason=incognito&app=<bundle id>&scheme=<its URL scheme>. -->
+       &reason=incognito&app=<bundle id>&scheme=<its URL scheme>&ext=<extension id>. -->
   <main class="doc">
     <div class="doc-wrap">
       <h1 id="title">Your browser closes soon</h1>
@@ -84,23 +105,47 @@
 
       <section class="doc-card" id="incognito" aria-labelledby="incognito-title" hidden>
         <h2 id="incognito-title">Turn on <span class="setting">Allow in Incognito</span></h2>
-        <p>It's one switch on the extension's page. Once it's on, this tab closes by itself.</p>
-        <a class="btn btn-primary" id="open-setting" hidden>Open the setting</a>
-        <figure class="demo" aria-hidden="true">
-          <div class="demo-window">
-            <div class="demo-bar"><span></span><span></span><span></span><div class="demo-url" id="demo-url">chrome://extensions</div></div>
-            <div class="demo-page">
-              <div class="demo-head"><img src="/assets/favicon.svg" alt="" />Ortus · Website blocking</div>
-              <div class="demo-row"><span>On</span><i class="demo-switch on"></i></div>
-              <div class="demo-row muted"><span>Site access</span><em></em></div>
-              <div class="demo-row target"><span class="setting">Allow in Incognito</span><i class="demo-switch"></i>
-                <svg class="demo-cursor" viewBox="0 0 24 24"><path d="M4 2l15 11-6.5 1 4 7.5-3 1.5-4-7.5L4 20z" fill="#202124" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>
-              </div>
-              <div class="demo-row muted"><span>Allow access to file URLs</span><i class="demo-switch"></i></div>
+        <p>Three steps. Once it's on, this tab closes by itself.</p>
+        <button class="btn btn-primary" id="open-setting" type="button" hidden>Open Ortus's Details page</button>
+        <p class="small open-note" id="open-note" hidden>Does steps 1 and 2 for you.</p>
+        <ol class="fix-steps">
+          <li>
+            <h3><span class="n">1</span><span>Open <code class="ext-page">chrome://extensions</code></span></h3>
+            <div class="step-body">
+              <p>Websites can't link there, so paste it in the address bar.</p>
+              <div class="addr"><code class="ext-page" id="addr">chrome://extensions</code><button class="copy" id="copy" type="button">Copy</button></div>
             </div>
-          </div>
-        </figure>
-        <p class="small">Or open <strong>Extensions</strong>, then <strong>Ortus · Website blocking</strong>, then <strong>Details</strong>. Is it already on? <a class="report" href="mailto:support@ortusmode.com?subject=Ortus%20closed%20my%20browser">Report a bug</a>.</p>
+          </li>
+          <li>
+            <h3><span class="n">2</span><span>Find <strong>Ortus · Website blocking</strong> and click <strong>Details</strong></span></h3>
+            <div class="step-body">
+              <figure class="shot" aria-hidden="true">
+                <div class="shot-bar"><span></span><span></span><span></span><div class="shot-url ext-page">chrome://extensions</div></div>
+                <div class="shot-page"><div class="ext-card">
+                  <div class="ext-head"><img src="/assets/favicon.svg" alt="" /><div><div class="ext-name">Ortus · Website blocking</div>
+                    <div class="ext-desc">Keep the websites you choose out of your focus time. Controlled locally by Ortus.</div></div></div>
+                  <div class="ext-actions"><span class="ext-btn target">Details<svg class="cursor" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2l15 11-6.5 1 4 7.5-3 1.5-4-7.5L4 20z" fill="#fff" stroke="#202124" stroke-width="1.5" stroke-linejoin="round"/></svg></span><span class="ext-btn">Remove</span><i class="sw on"></i></div>
+                </div></div>
+              </figure>
+            </div>
+          </li>
+          <li>
+            <h3><span class="n">3</span><span>Scroll down to <strong class="setting">Allow in Incognito</strong> and turn it on</span></h3>
+            <div class="step-body">
+              <p>It's below <strong>Pin to toolbar</strong>.</p>
+              <figure class="shot" aria-hidden="true">
+                <div class="shot-bar"><span></span><span></span><span></span><div class="shot-url" id="detail-url">chrome://extensions/?id=…</div></div>
+                <div class="shot-page"><div class="rows">
+                  <div class="row dim"><span>Site settings</span></div>
+                  <div class="row"><span>Pin to toolbar</span><i class="sw on"></i></div>
+                  <div class="row target"><span><strong class="setting">Allow in Incognito</strong><span class="warn">Warning: <span class="browser-name">Your browser</span> cannot prevent extensions from recording your browsing history.</span></span><i class="sw"></i><svg class="cursor" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2l15 11-6.5 1 4 7.5-3 1.5-4-7.5L4 20z" fill="#fff" stroke="#202124" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
+                  <div class="row dim"><span>View in Chrome Web Store</span></div>
+                </div></div>
+              </figure>
+            </div>
+          </li>
+        </ol>
+        <p class="small">Is it already on? <a class="report" href="mailto:support@ortusmode.com?subject=Ortus%20closed%20my%20browser">Report a bug</a>.</p>
       </section>
     </div>
   </main>
@@ -115,23 +160,55 @@
         link.href = "mailto:support@ortusmode.com?subject=" + encodeURIComponent("Ortus closed " + browser + " but the extension was on");
       });
 
-      // The extension is on but not allowed in incognito: say exactly that, and offer the setting.
+      // The extension is on but not allowed in incognito: say exactly that, and walk through the three steps.
       if (params.get("reason") === "incognito") {
         var app = params.get("app") || "";
         var scheme = params.get("scheme") || "";
-        var pages = { "com.google.Chrome": "chrome", "company.thebrowser.Browser": "arc", "com.microsoft.edgemac": "edge", "com.brave.Browser": "brave" };
+        var ext = /^[a-p]{32}$/.test(params.get("ext") || "") ? params.get("ext") : "lheanmgemlbnpeonkdbbinmankaineao";
+        var pages = { "com.google.Chrome": "chrome", "company.thebrowser.Browser": "arc", "company.thebrowser.dia": "dia", "com.microsoft.edgemac": "edge", "com.brave.Browser": "brave" };
+        var page = (pages[app] || "chrome") + "://extensions";
         var setting = app === "com.microsoft.edgemac" ? "Allow in InPrivate" : "Allow in Incognito";
         document.title = "Turn on " + setting + " for Ortus";
         document.getElementById("lede").textContent = "The Ortus extension is on, but it isn't allowed in private windows, so they can still open the sites you blocked. Turn it on and " + browser + " stays open.";
         document.querySelectorAll(".setting").forEach(function (node) { node.textContent = setting; });
-        document.getElementById("demo-url").textContent = (pages[app] || "chrome") + "://extensions";
+        document.querySelectorAll(".ext-page").forEach(function (node) { node.textContent = page; });
+        document.querySelectorAll(".browser-name").forEach(function (node) { node.textContent = browser; });
+        document.getElementById("detail-url").textContent = page + "/?id=" + ext;
         document.getElementById("generic").hidden = true;
         document.getElementById("incognito").hidden = false;
-        // Web pages can't link to the browser's settings, so the button asks Ortus to open them.
-        if (/^ortus(-[a-z]+)?$/.test(scheme) && /^[A-Za-z0-9.-]{1,100}$/.test(app)) {
-          var button = document.getElementById("open-setting");
-          button.href = scheme + "://incognito?browser=" + encodeURIComponent(app);
+
+        var copy = document.getElementById("copy");
+        copy.addEventListener("click", function () {
+          var select = function () {
+            var range = document.createRange(); range.selectNodeContents(document.getElementById("addr"));
+            var selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(range);
+          };
+          var copied = function () { copy.textContent = "Copied"; setTimeout(function () { copy.textContent = "Copy"; }, 2000); };
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(page).then(copied, select); else select();
+        });
+
+        // Web pages can't open the browser's extension pages, so the button asks the Ortus extension to
+        // open its own Details page. Extensions older than 1.1.1 can't hear it; then it asks the Ortus app.
+        var runtime = window.chrome && window.chrome.runtime && window.chrome.runtime.sendMessage ? window.chrome.runtime : null;
+        var appLink = /^ortus(-[a-z]+)?$/.test(scheme) && /^[A-Za-z0-9.-]{1,100}$/.test(app) ? scheme + "://incognito?browser=" + encodeURIComponent(app) : "";
+        var button = document.getElementById("open-setting");
+        var note = document.getElementById("open-note");
+        if (runtime || appLink) {
           button.hidden = false;
+          note.hidden = false;
+          button.addEventListener("click", function () {
+            var viaApp = function () {
+              if (appLink) { location.href = appLink; return; }
+              note.textContent = "That didn't open. Follow the steps below.";
+            };
+            if (!runtime) { viaApp(); return; }
+            try {
+              runtime.sendMessage(ext, { type: "open-incognito-setting" }, function (reply) {
+                if (runtime.lastError || !reply || !reply.ok) { viaApp(); return; }
+                note.textContent = "Opened in a new tab. Now do step 3 there.";
+              });
+            } catch (error) { viaApp(); }
+          });
         }
       }
 

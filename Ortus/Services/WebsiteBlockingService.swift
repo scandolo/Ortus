@@ -12,6 +12,7 @@ final class WebsiteBlockingService: ObservableObject {
     }
     var availableBrowsers: [SupportedBrowser] {
         [SupportedBrowser(id: "company.thebrowser.Browser", name: "Arc", page: "arc://extensions"),
+         .init(id: "company.thebrowser.dia", name: "Dia", page: "dia://extensions"),
          .init(id: "com.google.Chrome", name: "Chrome", page: "chrome://extensions"),
          .init(id: "com.microsoft.edgemac", name: "Edge", page: "edge://extensions"),
          .init(id: "com.brave.Browser", name: "Brave", page: "brave://extensions")]
@@ -103,9 +104,9 @@ final class WebsiteBlockingService: ObservableObject {
                 guard var page = URLComponents(string: site + "/extension-off") else { break }
                 page.queryItems = [URLQueryItem(name: "browser", value: name), URLQueryItem(name: "closes", value: String(Int(closesAt.timeIntervalSince1970)))]
                 // The page then says exactly what's wrong, and its button asks Ortus to open the setting.
-                if let id = app.bundleIdentifier, incognitoOff[id] != nil, let scheme = AppDelegate.urlScheme {
+                if let id = app.bundleIdentifier, let extensionID = incognitoOff[id], let scheme = AppDelegate.urlScheme {
                     page.queryItems? += [URLQueryItem(name: "reason", value: "incognito"), URLQueryItem(name: "app", value: id),
-                                         URLQueryItem(name: "scheme", value: scheme)]
+                                         URLQueryItem(name: "scheme", value: scheme), URLQueryItem(name: "ext", value: extensionID)]
                 }
                 if let url = page.url, let browser = app.bundleURL {
                     NSWorkspace.shared.open([url], withApplicationAt: browser, configuration: .init(), completionHandler: nil)
@@ -186,7 +187,7 @@ final class WebsiteBlockingService: ObservableObject {
               let choice = availableBrowsers.first(where: { $0.id == browserID }),
               let browser = NSWorkspace.shared.urlForApplication(withBundleIdentifier: choice.id) else {
             if availableBrowsers.isEmpty {
-                setupError = "Choose an installed supported browser: Arc, Chrome, Edge or Brave. Safari and Firefox are not supported."
+                setupError = "Choose an installed supported browser: Arc, Dia, Chrome, Edge or Brave. Safari and Firefox are not supported."
             }
             NSWorkspace.shared.open(listing)
             return
@@ -215,7 +216,7 @@ final class WebsiteBlockingService: ObservableObject {
         guard let choice = availableBrowsers.first(where: { $0.id == browserID }),
               let browser = NSWorkspace.shared.urlForApplication(withBundleIdentifier: choice.id),
               let target = URL(string: choice.page) else {
-            setupError = "Choose an installed supported browser: Arc, Chrome, Edge or Brave. Safari and Firefox are not supported."
+            setupError = "Choose an installed supported browser: Arc, Dia, Chrome, Edge or Brave. Safari and Firefox are not supported."
             return
         }
         let name = choice.name
