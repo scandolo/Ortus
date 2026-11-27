@@ -5,17 +5,26 @@ import OrtusCore
 final class WebsiteBlockingService: ObservableObject {
     @Published private(set) var connectedBrowsers: [String] = []
     @Published private(set) var connectionSummary = ""
-    struct SupportedBrowser: Identifiable {
-        let id: String
-        let name: String
-        let page: String
-    }
+    /// Supported browsers installed on this Mac.
     var availableBrowsers: [SupportedBrowser] {
-        [SupportedBrowser(id: "company.thebrowser.Browser", name: "Arc", page: "arc://extensions"),
-         .init(id: "com.google.Chrome", name: "Chrome", page: "chrome://extensions"),
-         .init(id: "com.microsoft.edgemac", name: "Edge", page: "edge://extensions"),
-         .init(id: "com.brave.Browser", name: "Brave", page: "brave://extensions")]
-            .filter { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0.id) != nil }
+        SupportedBrowser.all.filter { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0.id) != nil }
+    }
+    /// The installed browsers this person uses and hasn't connected yet, the one to set up first.
+    var suggestedBrowsers: [SupportedBrowser] {
+        let installed = availableBrowsers
+        let defaultBrowser = NSWorkspace.shared.urlForApplication(toOpen: URL(string: "https://ortusmode.com")!)
+            .flatMap { Bundle(url: $0)?.bundleIdentifier }
+        let running = Set(NSWorkspace.shared.runningApplications.compactMap(\.bundleIdentifier))
+        // Chromium rewrites Local State while it runs, so its date is when the browser last ran.
+        let support = CompanionRegistration.applicationSupport
+        var lastUsed: [String: Date] = [:]
+        for browser in installed {
+            let localState = support.appendingPathComponent("\(browser.folder)/Local State")
+            lastUsed[browser.id] = try? localState.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
+        }
+        let ids = SupportedBrowser.suggested(installed: installed.map(\.id), defaultBrowser: defaultBrowser, running: running,
+                                             lastUsed: lastUsed, connected: connectedBrowserIDs)
+        return ids.compactMap { id in installed.first { $0.id == id } }
     }
     /// The next browser Ortus will close because its extension is off. `incognitoOff`: the
     /// extension is on but not allowed in incognito, so one switch on its Details page fixes it.
@@ -24,6 +33,8 @@ final class WebsiteBlockingService: ObservableObject {
     private var browserGuard = BrowserGuard()
     /// Browsers with a working extension right now, by bundle ID.
     private var protectedBrowsers: Set<String> = []
+    /// Browsers with a connected, working extension, by bundle ID.
+    private var connectedBrowserIDs: Set<String> = []
     /// Browsers whose extension is connected but not allowed in incognito, mapped to its id.
     private var incognitoOff: [String: String] = [:]
     @Published private(set) var error: String?
@@ -75,6 +86,7 @@ final class WebsiteBlockingService: ObservableObject {
         let seen = guarded.union(ready.compactMap(\.bundleID))
         if seen != guarded { UserDefaults.standard.set(seen.sorted(), forKey: "guardedBrowsers") }
         Analytics.reportConnectedBrowsers(Set(ready.compactMap(\.bundleID)))
+        connectedBrowserIDs = Set(ready.compactMap(\.bundleID))
         connectedBrowsers = Array(Set(ready.map(\.browser))).sorted()
         connectionSummary = connectedBrowsers.map { name in
             let count = ready.filter { $0.browser == name }.count
@@ -186,7 +198,7 @@ final class WebsiteBlockingService: ObservableObject {
               let choice = availableBrowsers.first(where: { $0.id == browserID }),
               let browser = NSWorkspace.shared.urlForApplication(withBundleIdentifier: choice.id) else {
             if availableBrowsers.isEmpty {
-                setupError = "Choose an installed supported browser: Arc, Chrome, Edge or Brave. Safari and Firefox are not supported."
+                setupError = "Choose an installed supported browser: \(SupportedBrowser.names). Safari and Firefox are not supported."
             }
             NSWorkspace.shared.open(listing)
             return
@@ -215,7 +227,7 @@ final class WebsiteBlockingService: ObservableObject {
         guard let choice = availableBrowsers.first(where: { $0.id == browserID }),
               let browser = NSWorkspace.shared.urlForApplication(withBundleIdentifier: choice.id),
               let target = URL(string: choice.page) else {
-            setupError = "Choose an installed supported browser: Arc, Chrome, Edge or Brave. Safari and Firefox are not supported."
+            setupError = "Choose an installed supported browser: \(SupportedBrowser.names). Safari and Firefox are not supported."
             return
         }
         let name = choice.name

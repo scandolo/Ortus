@@ -3,7 +3,7 @@ import Foundation
 /// User-level registration of the browser companion. Re-running updates the bridge path after moving a build.
 public enum CompanionRegistration {
     /// Chromium browsers that read user-level native messaging hosts, under Application Support.
-    public static let browserFolders = ["Google/Chrome", "Arc/User Data", "Microsoft Edge", "BraveSoftware/Brave-Browser", "Chromium"]
+    public static let browserFolders = SupportedBrowser.all.map(\.folder) + ["Chromium"]
 
     public static var applicationSupport: URL {
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support", isDirectory: true)

@@ -59,8 +59,8 @@ struct OrtusBrowserBridge {
             try BrowserPaths.prepare(clients)
             let clientURL = clients.appendingPathComponent(hello.clientID + ".json")
             let parent = NSRunningApplication(processIdentifier: getppid())?.bundleIdentifier ?? ""
-            let detected = parent.hasPrefix("company.thebrowser.Browser") ? "Arc" : parent.hasPrefix("com.brave") ? "Brave" : parent.hasPrefix("com.microsoft.edgemac") ? "Edge" : nil
-            let browser = detected ?? (["Chrome", "Arc", "Edge", "Brave", "Chromium"].contains(hello.browser) ? hello.browser : "Chromium")
+            let detected = SupportedBrowser.all.first { parent.hasPrefix($0.id) }?.name
+            let browser = detected ?? ((SupportedBrowser.all.map(\.name) + ["Chromium"]).contains(hello.browser) ? hello.browser : "Chromium")
             let extensionID = CommandLine.arguments.dropFirst().lazy.compactMap(BrowserCompanion.extensionID(fromOrigin:)).first
             let acknowledgement = Acknowledgement()
             // Exit when the browser closes its port; an orphan must not claim to be connected.
