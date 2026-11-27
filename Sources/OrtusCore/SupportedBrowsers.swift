@@ -11,7 +11,7 @@ public struct SupportedBrowser: Identifiable, Equatable, Sendable {
 
     public static let all: [SupportedBrowser] = [
         .init(id: "com.google.Chrome", name: "Chrome", folder: "Google/Chrome", page: "chrome://extensions"),
-        .init(id: "company.thebrowser.dia", name: "Dia", folder: "Dia/User Data", page: "chrome://extensions"),
+        .init(id: "company.thebrowser.dia", name: "Dia", folder: "Dia/User Data", page: "dia://extensions"),
         .init(id: "company.thebrowser.Browser", name: "Arc", folder: "Arc/User Data", page: "arc://extensions"),
         .init(id: "com.microsoft.edgemac", name: "Edge", folder: "Microsoft Edge", page: "edge://extensions"),
         .init(id: "com.brave.Browser", name: "Brave", folder: "BraveSoftware/Brave-Browser", page: "brave://extensions"),
