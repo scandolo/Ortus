@@ -23,6 +23,7 @@ struct ChatView: View {
                 } else {
                     messageList
                 }
+                if claudeCodeService.isSignedOut { signedOutBar }
                 inputBar
             }
         }
@@ -30,6 +31,8 @@ struct ChatView: View {
             #if DEBUG
             ChatFixtures.applySetup(snapshotState, to: claudeCodeService, router: router)
             #endif
+            // A sign-out in Terminal shows up the next time the tab opens.
+            if snapshotState == nil { claudeCodeService.refreshSignIn() }
             if snapshotState == "chat-send-hover" { inputText = "And the press list?" }
             if ChatFixtures.apply(snapshotState, to: claudeCodeService) { return }
             if snapshotState == "chat-draft" {
@@ -66,11 +69,11 @@ struct ChatView: View {
         VStack(spacing: OrtusTheme.spacingMD) {
             Spacer()
             OrtusIcon(.agent, size: 36)
-            Text("Your agent needs Claude Code.")
+            Text("Your agent needs \(claudeCodeService.engine.name).")
                 .font(OrtusTheme.Typo.titleSmall)
                 .tracking(-1)
                 .multilineTextAlignment(.center)
-            Text("Your agent uses Claude Code on your Mac. Set it up once, then ask from here.")
+            Text("Your agent uses \(claudeCodeService.engine.name) on your Mac. Set it up once, then ask from here.")
                 .font(OrtusTheme.Typo.callout)
                 .foregroundStyle(OrtusTheme.textMuted)
                 .multilineTextAlignment(.center)
@@ -101,6 +104,24 @@ struct ChatView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(OrtusTheme.spacingMD)
+    }
+
+    /// The problem sits where it bites, just above the text box, with one fix.
+    private var signedOutBar: some View {
+        HStack(spacing: 10) {
+            OrtusProblemIcon(size: 16)
+            Text("You’re signed out of \(claudeCodeService.engine.name).")
+                .font(OrtusTheme.Typo.callout.weight(.bold))
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            Button("Sign in") { router.modal = .chatSetup }
+                .buttonStyle(OrtusRowButtonStyle())
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(OrtusTheme.cardSurface))
+        .padding(.horizontal, OrtusTheme.spacingMD)
+        .padding(.bottom, OrtusTheme.spacingSM)
     }
 
     // MARK: - Message List
@@ -520,12 +541,13 @@ struct ChatIntroModal: View {
                     .font(OrtusTheme.Typo.callout).foregroundStyle(OrtusTheme.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
                 OrtusGroup {
-                    OrtusListRow(title: "Runs on Claude Code",
+                    OrtusListRow(title: "Runs on \(claudeCodeService.engine.name)",
                                  subtitle: claudeCodeService.isConfigured ? "Already on this Mac, so there’s nothing to set up." : "Install it once, and your agent uses it from then on.") {
                         OrtusIcon(.terminal, size: 18)
                     } trailing: { EmptyView() }
                     OrtusGroupDivider()
-                    OrtusListRow(title: "Uses your connectors", subtitle: "Whatever you connected to Claude Code.") {
+                    OrtusListRow(title: "Uses your connectors",
+                                 subtitle: claudeCodeService.engine == .codex ? "Whatever you connected in ChatGPT." : "Whatever you connected to Claude Code.") {
                         OrtusIcon(.link, size: 18)
                     } trailing: { EmptyView() }
                     OrtusGroupDivider()

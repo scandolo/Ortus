@@ -353,6 +353,8 @@ struct CoreChecks {
         usage.onlyAUUIDLinksAWebsiteVisitor()
         usage.activeDayIsReportedOncePerCalendarDay()
         usage.focusDescribesKindModeAndSizeWithoutNames()
-        print("PASS: 39 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, incognito off, store extension, framing, modes, mode migration, duplicate modes, chat stream, chat blocks, Claude Code location, update feed, update verification, safe update swap, credential migration, companion registration, preview-only developer mode, usage events)")
+        try AgentTests.runAll()
+        try InstallerTests.runAll()
+        print("PASS: 53 Ortus core checks (validation, migration, stable default identity, schedules, overlap, grace skip, recovery, browser lease, browser guard, incognito off, store extension, framing, modes, mode migration, duplicate modes, chat stream, chat blocks, Claude Code location, update feed, update verification, safe update swap, credential migration, companion registration, preview-only developer mode, usage events, agent engines: Codex events, sign-in status, Codex commands, desktop app copies, Claude Code release manifest, install signature checks)")
     }
 }
