@@ -35,6 +35,12 @@ final class FocusManager: ObservableObject {
     private var lastPublish = Date.distantPast
     private var lastSlackEnd: Date?
     private var slackStatusApplied = false
+    // Usage events: the focus period being tracked, how it ends, and apps Ortus closed in it.
+    private var trackedFocus: UsageAnalytics.Focus?
+    private var focusEndReason = "completed"
+    private var appsClosedInFocus = 0
+    @AppStorage("analyticsTrackedFocusStart") private var trackedFocusStart: Double = 0
+    @AppStorage("analyticsFirstBlockReported") private var firstBlockReported = false
 
     // Keep the old preference key so existing users retain their choice.
     @AppStorage("relaunchSlackOnEnd") var relaunchSlackOnEnd = false
@@ -77,6 +83,7 @@ final class FocusManager: ObservableObject {
         if let data = UserDefaults.standard.data(forKey: "customFocusModes"), let saved = try? JSONDecoder().decode([FocusMode].self, from: data) { customModes = saved }
         migrateToModesIfNeeded(freshInstall: freshInstall)
         websites.registerCompanion()
+        apps.onClose = { [weak self] in self?.blockedAppClosed() }
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.refresh() }
@@ -109,6 +116,7 @@ final class FocusManager: ObservableObject {
         guard !mode.isBuiltIn, !mode.blocked.isEmpty, FocusMode.duplicate(of: mode, in: modes) == nil else { return }
         let previous = customModes.first { $0.id == mode.id }
         if let index = customModes.firstIndex(where: { $0.id == mode.id }) { customModes[index] = mode } else { customModes.append(mode) }
+        Analytics.capture("mode_saved", ["new": previous == nil, "apps_count": mode.blocked.applications.count, "sites_count": mode.blocked.websites.count])
         // A copy of Socials saved by an older version must not drag Socials' schedules along.
         guard let previous, previous.blocked != mode.blocked, self.mode(for: previous.blocked) == nil else { return }
         if manualSelection == previous.blocked { manualSelection = mode.blocked }
@@ -119,6 +127,7 @@ final class FocusManager: ObservableObject {
     func deleteMode(_ mode: FocusMode) {
         customModes.removeAll { $0.id == mode.id }
         if manualSelection == mode.blocked { manualSelection = FocusMode.social.blocked }
+        Analytics.capture("mode_deleted")
     }
 
     /// One-time move to modes: new sessions default to Social, and an upgrader's schedule
@@ -145,6 +154,7 @@ final class FocusManager: ObservableObject {
     func deleteSchedule(_ schedule: FocusSchedule) {
         guard !activeScheduleIDs.contains(schedule.id) else { return }
         schedules.removeAll { $0.id == schedule.id }; ScheduleStore.save(schedules); refresh()
+        Analytics.capture("schedule_deleted")
     }
     func activeScheduleEndTime(for scheduleID: UUID) -> Date? {
         timeline.sessions.first { $0.scheduleID == scheduleID }?.end
@@ -164,22 +174,23 @@ final class FocusManager: ObservableObject {
         completionMessage = nil
         timeline.beginManual(at: Date(), duration: duration ?? 3600, blocked: manualSelection)
         refresh(forcePublish: true)
-        Analytics.capture("focus_started", ["scheduled": false])
     }
     func revertFocusSession() {
         guard isInGracePeriod else { return }
         timeline.revertManual(at: Date())
+        focusEndReason = "reverted"
         refresh(forcePublish: true)
         completionMessage = "Focus cancelled. Your apps and websites are available."
-        Analytics.capture("focus_reverted")
     }
     func skipGracePeriod() {
         guard isInGracePeriod else { return }
         timeline.skipGracePeriod()
         refresh(forcePublish: true)
+        Analytics.capture("grace_skipped")
     }
     func endFocusSession() {
         timeline.endEarly(at: Date())
+        focusEndReason = "ended_early"
         refresh(forcePublish: true)
     }
     func emergencyEndFocusSession() {
@@ -188,13 +199,14 @@ final class FocusManager: ObservableObject {
         originalFocusEndTime = timeline.end
         timeline.endEarly(at: Date())
         apps.finish(relaunch: true)
+        focusEndReason = "emergency"
         refresh(forcePublish: true)
         completionMessage = "Focus ended early. Your apps and websites are available."
-        Analytics.capture("focus_emergency_ended")
     }
     func extendFocus(by seconds: TimeInterval) {
         timeline.extend(by: seconds)
         refresh(forcePublish: true)
+        Analytics.capture("focus_extended", ["minutes": Int((seconds / 60).rounded())])
     }
 
     private func refresh(forcePublish: Bool = false) {
@@ -233,6 +245,7 @@ final class FocusManager: ObservableObject {
         emergencyScheduleSuppressUntil = timeline.suppressedUntil?.timeIntervalSince1970 ?? 0
         isEmergencyEnded = timeline.suppressedUntil.map { $0 > now } ?? false
         apps.update(selection.applications)
+        trackFocus(wasActive: wasActive, sessions: effective.sessions, now: now)
         if wasActive && !isInFocus {
             apps.finish(relaunch: relaunchSlackOnEnd)
             clearSlackStatusForFocus()
@@ -253,6 +266,36 @@ final class FocusManager: ObservableObject {
             websites.refreshConnections(now: now)
         }
         websites.guardBrowsers(active: isInFocus && !selection.websites.isEmpty, now: now)
+    }
+
+    /// `focus_started` and `focus_ended` once per focus period, whether it was started by hand,
+    /// by a schedule, or both. A relaunch in the middle of a period doesn't count as a new start.
+    private func trackFocus(wasActive: Bool, sessions: [FocusSession], now: Date) {
+        if isInFocus, let focus = UsageAnalytics.focus(sessions, modes: modes) {
+            if !wasActive, trackedFocusStart != focus.start.timeIntervalSince1970 {
+                trackedFocusStart = focus.start.timeIntervalSince1970
+                appsClosedInFocus = 0
+                Analytics.capture("focus_started", focus.properties)
+            }
+            trackedFocus = focus
+        } else if wasActive, let focus = trackedFocus {
+            var properties = focus.properties
+            properties["reason"] = focusEndReason
+            properties["actual_minutes"] = focus.minutes(until: now)
+            properties["apps_closed"] = appsClosedInFocus
+            Analytics.capture("focus_ended", properties)
+            trackedFocus = nil; trackedFocusStart = 0; appsClosedInFocus = 0
+        }
+        if !isInFocus { focusEndReason = "completed" }
+    }
+
+    /// Ortus closed a blocked app. Reported once per focus period; `first_time` marks the first
+    /// session that really blocked something on this Mac, which is how we count activation.
+    private func blockedAppClosed() {
+        appsClosedInFocus += 1
+        guard appsClosedInFocus == 1, Analytics.isActive else { return }
+        Analytics.capture("blocked_app_closed", ["first_time": !firstBlockReported])
+        firstBlockReported = true
     }
 
     private func applySlackStatusForFocus() {
